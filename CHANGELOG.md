@@ -4,6 +4,8 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-09-21
+
 ### Changed
 
 - Added opt-in tenant ownership for profiles, translations, redirects, graph
