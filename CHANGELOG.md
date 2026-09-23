@@ -4,6 +4,14 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-09-23
+
+### Changed
+
+- Replace management and sitemap Form Requests with Data contracts while
+  retaining strict unknown-field rejection, owner identifiers, optimistic
+  revision validation, public sitemap scope allowlisting, and response shapes.
+
 ## [2.0.1] - 2026-09-22
 
 ### Changed
