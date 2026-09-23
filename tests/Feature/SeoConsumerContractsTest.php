@@ -463,6 +463,19 @@ it('exercises the complete opt-in management API lifecycle', function (): void {
     expect($profileId)->toBeString()
         ->and($revision)->toBeInt();
 
+    $this->getJson('/api/consumer/seo/profiles?unsupported=1')
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('unsupported');
+    $this->putJson("/api/consumer/seo/profiles/{$profileId}", ['isIndexable' => false])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('expectedRevision');
+    $this->putJson("/api/consumer/seo/profiles/{$profileId}", ['expectedRevision' => 0])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('expectedRevision');
+    $this->putJson("/api/consumer/seo/profiles/{$profileId}", ['expectedRevision' => $revision, 'unsupported' => true])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('unsupported');
+
     $this->getJson('/api/consumer/seo/profiles?ownerAlias=article&perPage=10')
         ->assertOk()
         ->assertJsonPath('data.meta.total', 1)

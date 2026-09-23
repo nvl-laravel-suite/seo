@@ -6,6 +6,7 @@ namespace Nvl\Seo\Http\Controllers;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Nvl\Data\Data\PaginatedCollection;
 use Nvl\Data\Data\PaginationMeta;
@@ -18,15 +19,15 @@ use Nvl\Seo\Actions\PreviewSeoProfileAction;
 use Nvl\Seo\Actions\SeoProfileStatusAction;
 use Nvl\Seo\Actions\SyncSeoProfileAction;
 use Nvl\Seo\Contracts\SeoAuthorization;
+use Nvl\Seo\Data\Mutations\SeoProfilePayload;
+use Nvl\Seo\Data\SeoArchiveProfileData;
+use Nvl\Seo\Data\SeoDuplicateProfileData;
+use Nvl\Seo\Data\SeoPreviewQueryData;
+use Nvl\Seo\Data\SeoProfileQuery;
+use Nvl\Seo\Data\SeoRevisionData;
+use Nvl\Seo\Data\SeoScopeQueryData;
+use Nvl\Seo\Data\SeoStoreProfileData;
 use Nvl\Seo\Enums\SeoAbility;
-use Nvl\Seo\Http\Requests\ArchiveSeoProfileRequest;
-use Nvl\Seo\Http\Requests\DeleteSeoProfileRequest;
-use Nvl\Seo\Http\Requests\DuplicateSeoProfileRequest;
-use Nvl\Seo\Http\Requests\ListSeoProfilesRequest;
-use Nvl\Seo\Http\Requests\PreviewSeoProfileRequest;
-use Nvl\Seo\Http\Requests\SeoProfileStatusRequest;
-use Nvl\Seo\Http\Requests\StoreSeoProfileRequest;
-use Nvl\Seo\Http\Requests\UpdateSeoProfileRequest;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Seo\Services\SeoProfilePresenter;
@@ -48,10 +49,10 @@ final class SeoManagementController extends Controller
      * Return a paginated management list of profiles.
      */
     public function index(
-        ListSeoProfilesRequest $request,
+        Request $request,
         ListSeoProfilesAction $action,
     ): JsonResponse {
-        $query = $request->profileQuery();
+        $query = SeoProfileQuery::validateAndCreate($request->query());
         $profiles = $action->execute($query);
         $items = [];
 
@@ -89,12 +90,13 @@ final class SeoManagementController extends Controller
      * Create a profile for one authorized registered owner.
      */
     public function store(
-        StoreSeoProfileRequest $request,
+        Request $request,
         SyncSeoProfileAction $action,
     ): JsonResponse {
-        $ownerAlias = $request->ownerAlias();
-        $owner = $this->owners->resolve($ownerAlias, $request->ownerId());
-        $scope = SeoScope::normalize($request->scope());
+        $data = SeoStoreProfileData::validateAndCreate($request->all());
+        $ownerAlias = $data->ownerAlias;
+        $owner = $this->owners->resolve($ownerAlias, $data->normalizedOwnerId());
+        $scope = SeoScope::normalize($data->scope);
         $this->authorization->authorize(new SeoAuthorizationContext(
             ability: SeoAbility::Create,
             owner: $owner,
@@ -103,7 +105,7 @@ final class SeoManagementController extends Controller
         ));
         $profile = $action->execute(
             $owner,
-            $request->payload(),
+            $data->payload(),
             $scope,
         );
 
@@ -114,13 +116,22 @@ final class SeoManagementController extends Controller
      * Update one profile with a mandatory optimistic revision token.
      */
     public function update(
-        UpdateSeoProfileRequest $request,
+        Request $request,
         string $profile,
         SyncSeoProfileAction $action,
     ): JsonResponse {
+        $input = [];
+
+        foreach ($request->all() as $key => $value) {
+            if (is_string($key)) {
+                $input[$key] = $value;
+            }
+        }
+
+        $data = SeoProfilePayload::validateForUpdate($input);
         $profileModel = $this->profileModel($profile);
         $owner = $this->authorizeProfile(SeoAbility::Update, $profileModel);
-        $updated = $action->execute($owner, $request->payload(), $profileModel->scope);
+        $updated = $action->execute($owner, $data, $profileModel->scope);
 
         return response()->json(['data' => $this->presenter->present($updated)->toArray()]);
     }
@@ -129,16 +140,17 @@ final class SeoManagementController extends Controller
      * Duplicate one profile to an authorized target owner.
      */
     public function duplicate(
-        DuplicateSeoProfileRequest $request,
+        Request $request,
         string $profile,
         DuplicateSeoProfileAction $action,
     ): JsonResponse {
+        $data = SeoDuplicateProfileData::validateAndCreate($request->all());
         $profileModel = $this->profileModel($profile);
-        $ownerAlias = $request->ownerAlias();
-        $target = $this->owners->resolve($ownerAlias, $request->ownerId());
+        $ownerAlias = $data->ownerAlias;
+        $target = $this->owners->resolve($ownerAlias, $data->normalizedOwnerId());
         $sourceOwner = $profileModel->seoable()->firstOrFail();
         $sourceOwnerAlias = $this->owners->aliasFor($sourceOwner);
-        $scope = SeoScope::normalize($request->scope());
+        $scope = SeoScope::normalize($data->scope);
         $this->authorization->authorize(new SeoAuthorizationContext(
             ability: SeoAbility::Duplicate,
             profile: $profileModel,
@@ -152,7 +164,7 @@ final class SeoManagementController extends Controller
             $profile,
             $target,
             $scope,
-            $request->copyPaths(),
+            $data->copyPaths ?? false,
         );
 
         return response()->json(['data' => $this->presenter->present($duplicate)->toArray()], 201);
@@ -162,16 +174,17 @@ final class SeoManagementController extends Controller
      * Archive or restore one authorized profile.
      */
     public function archive(
-        ArchiveSeoProfileRequest $request,
+        Request $request,
         string $profile,
         ArchiveSeoProfileAction $action,
     ): JsonResponse {
+        $data = SeoArchiveProfileData::validateAndCreate($request->all());
         $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Archive, $profileModel);
         $updated = $action->execute(
             $profile,
-            $request->archived(),
-            $request->expectedRevision(),
+            $data->archived,
+            $data->expectedRevision,
         );
 
         return response()->json(['data' => $this->presenter->present($updated)->toArray()]);
@@ -181,10 +194,11 @@ final class SeoManagementController extends Controller
      * Delete one authorized profile.
      */
     public function destroy(
-        DeleteSeoProfileRequest $request,
+        Request $request,
         string $profile,
         DeleteSeoProfileAction $action,
     ): JsonResponse {
+        $data = SeoRevisionData::validateAndCreate($request->all());
         $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Delete, $profileModel);
 
@@ -192,7 +206,7 @@ final class SeoManagementController extends Controller
             'data' => [
                 'deleted' => $action->execute(
                     $profile,
-                    $request->expectedRevision(),
+                    $data->expectedRevision,
                 ),
             ],
         ]);
@@ -202,17 +216,18 @@ final class SeoManagementController extends Controller
      * Preview resolved metadata for one authorized profile.
      */
     public function preview(
-        PreviewSeoProfileRequest $request,
+        Request $request,
         string $profile,
         PreviewSeoProfileAction $action,
     ): JsonResponse {
+        $query = SeoPreviewQueryData::validateAndCreate($request->query());
         $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Preview, $profileModel);
 
         return response()->json([
             'data' => $action->execute(
                 $profileModel,
-                $request->locale(),
+                $query->locale,
             )->toArray(),
         ]);
     }
@@ -221,10 +236,11 @@ final class SeoManagementController extends Controller
      * Return aggregate status for one authorized scope.
      */
     public function status(
-        SeoProfileStatusRequest $request,
+        Request $request,
         SeoProfileStatusAction $action,
     ): JsonResponse {
-        $scope = $request->scope();
+        $query = SeoScopeQueryData::validateAndCreate($request->query());
+        $scope = $query->scope;
         $this->authorization->authorize(new SeoAuthorizationContext(
             ability: SeoAbility::List,
             scope: $scope === null ? null : SeoScope::normalize($scope),

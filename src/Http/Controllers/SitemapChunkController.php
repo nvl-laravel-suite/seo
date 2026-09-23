@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Http\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Nvl\Seo\Http\Requests\SitemapRequest;
+use Nvl\Seo\Data\SeoSitemapQueryData;
 use Nvl\Seo\Services\SitemapGenerator;
 use Nvl\Seo\Support\SeoConfiguration;
 use OutOfBoundsException;
@@ -21,12 +22,13 @@ final readonly class SitemapChunkController
     /**
      * Serve one sitemap chunk with validation and conditional caching headers.
      */
-    public function __invoke(SitemapRequest $request, int|string $chunk): Response
+    public function __invoke(Request $request, int|string $chunk): Response
     {
+        $query = SeoSitemapQueryData::validateAndCreate($request->query());
         try {
             $xml = $this->sitemaps->generateChunk(
                 (int) $chunk,
-                $request->scope(),
+                $query->scope,
             );
         } catch (OutOfBoundsException) {
             throw new NotFoundHttpException;

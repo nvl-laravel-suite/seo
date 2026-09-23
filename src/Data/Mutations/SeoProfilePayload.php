@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Data\Mutations;
 
+use Illuminate\Support\Facades\Validator as ValidatorFacade;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Nvl\Data\Traits\DataTransform;
+use Nvl\Seo\Data\SeoManagementInputData;
 use Nvl\Seo\Enums\SitemapChangeFrequency;
 use Nvl\Translatable\Rules\SupportedLocaleMapRule;
 use Spatie\LaravelData\Attributes\MapInputName;
@@ -109,5 +112,24 @@ final class SeoProfilePayload extends Data
             'expectedRevision' => ['sometimes', 'nullable', 'integer', 'min:0'],
             ...SeoTranslationPayload::scopedRules('translations.*.'),
         ];
+    }
+
+    public static function withValidator(Validator $validator): void
+    {
+        SeoManagementInputData::rejectUnknownFields($validator, self::rules());
+    }
+
+    /**
+     * Validate the stricter update boundary before creating the reusable mutation payload.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    public static function validateForUpdate(array $input): self
+    {
+        $rules = array_replace(self::rules(), ['expectedRevision' => ['required', 'integer', 'min:1']]);
+        $validator = ValidatorFacade::make($input, $rules);
+        SeoManagementInputData::rejectUnknownFields($validator, $rules);
+
+        return self::from($validator->validate());
     }
 }

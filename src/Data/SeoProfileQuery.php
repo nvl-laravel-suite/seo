@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Seo\Data;
 
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Mappers\CamelCaseMapper;
@@ -37,5 +38,10 @@ final class SeoProfileQuery extends Data
             'page' => ['integer', 'min:1'],
             'perPage' => ['integer', 'min:1', 'max:200'],
         ];
+    }
+
+    public static function withValidator(Validator $validator): void
+    {
+        SeoManagementInputData::rejectUnknownFields($validator, self::rules());
     }
 }

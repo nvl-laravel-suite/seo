@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Http\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Nvl\Seo\Http\Requests\SitemapRequest;
+use Nvl\Seo\Data\SeoSitemapQueryData;
 use Nvl\Seo\Services\SitemapGenerator;
 use Nvl\Seo\Support\SeoConfiguration;
 
@@ -21,9 +22,10 @@ final readonly class SitemapController
     /**
      * Serve the sitemap with validation and conditional caching headers.
      */
-    public function __invoke(SitemapRequest $request): Response
+    public function __invoke(Request $request): Response
     {
-        $xml = $this->sitemaps->generate($request->scope());
+        $query = SeoSitemapQueryData::validateAndCreate($request->query());
+        $xml = $this->sitemaps->generate($query->scope);
         $response = response(
             $xml,
             200,
