@@ -2,6 +2,9 @@
 
 [← NVL Laravel Suite](https://github.com/nvl-laravel-suite)
 
+For support, [open an issue](https://github.com/nvl-laravel-suite/seo/issues). For vulnerabilities, use
+[private reporting](https://github.com/nvl-laravel-suite/seo/security/advisories/new). See [Contributing](CONTRIBUTING.md).
+
 ## Quick reference
 
 | Item | Value |
@@ -768,7 +771,7 @@ composer install
 composer quality
 ```
 
-The package gate runs Pint, PHPStan at maximum strictness, and isolated Testbench/Pest tests. The monorepo adds dependency analysis, Composer audit, integration tests, and Laravel 13 gates.
+The package gate runs Pint, PHPStan at maximum strictness, and isolated Testbench/Pest tests. Maintainer CI adds dependency analysis, Composer audit, integration tests, and Laravel 13 gates.
 
 See [UPGRADING.md](UPGRADING.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [CHANGELOG.md](CHANGELOG.md).
 
