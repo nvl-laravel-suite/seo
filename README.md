@@ -1,12 +1,12 @@
 # NVL SEO — API and usage
 
-[← NVL Laravel Suite](../../../README.md)
+[← NVL Laravel Suite](https://github.com/nvl-laravel-suite)
 
 ## Quick reference
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/laravel-suite:^2.0` |
+| Installed through | `composer require nvl/seo:^2.0` |
 | Module identifier | `nvl/seo` |
 | PHP namespace | `Nvl\Seo` |
 | Service provider | `Nvl\Seo\Providers\SeoServiceProvider` |
@@ -60,12 +60,12 @@ artifacts, drain jobs, and restart workers before admitting traffic.
 
 - PHP 8.4+
 - Laravel 13
-- `nvl/translatable` 1.x
-- `nvl/data` 1.x
+- `nvl/translatable` 2.x
+- `nvl/core` 2.x
 - `ext-json`, `ext-libxml`, `ext-xmlwriter`, and `ext-mbstring`
 
 ```bash
-composer require nvl/laravel-suite:^2.0
+composer require nvl/seo:^2.0
 php artisan migrate
 php artisan vendor:publish --tag=seo-config
 php artisan vendor:publish --tag=seo-skills
@@ -704,7 +704,7 @@ Keep environment access in config. Application code reads `config('seo...')`.
 
 ## TypeScript
 
-SEO registers with `nvl/data`. Public contracts include `SeoProfilePayload`, `SeoTranslationPayload`, `ResolvedSeoData`, `SitemapChangeFrequency`, and `TwitterCard`.
+SEO registers with Core's Data provider. Public contracts include `SeoProfilePayload`, `SeoTranslationPayload`, `ResolvedSeoData`, `SitemapChangeFrequency`, and `TwitterCard`.
 
 ```bash
 php artisan nvl:data:types:generate
