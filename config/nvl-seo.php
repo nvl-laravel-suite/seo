@@ -6,6 +6,7 @@ use Nvl\Seo\Services\DirectSeoImageResolver;
 use Nvl\Seo\Services\FilesystemSitemapArtifactStore;
 use Nvl\Support\Config\PackageEnvironment;
 
+/** Complete runtime defaults; publication sections are declared in ../resources/config/sections.json. */
 return [
     'site' => [
         'scope' => PackageEnvironment::get('NVL_SEO_SITE_SCOPE', 'default'),

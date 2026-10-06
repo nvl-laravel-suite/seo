@@ -7,6 +7,7 @@ namespace Nvl\Seo\Actions;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
+use Nvl\Seo\Contracts\ListOwnerSeoProfilesContract;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Data\SeoProfileData;
 use Nvl\Seo\Enums\SeoAbility;
@@ -22,7 +23,7 @@ use Nvl\Seo\Support\SeoScope;
  *
  * @api
  */
-final readonly class ListOwnerSeoProfilesAction
+final readonly class ListOwnerSeoProfilesAction implements ListOwnerSeoProfilesContract
 {
     private const int MAXIMUM_OWNERS = 100;
 

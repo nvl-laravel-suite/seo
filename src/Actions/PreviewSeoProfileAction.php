@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Actions;
 
+use Nvl\Seo\Contracts\PreviewSeoProfileContract;
 use Nvl\Seo\Data\ResolvedSeoData;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Services\SeoMetadataResolver;
@@ -13,7 +14,7 @@ use Nvl\Seo\Services\SeoMetadataResolver;
  *
  * @api
  */
-final readonly class PreviewSeoProfileAction
+final readonly class PreviewSeoProfileAction implements PreviewSeoProfileContract
 {
     public function __construct(private SeoMetadataResolver $resolver) {}
 

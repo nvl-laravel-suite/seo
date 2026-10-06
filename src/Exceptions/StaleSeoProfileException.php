@@ -7,6 +7,8 @@ namespace Nvl\Seo\Exceptions;
 use Throwable;
 
 /**
+ * @api
+
  * Raised when a profile mutation targets a stale revision.
  */
 final class StaleSeoProfileException extends SeoException
@@ -30,7 +32,7 @@ final class StaleSeoProfileException extends SeoException
     /**
      * Return the stable machine-readable error code.
      */
-    protected function responseCode(): string
+    public function responseCode(): string
     {
         return 'stale_seo_profile';
     }
@@ -48,7 +50,7 @@ final class StaleSeoProfileException extends SeoException
      *
      * @return array<string, mixed>
      */
-    protected function publicContext(): array
+    public function publicContext(): array
     {
         return $this->profileId === null ? [] : ['profileId' => $this->profileId];
     }

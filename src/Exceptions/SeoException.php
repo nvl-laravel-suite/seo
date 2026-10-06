@@ -5,16 +5,28 @@ declare(strict_types=1);
 namespace Nvl\Seo\Exceptions;
 
 use Illuminate\Contracts\Debug\ShouldntReport;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Nvl\Seo\Enums\SeoResponseCode;
+use Nvl\Support\Contracts\RespondableException;
+use Nvl\Support\Exceptions\ExceptionResponse;
+use Nvl\Support\Traits\InteractsWithPackageFailure;
 use RuntimeException;
 use Throwable;
 
 /**
+ * @api
+
  * Base package exception for safe SEO domain failures.
  */
-abstract class SeoException extends RuntimeException implements ShouldntReport
+abstract class SeoException extends RuntimeException implements RespondableException, ShouldntReport
 {
+    use InteractsWithPackageFailure;
+
+    /** Resolve metadata through the existing native response hooks. */
+    protected function exceptionResponse(): ExceptionResponse
+    {
+        return new ExceptionResponse('seo', SeoResponseCode::tryFrom($this->responseCode()) ?? SeoResponseCode::OperationFailed, $this->status(), $this->publicContext());
+    }
+
     /**
      * Create a domain failure while preserving its original cause.
      */
@@ -24,31 +36,9 @@ abstract class SeoException extends RuntimeException implements ShouldntReport
     }
 
     /**
-     * Render API requests through the stable SEO error envelope.
-     */
-    public function render(Request $request): JsonResponse|bool
-    {
-        if (! $request->expectsJson()) {
-            return false;
-        }
-
-        $error = [
-            'code' => $this->responseCode(),
-            'message' => $this->getMessage(),
-        ];
-        $context = $this->publicContext();
-
-        if ($context !== []) {
-            $error['context'] = $context;
-        }
-
-        return response()->json(['error' => $error], $this->status());
-    }
-
-    /**
      * Return the stable machine-readable error code.
      */
-    abstract protected function responseCode(): string;
+    abstract public function responseCode(): string;
 
     /**
      * Return the suggested HTTP response status.
@@ -60,7 +50,7 @@ abstract class SeoException extends RuntimeException implements ShouldntReport
      *
      * @return array<string, mixed>
      */
-    protected function publicContext(): array
+    public function publicContext(): array
     {
         return [];
     }

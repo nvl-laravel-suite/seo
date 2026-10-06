@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Seo\Actions;
 
 use LogicException;
+use Nvl\Seo\Contracts\ImportSeoProfilesContract;
 use Nvl\Seo\Contracts\SeoImportSource;
 use Nvl\Seo\Data\Import\SeoImportResultData;
 use Nvl\Seo\Services\SeoOwnerRegistry;
@@ -14,7 +15,7 @@ use Nvl\Seo\Services\SeoOwnerRegistry;
  *
  * @api
  */
-final readonly class ImportSeoProfilesAction
+final readonly class ImportSeoProfilesAction implements ImportSeoProfilesContract
 {
     public function __construct(
         private SeoOwnerRegistry $owners,

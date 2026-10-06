@@ -7,6 +7,8 @@ namespace Nvl\Seo\Exceptions;
 use Throwable;
 
 /**
+ * @api
+
  * Identifies the profile that already owns a route.
  */
 final class SeoPathConflictException extends SeoException
@@ -56,7 +58,7 @@ final class SeoPathConflictException extends SeoException
     /**
      * Return the stable machine-readable error code.
      */
-    protected function responseCode(): string
+    public function responseCode(): string
     {
         return 'seo_path_conflict';
     }
@@ -74,7 +76,7 @@ final class SeoPathConflictException extends SeoException
      *
      * @return array<string, mixed>
      */
-    protected function publicContext(): array
+    public function publicContext(): array
     {
         return array_filter([
             'scope' => $this->scope,

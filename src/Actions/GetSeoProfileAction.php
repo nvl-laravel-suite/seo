@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Actions;
 
+use Nvl\Seo\Contracts\GetSeoProfileContract;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Data\SeoProfileData;
 use Nvl\Seo\Enums\SeoAbility;
@@ -17,7 +18,7 @@ use Nvl\Seo\Support\SeoAuthorizationContext;
  *
  * @api
  */
-final readonly class GetSeoProfileAction
+final readonly class GetSeoProfileAction implements GetSeoProfileContract
 {
     /**
      * Create the complete management profile reader.

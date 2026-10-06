@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Nvl\Seo\Contracts\SyncSeoProfileContract;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
 use Nvl\Seo\Events\SeoProfileChanged;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
@@ -22,6 +23,7 @@ use Nvl\Seo\Services\SitemapCache;
 use Nvl\Seo\Support\DatabaseConstraintViolation;
 use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Seo\Support\SeoScope;
+use Nvl\Support\Events\DomainEventDispatcher;
 use Nvl\Translatable\Enums\TranslationSyncMode;
 use Nvl\Translatable\Services\TranslationWriter;
 use Spatie\LaravelData\Optional;
@@ -34,7 +36,7 @@ use Spatie\LaravelData\Optional;
  *
  * @api
  */
-final readonly class SyncSeoProfileAction
+final readonly class SyncSeoProfileAction implements SyncSeoProfileContract
 {
     public function __construct(
         private TranslationWriter $translations,
@@ -43,6 +45,7 @@ final readonly class SyncSeoProfileAction
         private SeoMutationValidator $validator,
         private SitemapCache $sitemapCache,
         private SeoOwnerRegistry $owners,
+        private DomainEventDispatcher $domainEvents,
     ) {}
 
     public function execute(
@@ -64,7 +67,7 @@ final readonly class SyncSeoProfileAction
         $scope = SeoScope::normalize($scope);
 
         try {
-            return DB::transaction(function () use ($owner, $data, $scope, $translationMode): SeoProfile {
+            return (new SeoProfile)->getConnection()->transaction(function () use ($owner, $data, $scope, $translationMode): SeoProfile {
                 $profile = SeoProfile::query()
                     ->forOwner($owner, $scope)
                     ->lockForUpdate()
@@ -125,7 +128,7 @@ final readonly class SyncSeoProfileAction
                 DB::afterCommit(function () use ($identity): void {
                     $this->sitemapCache->forgetCaptured($identity);
                 });
-                SeoProfileChanged::dispatch($profile->id, $profile->scope, 'synced');
+                $this->domainEvents->dispatch(new SeoProfileChanged($profile->id, $profile->scope, 'synced'), $profile->getConnection());
 
                 return $profile;
             });

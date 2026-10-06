@@ -6,9 +6,11 @@ namespace Nvl\Seo\Models;
 
 use Illuminate\Container\Container;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Nvl\Seo\Database\Factories\SeoRedirectFactory;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Seo\Support\SeoPath;
@@ -42,6 +44,9 @@ use Nvl\Translatable\Support\LocaleCode;
 final class SeoRedirect extends Model
 {
     use GuardsTenantOwnership;
+
+    /** @use HasFactory<SeoRedirectFactory> */
+    use HasFactory;
     use HasUuids;
     use SoftDeletes;
 
@@ -154,5 +159,15 @@ final class SeoRedirect extends Model
     public function getConnectionName(): ?string
     {
         return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('seo') ?? parent::getConnectionName());
+    }
+
+    /**
+     * Return the package's runtime fixture factory.
+     *
+     * @internal
+     */
+    protected static function newFactory(): SeoRedirectFactory
+    {
+        return SeoRedirectFactory::new();
     }
 }

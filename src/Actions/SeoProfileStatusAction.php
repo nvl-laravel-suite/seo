@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Actions;
 
+use Nvl\Seo\Contracts\SeoProfileStatusContract;
 use Nvl\Seo\Data\SeoProfileStatusData;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Support\SeoScope;
@@ -13,7 +14,7 @@ use Nvl\Seo\Support\SeoScope;
  *
  * @api
  */
-final class SeoProfileStatusAction
+final class SeoProfileStatusAction implements SeoProfileStatusContract
 {
     /**
      * Return aggregate profile status for one optional normalized scope.

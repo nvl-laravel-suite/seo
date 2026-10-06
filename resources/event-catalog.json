@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "package": "nvl/seo",
+  "documentation": "docs/events.md",
+  "implementation_status": "implemented; executable acceptance proof pending",
+  "events": [
+    {
+      "class": "Nvl\\Seo\\Events\\SeoProfileChanged",
+      "source": "packages/nvl/seo/src/Events/SeoProfileChanged.php",
+      "constructor_fields": [
+        {
+          "name": "profileId",
+          "type": "string",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "scope",
+          "type": "string",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "operation",
+          "type": "string",
+          "visibility": "public",
+          "required": true
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "visibility": "public",
+          "required": false,
+          "default_expression": "1"
+        }
+      ],
+      "public_fields": [
+        {
+          "name": "profileId",
+          "type": "string"
+        },
+        {
+          "name": "scope",
+          "type": "string"
+        },
+        {
+          "name": "operation",
+          "type": "string"
+        },
+        {
+          "name": "schemaVersion",
+          "type": "int"
+        }
+      ],
+      "kind": "value_object",
+      "schema_version": 1,
+      "trigger": "SEO profile state changed.",
+      "aliases": [],
+      "producers": [
+        {
+          "path": "packages/nvl/seo/src/Actions/ArchiveSeoProfileAction.php",
+          "trigger": "SEO profile state changed.",
+          "connection": "$profile->getConnection()",
+          "construction_expression": "new SeoProfileChanged( $profile->id, $profile->scope, $archived ? 'archived' : 'restored', )"
+        },
+        {
+          "path": "packages/nvl/seo/src/Actions/DeleteSeoProfileAction.php",
+          "trigger": "SEO profile state changed.",
+          "connection": "$profile->getConnection()",
+          "construction_expression": "new SeoProfileChanged($id, $scope, 'deleted')"
+        },
+        {
+          "path": "packages/nvl/seo/src/Actions/SyncSeoProfileAction.php",
+          "trigger": "SEO profile state changed.",
+          "connection": "$profile->getConnection()",
+          "construction_expression": "new SeoProfileChanged($profile->id, $profile->scope, 'synced')"
+        }
+      ],
+      "security_notes": [
+        "Profile ID, scope and operation only; no SEO field content. Source model connection supplies timing."
+      ],
+      "no_op_semantics": "Existing sync/archive/delete branches govern publication. No generic request deduplication is added."
+    }
+  ],
+  "value_types": [],
+  "aliases": [],
+  "publication": {
+    "publication": "The native host dispatcher receives the captured event after the supplied source connection outer commit, or immediately when that connection has no active transaction.",
+    "rollback": "Callbacks attach to the matching native connection and current nesting record; native outer/savepoint rollback discards the corresponding callbacks.",
+    "registration_failure": "Missing source transaction records fail before commit; Mail Notifications reports and drops unusable observations.",
+    "host_policy": "Host after-commit listeners and queue after_commit policies can add their own deferral after publication. Host transaction infrastructure and dispatcher bindings are preserved.",
+    "delivery_limit": "Local callbacks are not an outbox. Process exit between commit and callback can lose delivery; no crash durability or exactly-once delivery is promised.",
+    "cardinality": "One canonical object is dispatched per qualifying producer call. This is local publication, not cross-process deduplication or a guarantee that repeated observations are unique.",
+    "manual_producers": "Use Nvl\\Support\\Events\\DomainEventDispatcher::dispatch($event, $writerConnection). Native Event::dispatch() is immediate and has no package interception."
+  },
+  "security_notes": [
+    "Profile ID, scope and operation only; no SEO field content. Source model connection supplies timing."
+  ],
+  "no_op_semantics": "Existing sync/archive/delete branches govern publication. No generic request deduplication is added.",
+  "notes": []
+}

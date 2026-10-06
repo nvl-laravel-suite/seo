@@ -6,8 +6,10 @@ namespace Nvl\Seo\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Nvl\Seo\Database\Factories\SeoProfileTranslationFactory;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\TwitterCard;
 use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
@@ -46,6 +48,9 @@ use Nvl\Support\Config\PackageStorage;
 final class SeoProfileTranslation extends Model
 {
     use GuardsTenantOwnership;
+
+    /** @use HasFactory<SeoProfileTranslationFactory> */
+    use HasFactory;
     use HasUuids;
 
     public const string TENANT_RESOURCE = 'seo.translations';
@@ -124,5 +129,15 @@ final class SeoProfileTranslation extends Model
     public function getConnectionName(): ?string
     {
         return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('seo') ?? parent::getConnectionName());
+    }
+
+    /**
+     * Return the package's runtime fixture factory.
+     *
+     * @internal
+     */
+    protected static function newFactory(): SeoProfileTranslationFactory
+    {
+        return SeoProfileTranslationFactory::new();
     }
 }

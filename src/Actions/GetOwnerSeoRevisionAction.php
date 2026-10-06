@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Seo\Actions;
 
 use Illuminate\Database\Eloquent\Model;
+use Nvl\Seo\Contracts\GetOwnerSeoRevisionContract;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Data\SeoOwnerRevisionData;
 use Nvl\Seo\Enums\SeoAbility;
@@ -19,7 +20,7 @@ use Nvl\Seo\Support\SeoScope;
  *
  * @api
  */
-final readonly class GetOwnerSeoRevisionAction
+final readonly class GetOwnerSeoRevisionAction implements GetOwnerSeoRevisionContract
 {
     /**
      * Create the owner-centric revision reader.

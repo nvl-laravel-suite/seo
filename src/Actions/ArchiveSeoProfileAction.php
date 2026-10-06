@@ -5,19 +5,21 @@ declare(strict_types=1);
 namespace Nvl\Seo\Actions;
 
 use Illuminate\Support\Facades\DB;
+use Nvl\Seo\Contracts\ArchiveSeoProfileContract;
 use Nvl\Seo\Events\SeoProfileChanged;
 use Nvl\Seo\Exceptions\StaleSeoProfileException;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Services\SitemapCache;
+use Nvl\Support\Events\DomainEventDispatcher;
 
 /**
  * Archives or restores a profile without destroying historical metadata.
  *
  * @api
  */
-final readonly class ArchiveSeoProfileAction
+final readonly class ArchiveSeoProfileAction implements ArchiveSeoProfileContract
 {
-    public function __construct(private SitemapCache $sitemapCache) {}
+    public function __construct(private SitemapCache $sitemapCache, private DomainEventDispatcher $domainEvents) {}
 
     public function execute(
         SeoProfile|string $profile,
@@ -26,7 +28,7 @@ final readonly class ArchiveSeoProfileAction
     ): SeoProfile {
         $profileId = $profile instanceof SeoProfile ? $profile->id : $profile;
 
-        return DB::transaction(function () use ($profileId, $archived, $expectedRevision): SeoProfile {
+        return (new SeoProfile)->getConnection()->transaction(function () use ($profileId, $archived, $expectedRevision): SeoProfile {
             $profile = SeoProfile::query()
                 ->lockForUpdate()
                 ->findOrFail($profileId);
@@ -43,11 +45,11 @@ final readonly class ArchiveSeoProfileAction
             DB::afterCommit(function () use ($identity): void {
                 $this->sitemapCache->forgetCaptured($identity);
             });
-            SeoProfileChanged::dispatch(
+            $this->domainEvents->dispatch(new SeoProfileChanged(
                 $profile->id,
                 $profile->scope,
                 $archived ? 'archived' : 'restored',
-            );
+            ), $profile->getConnection());
 
             return $profile;
         });

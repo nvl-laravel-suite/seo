@@ -1,11 +1,19 @@
 # Changelog
 
+## Unreleased — consumer runtime integration
+
+- Added focused consumer contract/testing guidance and shipped-factory usage limits.
+- Versioned committed event payloads and documented canonical aliases, source connections, failure metadata and optional safe rendering.
+- Added explicit first-use/installer and deployment guidance; new acceptance checks remain pending.
+
+
 All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
 ### Changed
 
+- Image and sitemap artifact defaults now use bindIf. Public source/authorization APIs and native transient extension lifetimes are retained; redirect pruning remains internal. Document contract substitution and truthful host fixtures in Testing your app.
 - Classify the supported consumer PHP surface with explicit source annotations and restrict package model handles to declared identity and in-memory read fields; preserve existing workflow behavior and concrete signatures.
 - Isolate owned cache and lock keys under `nvl:seo:`; preserve generic host entries and explicit store choices.
 

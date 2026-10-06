@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Nvl\Seo\Http\Controllers\SeoManagementController;
+use Nvl\Seo\Http\Middleware\RenderSeoExceptions;
 use Nvl\Seo\Support\SeoRouteConfiguration;
 
 $configuredMiddleware = config('nvl-seo.management.middleware', ['api', 'auth']);
@@ -26,7 +27,7 @@ foreach ($configuredMiddleware as $entry) {
     $middleware[] = $entry;
 }
 
-Route::middleware($middleware)
+Route::middleware([RenderSeoExceptions::class, ...$middleware])
     ->prefix(SeoRouteConfiguration::managementPath())
     ->name(SeoRouteConfiguration::managementName())
     ->group(function (): void {

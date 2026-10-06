@@ -4,19 +4,25 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Events;
 
-use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
-use Illuminate\Foundation\Events\Dispatchable;
+use Nvl\Support\Contracts\DomainEvent;
 
 /**
  * Announces a durable SEO profile mutation.
+ *
+ * @api
  */
-final class SeoProfileChanged implements ShouldDispatchAfterCommit
+final class SeoProfileChanged implements DomainEvent
 {
-    use Dispatchable;
-
     public function __construct(
         public readonly string $profileId,
         public readonly string $scope,
         public readonly string $operation,
+        public readonly int $schemaVersion = 1,
     ) {}
+
+    /** Return the immutable event payload schema version. */
+    public function schemaVersion(): int
+    {
+        return $this->schemaVersion;
+    }
 }

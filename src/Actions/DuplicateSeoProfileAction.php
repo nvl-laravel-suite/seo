@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Seo\Actions;
 
 use Illuminate\Database\Eloquent\Model;
+use Nvl\Seo\Contracts\DuplicateSeoProfileContract;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
@@ -18,7 +19,7 @@ use Nvl\Translatable\Enums\TranslationSyncMode;
  *
  * @api
  */
-final readonly class DuplicateSeoProfileAction
+final readonly class DuplicateSeoProfileAction implements DuplicateSeoProfileContract
 {
     public function __construct(private SyncSeoProfileAction $sync) {}
 

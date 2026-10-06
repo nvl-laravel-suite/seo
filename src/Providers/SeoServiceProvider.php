@@ -11,14 +11,40 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Nvl\Seo\Actions\ArchiveSeoProfileAction;
+use Nvl\Seo\Actions\DeleteSeoProfileAction;
+use Nvl\Seo\Actions\DuplicateSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
+use Nvl\Seo\Actions\GetSeoProfileAction;
+use Nvl\Seo\Actions\ImportSeoProfilesAction;
+use Nvl\Seo\Actions\ListOwnerSeoProfilesAction;
+use Nvl\Seo\Actions\ListSeoProfilesAction;
+use Nvl\Seo\Actions\PreviewSeoProfileAction;
+use Nvl\Seo\Actions\SeoProfileStatusAction;
+use Nvl\Seo\Actions\SyncSeoProfileAction;
+use Nvl\Seo\Actions\SyncSeoRedirectAction;
 use Nvl\Seo\Console\ClearSeoSitemapCommand;
 use Nvl\Seo\Console\PruneSeoRedirectsCommand;
 use Nvl\Seo\Console\SeoDoctorCommand;
 use Nvl\Seo\Console\WarmSeoSitemapCommand;
+use Nvl\Seo\Contracts\ArchiveSeoProfileContract;
+use Nvl\Seo\Contracts\DeleteSeoProfileContract;
+use Nvl\Seo\Contracts\DuplicateSeoProfileContract;
+use Nvl\Seo\Contracts\GetOwnerSeoProfileContract;
+use Nvl\Seo\Contracts\GetOwnerSeoRevisionContract;
+use Nvl\Seo\Contracts\GetSeoProfileContract;
+use Nvl\Seo\Contracts\ImportSeoProfilesContract;
+use Nvl\Seo\Contracts\ListOwnerSeoProfilesContract;
+use Nvl\Seo\Contracts\ListSeoProfilesContract;
+use Nvl\Seo\Contracts\PreviewSeoProfileContract;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImageResolver;
+use Nvl\Seo\Contracts\SeoProfileStatusContract;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Contracts\StructuredDataProvider;
+use Nvl\Seo\Contracts\SyncSeoProfileContract;
+use Nvl\Seo\Contracts\SyncSeoRedirectContract;
 use Nvl\Seo\Contracts\TenantSafeSeoImageResolver;
 use Nvl\Seo\Http\Controllers\RobotsController;
 use Nvl\Seo\Http\Controllers\SitemapChunkController;
@@ -59,6 +85,20 @@ final class SeoServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bindIf(ArchiveSeoProfileContract::class, ArchiveSeoProfileAction::class);
+        $this->app->bindIf(DeleteSeoProfileContract::class, DeleteSeoProfileAction::class);
+        $this->app->bindIf(DuplicateSeoProfileContract::class, DuplicateSeoProfileAction::class);
+        $this->app->bindIf(GetOwnerSeoProfileContract::class, GetOwnerSeoProfileAction::class);
+        $this->app->bindIf(GetOwnerSeoRevisionContract::class, GetOwnerSeoRevisionAction::class);
+        $this->app->bindIf(GetSeoProfileContract::class, GetSeoProfileAction::class);
+        $this->app->bindIf(ImportSeoProfilesContract::class, ImportSeoProfilesAction::class);
+        $this->app->bindIf(ListOwnerSeoProfilesContract::class, ListOwnerSeoProfilesAction::class);
+        $this->app->bindIf(ListSeoProfilesContract::class, ListSeoProfilesAction::class);
+        $this->app->bindIf(PreviewSeoProfileContract::class, PreviewSeoProfileAction::class);
+        $this->app->bindIf(SeoProfileStatusContract::class, SeoProfileStatusAction::class);
+        $this->app->bindIf(SyncSeoProfileContract::class, SyncSeoProfileAction::class);
+        $this->app->bindIf(SyncSeoRedirectContract::class, SyncSeoRedirectAction::class);
+
         $this->app->register(SupportServiceProvider::class);
         PackageDoctorContributor::register($this->app, 'nvl/seo', fn (): array => $this->app->make(SeoDoctor::class)->inspect());
 
@@ -85,7 +125,7 @@ final class SeoServiceProvider extends ServiceProvider
             label: 'seo.image_resolver',
         );
 
-        $this->app->bind(SeoImageResolver::class, $imageResolver);
+        $this->app->bindIf(SeoImageResolver::class, $imageResolver);
         $artifactStore = config(
             'nvl-seo.sitemap.artifact_store',
             FilesystemSitemapArtifactStore::class,
@@ -98,7 +138,7 @@ final class SeoServiceProvider extends ServiceProvider
             );
         }
 
-        $this->app->bind(SitemapArtifactStore::class, $artifactStore);
+        $this->app->bindIf(SitemapArtifactStore::class, $artifactStore);
         $this->app->bindIf(SeoAuthorization::class, ConfiguredSeoAuthorization::class);
         $this->app->singleton(SeoOwnerRegistry::class);
         $this->app->singleton(SitemapRegistry::class);
@@ -114,6 +154,10 @@ final class SeoServiceProvider extends ServiceProvider
         SitemapRegistry $sitemaps,
         StructuredDataRegistry $structuredData,
     ): void {
+        $this->app->make(GlobalNames::class)->translations('seo', __DIR__.'/../../lang', $this->app->make('translation.loader'));
+        $this->publishes([
+            __DIR__.'/../../lang' => lang_path('vendor/nvl-seo'),
+        ], 'nvl-seo-translations');
         $typeScriptSources->register(__DIR__.'/..', 'nvl/seo');
 
         if ((bool) config('nvl-seo.migrations.enabled', true)) {

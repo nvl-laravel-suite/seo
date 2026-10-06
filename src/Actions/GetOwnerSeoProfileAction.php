@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Seo\Actions;
 
 use Illuminate\Database\Eloquent\Model;
+use Nvl\Seo\Contracts\GetOwnerSeoProfileContract;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Data\SeoProfileData;
 use Nvl\Seo\Enums\SeoAbility;
@@ -20,7 +21,7 @@ use Nvl\Seo\Support\SeoScope;
  *
  * @api
  */
-final readonly class GetOwnerSeoProfileAction
+final readonly class GetOwnerSeoProfileAction implements GetOwnerSeoProfileContract
 {
     /**
      * Create the owner-centric profile reader.

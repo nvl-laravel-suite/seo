@@ -8,6 +8,7 @@ use Illuminate\Container\Container;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Nvl\Seo\Contracts\SyncSeoRedirectContract;
 use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
@@ -29,7 +30,7 @@ use Spatie\LaravelData\Optional;
  *
  * @api
  */
-final readonly class SyncSeoRedirectAction
+final readonly class SyncSeoRedirectAction implements SyncSeoRedirectContract
 {
     public function __construct(
         private SeoRedirectChain $chains,

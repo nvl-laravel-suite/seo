@@ -7,6 +7,8 @@ namespace Nvl\Seo\Exceptions;
 use Throwable;
 
 /**
+ * @api
+
  * Raised when a redirect mutation targets an outdated revision.
  */
 final class StaleSeoRedirectException extends SeoException
@@ -30,7 +32,7 @@ final class StaleSeoRedirectException extends SeoException
     /**
      * Return the stable machine-readable error code.
      */
-    protected function responseCode(): string
+    public function responseCode(): string
     {
         return 'stale_seo_redirect';
     }
@@ -48,7 +50,7 @@ final class StaleSeoRedirectException extends SeoException
      *
      * @return array<string, mixed>
      */
-    protected function publicContext(): array
+    public function publicContext(): array
     {
         return $this->redirectId === null ? [] : ['redirectId' => $this->redirectId];
     }

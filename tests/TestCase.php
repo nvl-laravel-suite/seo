@@ -12,6 +12,7 @@ use Nvl\Seo\Providers\SeoServiceProvider;
 use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestStructuredDataProvider;
+use Nvl\Support\Providers\LocaleServiceProvider;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -28,6 +29,7 @@ abstract class TestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
+            LocaleServiceProvider::class,
             DataServiceProvider::class,
             TranslatableServiceProvider::class,
             SeoServiceProvider::class,

@@ -135,6 +135,96 @@
             "properties": [],
             "constants": []
         },
+        "Nvl\\Seo\\Contracts\\ArchiveSeoProfileContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ArchiveSeoProfileContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\DeleteSeoProfileContract": {
+            "kind": "interface",
+            "file": "src/Contracts/DeleteSeoProfileContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\DuplicateSeoProfileContract": {
+            "kind": "interface",
+            "file": "src/Contracts/DuplicateSeoProfileContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\GetOwnerSeoProfileContract": {
+            "kind": "interface",
+            "file": "src/Contracts/GetOwnerSeoProfileContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\GetOwnerSeoRevisionContract": {
+            "kind": "interface",
+            "file": "src/Contracts/GetOwnerSeoRevisionContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\GetSeoProfileContract": {
+            "kind": "interface",
+            "file": "src/Contracts/GetSeoProfileContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\ImportSeoProfilesContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ImportSeoProfilesContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\ListOwnerSeoProfilesContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ListOwnerSeoProfilesContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\ListSeoProfilesContract": {
+            "kind": "interface",
+            "file": "src/Contracts/ListSeoProfilesContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\PreviewSeoProfileContract": {
+            "kind": "interface",
+            "file": "src/Contracts/PreviewSeoProfileContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Seo\\Contracts\\SeoAuthorization": {
             "kind": "interface",
             "file": "src/Contracts/SeoAuthorization.php",
@@ -158,6 +248,15 @@
             "file": "src/Contracts/SeoImportSource.php",
             "methods": [
                 "page"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\SeoProfileStatusContract": {
+            "kind": "interface",
+            "file": "src/Contracts/SeoProfileStatusContract.php",
+            "methods": [
+                "execute"
             ],
             "properties": [],
             "constants": []
@@ -187,6 +286,24 @@
             "file": "src/Contracts/StructuredDataProvider.php",
             "methods": [
                 "provide"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\SyncSeoProfileContract": {
+            "kind": "interface",
+            "file": "src/Contracts/SyncSeoProfileContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\SyncSeoRedirectContract": {
+            "kind": "interface",
+            "file": "src/Contracts/SyncSeoRedirectContract.php",
+            "methods": [
+                "execute"
             ],
             "properties": [],
             "constants": []
@@ -465,6 +582,24 @@
             ],
             "constants": []
         },
+        "Nvl\\Seo\\Data\\SitemapCacheIdentity": {
+            "kind": "class",
+            "file": "src/Data/SitemapCacheIdentity.php",
+            "methods": [
+                "__construct"
+            ],
+            "properties": [
+                "connection",
+                "key",
+                "namespace",
+                "origin",
+                "scope",
+                "site",
+                "tenantId",
+                "version"
+            ],
+            "constants": []
+        },
         "Nvl\\Seo\\Data\\SitemapEntry": {
             "kind": "class",
             "file": "src/Data/SitemapEntry.php",
@@ -516,6 +651,35 @@
             ],
             "constants": []
         },
+        "Nvl\\Seo\\Database\\Factories\\SeoProfileFactory": {
+            "kind": "class",
+            "file": "database/factories/SeoProfileFactory.php",
+            "methods": [
+                "definition",
+                "forOwner"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Database\\Factories\\SeoProfileTranslationFactory": {
+            "kind": "class",
+            "file": "database/factories/SeoProfileTranslationFactory.php",
+            "methods": [
+                "definition",
+                "forProfile"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Database\\Factories\\SeoRedirectFactory": {
+            "kind": "class",
+            "file": "database/factories/SeoRedirectFactory.php",
+            "methods": [
+                "definition"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Seo\\Enums\\SeoAbility": {
             "kind": "enum",
             "file": "src/Enums/SeoAbility.php",
@@ -539,6 +703,27 @@
                 "Preview",
                 "Update",
                 "View"
+            ]
+        },
+        "Nvl\\Seo\\Enums\\SeoResponseCode": {
+            "kind": "enum",
+            "file": "src/Enums/SeoResponseCode.php",
+            "methods": [
+                "cases",
+                "from",
+                "tryFrom"
+            ],
+            "properties": [
+                "name",
+                "value"
+            ],
+            "constants": [
+                "InvalidSeoMutation",
+                "OperationFailed",
+                "SeoPathConflict",
+                "SeoRedirectLoop",
+                "StaleSeoProfile",
+                "StaleSeoRedirect"
             ]
         },
         "Nvl\\Seo\\Enums\\SitemapChangeFrequency": {
@@ -612,6 +797,122 @@
                 "Summary",
                 "SummaryLargeImage"
             ]
+        },
+        "Nvl\\Seo\\Events\\SeoProfileChanged": {
+            "kind": "class",
+            "file": "src/Events/SeoProfileChanged.php",
+            "methods": [
+                "__construct",
+                "schemaVersion"
+            ],
+            "properties": [
+                "operation",
+                "profileId",
+                "schemaVersion",
+                "scope"
+            ],
+            "constants": []
+        },
+        "Nvl\\Seo\\Exceptions\\InvalidSeoMutationException": {
+            "kind": "class",
+            "file": "src/Exceptions/InvalidSeoMutationException.php",
+            "methods": [
+                "because",
+                "forField",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Exceptions\\SeoException": {
+            "kind": "class",
+            "file": "src/Exceptions/SeoException.php",
+            "methods": [
+                "__construct",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Exceptions\\SeoPathConflictException": {
+            "kind": "class",
+            "file": "src/Exceptions/SeoPathConflictException.php",
+            "methods": [
+                "__construct",
+                "concurrent",
+                "forRoute",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Exceptions\\SeoRedirectLoopException": {
+            "kind": "class",
+            "file": "src/Exceptions/SeoRedirectLoopException.php",
+            "methods": [
+                "__construct",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Exceptions\\StaleSeoProfileException": {
+            "kind": "class",
+            "file": "src/Exceptions/StaleSeoProfileException.php",
+            "methods": [
+                "__construct",
+                "forProfile",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Exceptions\\StaleSeoRedirectException": {
+            "kind": "class",
+            "file": "src/Exceptions/StaleSeoRedirectException.php",
+            "methods": [
+                "__construct",
+                "forRedirect",
+                "package",
+                "publicContext",
+                "responseCode",
+                "responseHeaders",
+                "suggestedStatus",
+                "translationKey",
+                "translationParameters"
+            ],
+            "properties": [],
+            "constants": []
         },
         "Nvl\\Seo\\Models\\SeoProfile": {
             "kind": "class",

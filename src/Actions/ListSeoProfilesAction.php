@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Seo\Actions;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Nvl\Seo\Contracts\ListSeoProfilesContract;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Data\SeoProfileData;
 use Nvl\Seo\Data\SeoProfileQuery;
@@ -20,7 +21,7 @@ use Nvl\Seo\Support\SeoScope;
  *
  * @api
  */
-final class ListSeoProfilesAction
+final class ListSeoProfilesAction implements ListSeoProfilesContract
 {
     /**
      * Create the profile-list action.

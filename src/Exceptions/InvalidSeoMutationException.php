@@ -7,6 +7,8 @@ namespace Nvl\Seo\Exceptions;
 use Throwable;
 
 /**
+ * @api
+
  * Raised when a typed SEO mutation violates a domain invariant.
  */
 final class InvalidSeoMutationException extends SeoException
@@ -49,7 +51,7 @@ final class InvalidSeoMutationException extends SeoException
     /**
      * Return the stable machine-readable error code.
      */
-    protected function responseCode(): string
+    public function responseCode(): string
     {
         return 'invalid_seo_mutation';
     }
@@ -67,7 +69,7 @@ final class InvalidSeoMutationException extends SeoException
      *
      * @return array<string, mixed>
      */
-    protected function publicContext(): array
+    public function publicContext(): array
     {
         return $this->errors === [] ? [] : ['errors' => $this->errors];
     }

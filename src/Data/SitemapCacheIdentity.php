@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Data;
 
-/** Captures every immutable fact used by one sitemap build and invalidation. */
+/** Captures every immutable fact used by one sitemap build and invalidation.
+ *
+ * @api
+ */
 final readonly class SitemapCacheIdentity
 {
     public function __construct(

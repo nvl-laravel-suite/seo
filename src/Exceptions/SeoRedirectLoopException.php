@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Nvl\Seo\Exceptions;
 
 /**
+ * @api
+
  * Raised when a redirect points to itself or introduces a chain cycle.
  */
 final class SeoRedirectLoopException extends SeoException
@@ -12,7 +14,7 @@ final class SeoRedirectLoopException extends SeoException
     /**
      * Return the stable machine-readable error code.
      */
-    protected function responseCode(): string
+    public function responseCode(): string
     {
         return 'seo_redirect_loop';
     }
