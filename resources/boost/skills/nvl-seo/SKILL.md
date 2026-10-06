@@ -27,7 +27,7 @@ Treat SEO as a resolved discoverability contract, not a collection of arbitrary 
 
 Use `SyncSeoProfileAction` with a persisted Eloquent owner and `SeoProfilePayload`. Pass translations as a locale-keyed map. Use patch mode by default; require explicit replace mode before deleting omitted locale rows.
 
-Add `HasSeo` to supply the package capability. Read profiles through `ResolveSeoAction` or `ListOwnerSeoSummariesAction` with their required authorization context; `seoProfiles()` is an internal relation. Never write `seo_profiles` or `seo_profiles_i18n` directly.
+Add `HasSeo` to supply the package capability. Read profiles through `GetOwnerSeoProfileAction` for one owner or `ListOwnerSeoProfilesAction` for an owner iterable, with an optional scope. Both invoke the configured `SeoAuthorization` internally and accept no actor argument; `seoProfiles()` is an internal relation. Never write `seo_profiles` or `seo_profiles_i18n` directly.
 
 Polymorphic owners cannot use database-level cascading foreign keys. Keep owner
 deletion policy in the host application's Action: remove profiles through
