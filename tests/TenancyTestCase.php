@@ -40,14 +40,14 @@ abstract class TenancyTestCase extends Orchestra
             'app.url' => 'https://untrusted-global.test',
             'cache.default' => 'array',
             'filesystems.default' => 'local',
-            'seo.site.base_url' => 'https://untrusted-global.test',
-            'seo.owners' => ['tenant-owner' => TenantSeoOwner::class],
-            'seo.sitemap.cache_seconds' => 0,
-            'translatable.locales' => ['en', 'bg'],
-            'translatable.fallback_locales' => ['en'],
-            'tenancy.enabled' => true,
-            'tenancy.profile' => 'application',
-            'tenancy.resources' => ['seo' => 'tenant', 'seo-test-owners' => 'tenant'],
+            'nvl-seo.site.base_url' => 'https://untrusted-global.test',
+            'nvl-seo.owners' => ['tenant-owner' => TenantSeoOwner::class],
+            'nvl-seo.sitemap.cache_seconds' => 0,
+            'nvl-translatable.locales' => ['en', 'bg'],
+            'nvl-translatable.fallback_locales' => ['en'],
+            'nvl-tenancy.enabled' => true,
+            'nvl-tenancy.profile' => 'application',
+            'nvl-tenancy.resources' => ['seo' => 'tenant', 'seo-test-owners' => 'tenant'],
         ]);
         TenantScenario::bind($app);
     }

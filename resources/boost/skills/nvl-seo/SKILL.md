@@ -92,7 +92,7 @@ Enable package routes only when the application does not already own `/sitemap.x
   small manifests and versions in the cache.
 - Use an atomic-lock-capable cache store, unique source keys, completed
   manifests, ETags, and after-commit version invalidation.
-- List every public non-default scope in `seo.routes.sitemap_scopes`; never
+- List every public non-default scope in `nvl-seo.routes.sitemap_scopes`; never
   accept arbitrary public scope keys that can create unbounded cache namespaces.
 - Preserve scope on sitemap-index chunk links and rebuild once when a completed
   manifest points to a missing filesystem artifact.
@@ -107,8 +107,8 @@ Enable package routes only when the application does not already own `/sitemap.x
 ## Manage and adopt
 
 - Keep the API disabled by default and configure both
-  `seo.management.path` and `seo.management.name`.
-- Register stable aliases in `seo.owners`; never accept model class names at
+  `nvl-seo.management.path` and `nvl-seo.management.name`.
+- Register stable aliases in `nvl-seo.owners`; never accept model class names at
   HTTP/import boundaries.
 - Normalize both integer and string owner identifiers into the package's stable
   string storage boundary.
@@ -142,7 +142,7 @@ Enable package routes only when the application does not already own `/sitemap.x
   ?string $scope = null)` for bounded collection composition. It accepts at
   most 100 persisted owners, authorizes all of them before profile SQL, and
   returns positional profile-or-null results with translations in fixed queries.
-- Register the owner's stable alias in `seo.owners` and bind
+- Register the owner's stable alias in `nvl-seo.owners` and bind
   `SeoAuthorization` or configure its Gate ability. These Actions normalize the
   scope, resolve the alias/morph identity, and authorize `SeoAbility::View`
   before querying profiles.
@@ -180,11 +180,11 @@ Laravel 13 gates.
 
 ## Shared owner identities
 
-- Declare canonical owner identity once in `nvl-core.owners`; reference its alias in `seo` capability configuration.
+- Declare owner class lists in `nvl-core.owners` and reference model classes in `seo` capability configuration. Laravel `getMorphClass()` supplies the host-authored stored identity; declarations do not add global host morph mappings.
 - An alias-to-alias map may retain a distinct API key, for example owners = ['articles.detail' => 'article']. Preserve SEO mutation authorization and scopes.
 - Keep the package allowlist and authorization independent of Core registration. Never authorize a model merely because Core knows it.
-- Accept legacy class/resolver/handler inputs during the documented one-major compatibility cycle. Report deprecated host identity inputs through `nvl:doctor`; preserve established write-time morph types.
-- Before introducing an alias for historical FQCN-backed data, explicitly convert reviewed package-owned columns and reconcile affected host relations. Never silently rewrite host morph tables or enable `enforceMorphMap()` globally.
+- Preserve resolvers, handlers and authorization. Legacy aliases require agreement with native `getMorphClass()` and are removed in major 6; Doctor reports mismatches and stored identity drift without conversion.
+- If the host changes its morph map, explicitly reconcile reviewed package-owned columns and affected host relations before cutover. Core and package capability registration never mutate the host morph map or rewrite stored values.
 
 ## Shared consumer diagnostics
 
@@ -192,4 +192,17 @@ Run `php artisan nvl:doctor --strict --format=json` to combine checks from loade
 
 ### Brownfield storage identities
 
-Resolve all package tables through the table helper and canonical `seo.tables.*`, connections through `seo.connection` with Core/Laravel inheritance. Defaults use `nvl_seo_*`; migration filenames include that package slug. Never silently adopt a matching table or generic migration filename. Run shared `nvl:doctor --strict --format=json` and the explicit `nvl:schema:upgrade --package=seo --claim-legacy --dry-run --format=json` before upgrading owned legacy storage. Validate the complete plan and choose one migration owner. Preserve host records, constraint names and stored morph values. Deprecated config inputs last one major; canonical options take precedence.
+Resolve all package tables through the table helper and canonical `nvl-seo.tables.*`, connections through `nvl-seo.connection` with Core/Laravel inheritance. Defaults use `nvl_seo_*`; migration filenames include that package slug. Never silently adopt a matching table or generic migration filename. Run shared `nvl:doctor --strict --format=json` and the explicit `nvl:schema:upgrade --package=seo --claim-legacy --dry-run --format=json` before upgrading owned legacy storage. Validate the complete plan and choose one migration owner. Preserve host records, constraint names and stored morph values. Deprecated config inputs last one major; canonical options take precedence.
+
+## Cache and lock ownership
+
+The default sitemap cache prefix is `nvl:seo:sitemap` instead of `nvl-seo:sitemap`. An explicitly configured `nvl-seo.sitemap.cache_key` remains host-selected. Old default entries expire naturally; NVL never copies or removes a generic host entry.
+
+Drain old mutation workers and maintenance processes, then wait for their outstanding lock leases to end before starting the new major across all nodes. Running old and new lock prefixes concurrently would create independent serialization domains. Restart workers after cutover; preserve host-selected stores and keys, and do not flush a shared cache to remove old NVL entries.
+
+## Canonical configuration ownership
+
+- Read/write `nvl-seo` configuration and publish only canonical `nvl-<package>-<resource>` tags. Keep logical package/tenant resource identifiers unchanged.
+- Generic config roots and unprefixed package environment names are foreign by default. For an upgrading NVL host only, select `nvl-core.compatibility.legacy_config` package IDs and `legacy_env` explicitly; both default off. Canonical presence wins, including false/null/empty values. Legacy inputs are read without writing back and are removed in major 6.
+- Use canonical `NVL_<PACKAGE>_*` variables only in config evaluation, then rebuild configuration caches and restart workers after cutover. Shared Laravel environment variables retain their names. Consult Core's versioned `support/resources/global-names.json` for all renames.
+- Old global aliases and legacy route families require separate explicit `global_aliases`/`legacy_routes` package selections. Preserve collisions and use Doctor diagnostics; never grant generic permissions automatically or claim signed-link compatibility without the same authorization/signature checks.

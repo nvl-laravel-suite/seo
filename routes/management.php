@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Nvl\Seo\Http\Controllers\SeoManagementController;
 use Nvl\Seo\Support\SeoRouteConfiguration;
 
-$configuredMiddleware = config('seo.management.middleware', ['api', 'auth']);
+$configuredMiddleware = config('nvl-seo.management.middleware', ['api', 'auth']);
 
 if (! is_array($configuredMiddleware) || $configuredMiddleware === []) {
     throw new InvalidArgumentException(

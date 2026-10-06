@@ -93,7 +93,7 @@ final class SitemapRegistry
         ksort($this->sources);
 
         $resolved = [];
-        $enabled = $this->container->make('config')->get('tenancy.enabled') === true;
+        $enabled = $this->container->make('config')->get('nvl-tenancy.enabled') === true;
         foreach ($this->sources as $key => $declaration) {
             if ($enabled && $declaration['class'] === null) {
                 throw new InvalidArgumentException(

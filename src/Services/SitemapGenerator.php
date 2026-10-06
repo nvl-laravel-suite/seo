@@ -184,10 +184,10 @@ final readonly class SitemapGenerator
         $manifest = $store
             ->lock(
                 $this->cacheKey($key, 'build-lock'),
-                SeoConfiguration::positiveInteger('seo.sitemap.lock_seconds', 60),
+                SeoConfiguration::positiveInteger('nvl-seo.sitemap.lock_seconds', 60),
             )
             ->block(
-                SeoConfiguration::positiveInteger('seo.sitemap.lock_wait_seconds', 10),
+                SeoConfiguration::positiveInteger('nvl-seo.sitemap.lock_wait_seconds', 10),
                 $build,
             );
 
@@ -251,7 +251,7 @@ final readonly class SitemapGenerator
             );
         }
 
-        if ($chunk > 1 && ! (bool) config('seo.sitemap.index_enabled', true)) {
+        if ($chunk > 1 && ! (bool) config('nvl-seo.sitemap.index_enabled', true)) {
             throw new LogicException(
                 'The sitemap requires an index, but seo.sitemap.index_enabled is false.',
             );
@@ -291,7 +291,7 @@ final readonly class SitemapGenerator
      */
     private function buildIndex(string $scope, int $chunks): string
     {
-        if ((bool) config('seo.routes.enabled', false)
+        if ((bool) config('nvl-seo.routes.enabled', false)
             && ! in_array($scope, SeoScope::publicSitemapScopes(), true)) {
             throw new LogicException(
                 "Sitemap scope [{$scope}] must be listed in seo.routes.sitemap_scopes before its index can be served.",
@@ -481,7 +481,7 @@ final readonly class SitemapGenerator
      */
     private function cacheSeconds(): int
     {
-        return SeoConfiguration::nonNegativeInteger('seo.sitemap.cache_seconds', 3600);
+        return SeoConfiguration::nonNegativeInteger('nvl-seo.sitemap.cache_seconds', 3600);
     }
 
     /**
@@ -491,7 +491,7 @@ final readonly class SitemapGenerator
     {
         return min(
             50_000,
-            SeoConfiguration::positiveInteger('seo.sitemap.max_urls', 50_000),
+            SeoConfiguration::positiveInteger('nvl-seo.sitemap.max_urls', 50_000),
         );
     }
 
@@ -503,7 +503,7 @@ final readonly class SitemapGenerator
         return min(
             self::MAXIMUM_STANDARD_BYTES,
             SeoConfiguration::positiveInteger(
-                'seo.sitemap.max_bytes',
+                'nvl-seo.sitemap.max_bytes',
                 self::MAXIMUM_STANDARD_BYTES,
             ),
         );

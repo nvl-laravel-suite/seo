@@ -114,7 +114,7 @@ final class SeoRedirect extends Model
     {
         $tenant = '*';
         $container = Container::getInstance();
-        if ($container->bound('config') && $container->make('config')->get('tenancy.enabled') === true) {
+        if ($container->bound('config') && $container->make('config')->get('nvl-tenancy.enabled') === true) {
             $snapshot = $container->make(TenantContext::class)->snapshot();
             if ($snapshot->mode !== TenantContextMode::Tenant || $snapshot->tenantId === null) {
                 throw new TenantContextMissing;

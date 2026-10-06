@@ -233,8 +233,8 @@ it('falls back each localized field while preserving intentional empty values', 
 
 it('rejects non-http absolute urls and renders every configured default robots directive', function (): void {
     config()->set([
-        'seo.defaults.robots.max_snippet' => 160,
-        'seo.defaults.robots.max_video_preview' => 30,
+        'nvl-seo.defaults.robots.max_snippet' => 160,
+        'nvl-seo.defaults.robots.max_video_preview' => 30,
     ]);
 
     $seo = app(SeoMetadataResolver::class)->resolve(seoOwner(), 'en');
@@ -458,7 +458,7 @@ it('provides typed management actions while management routes stay disabled', fu
             'secondary',
         ))->toThrow(StaleSeoProfileException::class);
 
-    $this->getJson('/api/v1/seo/profiles')->assertNotFound();
+    $this->getJson('/nvl/api/v1/seo/profiles')->assertNotFound();
 });
 
 it('normalizes redirect identity and rejects unsupported locales and stale creates', function (): void {
@@ -538,11 +538,11 @@ it('preserves safe query strings and fragments on internal redirect targets', fu
 
 it('exposes an authorized alias-based management API with mandatory revisions', function (): void {
     config()->set([
-        'seo.management.enabled' => true,
-        'seo.management.path' => 'api/internal/seo',
-        'seo.management.name' => 'internal.seo',
-        'seo.management.middleware' => ['api'],
-        'seo.authorization.ability' => 'manage-seo',
+        'nvl-seo.management.enabled' => true,
+        'nvl-seo.management.path' => 'api/internal/seo',
+        'nvl-seo.management.name' => 'internal.seo',
+        'nvl-seo.management.middleware' => ['api'],
+        'nvl-seo.authorization.ability' => 'manage-seo',
     ]);
     Gate::define(
         'manage-seo',
@@ -722,8 +722,8 @@ it('caches sitemap builds, returns etags, and rejects duplicate source keys', fu
 
 it('enforces the configured uncompressed sitemap byte limit', function (): void {
     config()->set([
-        'seo.sitemap.cache_seconds' => 0,
-        'seo.sitemap.max_bytes' => 100,
+        'nvl-seo.sitemap.cache_seconds' => 0,
+        'nvl-seo.sitemap.max_bytes' => 100,
     ]);
     app(SyncSeoProfileAction::class)->execute(seoOwner(), seoPayload());
 
@@ -773,7 +773,7 @@ it('flattens redirect chains, rejects loops and stale revisions, and records hit
 });
 
 it('generates bounded sitemap indexes and reports package health', function (): void {
-    config()->set('seo.sitemap.max_urls', 1);
+    config()->set('nvl-seo.sitemap.max_urls', 1);
     app(SyncSeoProfileAction::class)->execute(seoOwner(), seoPayload());
     $generator = app(SitemapGenerator::class);
 
@@ -785,7 +785,7 @@ it('generates bounded sitemap indexes and reports package health', function (): 
             static fn ($check): bool => $check->passed,
         ))->toBeTrue();
 
-    config()->set('seo.sitemap.cache_seconds', 0);
+    config()->set('nvl-seo.sitemap.cache_seconds', 0);
 
     expect($generator->generate())->toContain('<sitemapindex')
         ->and($generator->generateChunk(2))->toContain('<urlset')

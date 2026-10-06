@@ -33,7 +33,7 @@ final readonly class RobotsController
             ],
         );
         $response->setEtag(hash('sha256', $content));
-        $seconds = SeoConfiguration::nonNegativeInteger('seo.robots.cache_seconds', 3600);
+        $seconds = SeoConfiguration::nonNegativeInteger('nvl-seo.robots.cache_seconds', 3600);
 
         if ($seconds > 0) {
             $response->setPublic();

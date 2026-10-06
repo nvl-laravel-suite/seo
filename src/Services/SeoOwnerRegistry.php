@@ -64,7 +64,7 @@ final class SeoOwnerRegistry
 
         /** @var Model $model */
         $model = $modelClass::query()->findOrFail($id);
-        if ($this->configuration->get('tenancy.enabled') === true) {
+        if ($this->configuration->get('nvl-tenancy.enabled') === true) {
             $resource = $this->resources->forModel($model);
             $this->tenancy->assertRecord($model, $resource->key);
         }
@@ -151,7 +151,7 @@ final class SeoOwnerRegistry
      */
     public function configured(): array
     {
-        $configured = $this->configuration->get('seo.owners', []);
+        $configured = $this->configuration->get('nvl-seo.owners', []);
 
         if (! is_array($configured)) {
             throw new InvalidArgumentException('seo.owners must be an alias-to-model map.');
@@ -166,7 +166,7 @@ final class SeoOwnerRegistry
                 $alias = $modelClass;
             }
             if (! is_string($alias)
-                || preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]*$/', $alias) !== 1
+                || (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]*$/', $alias) !== 1 && ! is_a($alias, Model::class, true))
                 || ! is_string($modelClass)) {
                 throw new InvalidArgumentException(
                     'Every seo.owners entry must use a safe alias and an Eloquent model class.',

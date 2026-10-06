@@ -72,7 +72,7 @@ final readonly class FilesystemSitemapArtifactStore implements SitemapArtifactSt
      */
     private function disk(): Filesystem
     {
-        $disk = $this->config->get('seo.sitemap.disk');
+        $disk = $this->config->get('nvl-seo.sitemap.disk');
 
         return is_string($disk) && $disk !== ''
             ? $this->filesystems->disk($disk)
@@ -96,7 +96,7 @@ final readonly class FilesystemSitemapArtifactStore implements SitemapArtifactSt
      */
     private function directory(): string
     {
-        $directory = $this->config->get('seo.sitemap.directory', 'nvl-seo/sitemaps');
+        $directory = $this->config->get('nvl-seo.sitemap.directory', 'nvl-seo/sitemaps');
 
         if (! is_string($directory)
             || preg_match('#^[A-Za-z0-9][A-Za-z0-9/_-]*$#', $directory) !== 1

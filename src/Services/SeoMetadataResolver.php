@@ -68,10 +68,10 @@ final readonly class SeoMetadataResolver
         $plainTitle = $this->translatedString($profile, 'title', $locale);
         $description = $this->translatedString($profile, 'description', $locale);
         $plainTitle = $plainTitle === null
-            ? $this->stringConfig('seo.defaults.title')
+            ? $this->stringConfig('nvl-seo.defaults.title')
             : $plainTitle;
         $description = $description === null
-            ? $this->stringConfig('seo.defaults.description')
+            ? $this->stringConfig('nvl-seo.defaults.description')
             : ($description !== '' ? $description : null);
         $imageContext = new SeoImageContext(
             profile: $profile,
@@ -81,7 +81,7 @@ final readonly class SeoMetadataResolver
             reference: $this->translatedString($profile, 'image_reference', $locale),
             alt: $this->translatedString($profile, 'image_alt', $locale),
         );
-        if ($this->configuration->get('tenancy.enabled') === true) {
+        if ($this->configuration->get('nvl-tenancy.enabled') === true) {
             if (! $this->images instanceof TenantSafeSeoImageResolver) {
                 throw new \LogicException('The adopted SEO image resolver has no tenant safety boundary.');
             }
@@ -118,9 +118,9 @@ final readonly class SeoMetadataResolver
             $locale,
         );
         $openGraph = array_filter([
-            'og:type' => SeoConfiguration::string('seo.site.open_graph_type', 'website'),
+            'og:type' => SeoConfiguration::string('nvl-seo.site.open_graph_type', 'website'),
             'og:locale' => str_replace('-', '_', $translation->locale),
-            'og:site_name' => SeoConfiguration::string('seo.site.name', ''),
+            'og:site_name' => SeoConfiguration::string('nvl-seo.site.name', ''),
             'og:title' => $openGraphTitle ?? $plainTitle,
             'og:description' => $openGraphDescription ?? $description,
             'og:url' => $canonical,
@@ -137,11 +137,11 @@ final readonly class SeoMetadataResolver
                 : (is_string($twitterCard) && $twitterCard !== ''
                     ? $twitterCard
                     : SeoConfiguration::string(
-                        'seo.defaults.twitter_card',
+                        'nvl-seo.defaults.twitter_card',
                         'summary_large_image',
                     )),
-            'twitter:site' => $this->stringConfig('seo.site.twitter_site'),
-            'twitter:creator' => $this->stringConfig('seo.site.twitter_creator'),
+            'twitter:site' => $this->stringConfig('nvl-seo.site.twitter_site'),
+            'twitter:creator' => $this->stringConfig('nvl-seo.site.twitter_creator'),
             'twitter:title' => $this->translatedString($profile, 'twitter_title', $locale)
                 ?? $openGraphTitle
                 ?? $plainTitle,
@@ -160,7 +160,7 @@ final readonly class SeoMetadataResolver
             : $owner;
         $resource = $resource instanceof Model ? $resource : $profile;
         $siteUrl = $this->urls->resolve('/') ?? SeoConfiguration::string(
-            'seo.site.base_url',
+            'nvl-seo.site.base_url',
             'http://localhost',
         );
 
@@ -186,7 +186,7 @@ final readonly class SeoMetadataResolver
                     title: $plainTitle,
                     description: $description,
                     imageUrl: $image?->url,
-                    siteName: SeoConfiguration::string('seo.site.name', ''),
+                    siteName: SeoConfiguration::string('nvl-seo.site.name', ''),
                     siteUrl: rtrim($siteUrl, '/'),
                 ),
                 persisted: $this->translatedArray($profile, 'structured_data', $locale),
@@ -197,7 +197,7 @@ final readonly class SeoMetadataResolver
     /** Canonically reload supplied models before any metadata, image, or provider work. */
     private function canonicalOwner(Model|SeoProfile $owner): Model|SeoProfile
     {
-        if ($this->configuration->get('tenancy.enabled') !== true) {
+        if ($this->configuration->get('nvl-tenancy.enabled') !== true) {
             return $owner;
         }
 
@@ -215,8 +215,8 @@ final readonly class SeoMetadataResolver
     {
         return new ResolvedSeoData(
             locale: $locale,
-            title: $this->brandedTitle($this->stringConfig('seo.defaults.title')),
-            description: $this->stringConfig('seo.defaults.description'),
+            title: $this->brandedTitle($this->stringConfig('nvl-seo.defaults.title')),
+            description: $this->stringConfig('nvl-seo.defaults.description'),
             canonicalUrl: null,
             robots: $robots ?? $this->defaultRobots(),
             alternates: [],
@@ -233,7 +233,7 @@ final readonly class SeoMetadataResolver
             return null;
         }
 
-        $siteName = $this->stringConfig('seo.site.name');
+        $siteName = $this->stringConfig('nvl-seo.site.name');
 
         if ($title === null) {
             return $siteName;
@@ -243,9 +243,9 @@ final readonly class SeoMetadataResolver
             return $title;
         }
 
-        $separator = SeoConfiguration::string('seo.site.title_separator', ' | ');
+        $separator = SeoConfiguration::string('nvl-seo.site.title_separator', ' | ');
 
-        return config('seo.site.title_position', 'suffix') === 'prefix'
+        return config('nvl-seo.site.title_position', 'suffix') === 'prefix'
             ? $siteName.$separator.$title
             : $title.$separator.$siteName;
     }
@@ -274,12 +274,12 @@ final readonly class SeoMetadataResolver
 
     private function defaultRobots(): string
     {
-        $index = (bool) config('seo.defaults.robots.index', true);
-        $follow = (bool) config('seo.defaults.robots.follow', true);
+        $index = (bool) config('nvl-seo.defaults.robots.index', true);
+        $follow = (bool) config('nvl-seo.defaults.robots.follow', true);
         $directives = [$index ? 'index' : 'noindex', $follow ? 'follow' : 'nofollow'];
-        $maxImage = $this->stringConfig('seo.defaults.robots.max_image_preview');
-        $maxSnippet = config('seo.defaults.robots.max_snippet');
-        $maxVideo = config('seo.defaults.robots.max_video_preview');
+        $maxImage = $this->stringConfig('nvl-seo.defaults.robots.max_image_preview');
+        $maxSnippet = config('nvl-seo.defaults.robots.max_snippet');
+        $maxVideo = config('nvl-seo.defaults.robots.max_video_preview');
 
         if (is_int($maxSnippet)) {
             $directives[] = 'max-snippet:'.$maxSnippet;

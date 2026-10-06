@@ -35,7 +35,7 @@ final readonly class SitemapController
             ],
         );
         $response->setEtag(hash('sha256', $xml));
-        $seconds = SeoConfiguration::nonNegativeInteger('seo.sitemap.cache_seconds', 3600);
+        $seconds = SeoConfiguration::nonNegativeInteger('nvl-seo.sitemap.cache_seconds', 3600);
 
         if ($seconds > 0) {
             $response->setPublic();

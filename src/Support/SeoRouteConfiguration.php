@@ -16,7 +16,7 @@ final class SeoRouteConfiguration
      */
     public static function managementPath(): string
     {
-        return self::path('seo.management.path', 'api/v1/seo');
+        return self::path('nvl-seo.management.path', 'nvl/api/v1/seo');
     }
 
     /**
@@ -24,7 +24,7 @@ final class SeoRouteConfiguration
      */
     public static function managementName(): string
     {
-        return self::name('seo.management.name', 'nvl.seo.management.');
+        return self::name('nvl-seo.management.name', 'nvl.seo.management.');
     }
 
     /**
@@ -32,7 +32,7 @@ final class SeoRouteConfiguration
      */
     public static function publicName(): string
     {
-        return self::name('seo.routes.name', 'nvl.seo.');
+        return self::name('nvl-seo.routes.name', 'nvl.seo.');
     }
 
     /**
@@ -40,7 +40,7 @@ final class SeoRouteConfiguration
      */
     public static function sitemapPath(): string
     {
-        return self::path('seo.routes.sitemap_path', 'sitemap.xml');
+        return self::path('nvl-seo.routes.sitemap_path', 'nvl/seo/sitemap.xml');
     }
 
     /**
@@ -49,14 +49,14 @@ final class SeoRouteConfiguration
     public static function sitemapChunkPath(): string
     {
         $path = self::path(
-            'seo.routes.sitemap_chunk_path',
-            'sitemap-{chunk}.xml',
+            'nvl-seo.routes.sitemap_chunk_path',
+            'nvl/seo/sitemap-{chunk}.xml',
             true,
         );
 
         if (substr_count($path, '{chunk}') !== 1) {
             throw new InvalidArgumentException(
-                'seo.routes.sitemap_chunk_path must contain exactly one {chunk} placeholder.',
+                'nvl-seo.routes.sitemap_chunk_path must contain exactly one {chunk} placeholder.',
             );
         }
 
@@ -68,7 +68,7 @@ final class SeoRouteConfiguration
      */
     public static function robotsPath(): string
     {
-        return self::path('seo.routes.robots_path', 'robots.txt');
+        return self::path('nvl-seo.routes.robots_path', 'nvl/seo/robots.txt');
     }
 
     /**

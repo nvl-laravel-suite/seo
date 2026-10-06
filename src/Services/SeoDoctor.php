@@ -113,7 +113,7 @@ final readonly class SeoDoctor
                 'indexes' => [],
             ],
         ];
-        if (config('tenancy.enabled') === true) {
+        if (config('nvl-tenancy.enabled') === true) {
             $tables[SeoTables::get(SeoTables::Profiles)]['columns'][] = 'tenant_id';
             $tables[SeoTables::get(SeoTables::Profiles)]['indexes'] = [
                 'seo_profiles_tenant_scope_owner_unique' => true,
@@ -316,7 +316,7 @@ final readonly class SeoDoctor
      */
     private function siteConfigurationCheck(): SeoDoctorCheckData
     {
-        $baseUrl = config('seo.site.base_url');
+        $baseUrl = config('nvl-seo.site.base_url');
         $healthy = is_string($baseUrl) && HttpUrl::isBase($baseUrl);
 
         return new SeoDoctorCheckData(
@@ -356,7 +356,7 @@ final readonly class SeoDoctor
             return new SeoDoctorCheckData(
                 key: 'configuration.owners',
                 severity: $missing === []
-                    || ! (bool) config('seo.management.enabled', false)
+                    || ! (bool) config('nvl-seo.management.enabled', false)
                     ? 'warning'
                     : 'error',
                 passed: $missing === [],
@@ -387,11 +387,11 @@ final readonly class SeoDoctor
      */
     private function structuredDataCheck(): SeoDoctorCheckData
     {
-        $mode = config('seo.structured_data.mode', 'merge');
+        $mode = config('nvl-seo.structured_data.mode', 'merge');
         $limits = [
-            config('seo.structured_data.maximum_bytes'),
-            config('seo.structured_data.maximum_depth'),
-            config('seo.structured_data.maximum_items'),
+            config('nvl-seo.structured_data.maximum_bytes'),
+            config('nvl-seo.structured_data.maximum_depth'),
+            config('nvl-seo.structured_data.maximum_items'),
         ];
         $healthy = is_string($mode)
             && in_array($mode, ['persisted', 'generated', 'merge'], true)
@@ -415,11 +415,11 @@ final readonly class SeoDoctor
      */
     private function sitemapConfigurationCheck(): SeoDoctorCheckData
     {
-        $maximumUrls = config('seo.sitemap.max_urls');
-        $maximumBytes = config('seo.sitemap.max_bytes');
-        $cacheSeconds = config('seo.sitemap.cache_seconds');
-        $artifactDirectory = config('seo.sitemap.directory');
-        $artifactDisk = config('seo.sitemap.disk');
+        $maximumUrls = config('nvl-seo.sitemap.max_urls');
+        $maximumBytes = config('nvl-seo.sitemap.max_bytes');
+        $cacheSeconds = config('nvl-seo.sitemap.cache_seconds');
+        $artifactDirectory = config('nvl-seo.sitemap.directory');
+        $artifactDisk = config('nvl-seo.sitemap.disk');
         $needsLock = is_int($cacheSeconds) && $cacheSeconds > 0;
         $publicScopesAreValid = true;
 
@@ -459,8 +459,8 @@ final readonly class SeoDoctor
      */
     private function robotsConfigurationCheck(): SeoDoctorCheckData
     {
-        $cacheSeconds = config('seo.robots.cache_seconds');
-        $maximumBytes = config('seo.robots.maximum_bytes');
+        $cacheSeconds = config('nvl-seo.robots.cache_seconds');
+        $maximumBytes = config('nvl-seo.robots.maximum_bytes');
         $healthy = is_int($cacheSeconds)
             && $cacheSeconds >= 0
             && is_int($maximumBytes)
@@ -506,7 +506,7 @@ final readonly class SeoDoctor
             );
         }
 
-        if (! (bool) config('seo.routes.enabled', false)) {
+        if (! (bool) config('nvl-seo.routes.enabled', false)) {
             return new SeoDoctorCheckData(
                 key: 'routes.public',
                 severity: 'warning',
@@ -546,7 +546,7 @@ final readonly class SeoDoctor
             );
         }
 
-        if (! (bool) config('seo.management.enabled', false)) {
+        if (! (bool) config('nvl-seo.management.enabled', false)) {
             return new SeoDoctorCheckData(
                 key: 'routes.management',
                 severity: 'warning',
@@ -556,10 +556,10 @@ final readonly class SeoDoctor
         }
 
         $middleware = array_values(array_filter(
-            (array) config('seo.management.middleware', []),
+            (array) config('nvl-seo.management.middleware', []),
             static fn (mixed $value): bool => is_string($value) && $value !== '',
         ));
-        $ability = config('seo.authorization.ability');
+        $ability = config('nvl-seo.authorization.ability');
         $authorizationConfigured = ! $this->authorization instanceof ConfiguredSeoAuthorization
             || (is_string($ability) && $ability !== '');
         $healthy = $middleware !== []

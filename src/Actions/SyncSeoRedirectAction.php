@@ -149,7 +149,7 @@ final readonly class SyncSeoRedirectAction
     private function lockGraph(): void
     {
         $container = Container::getInstance();
-        if ($container->make('config')->get('tenancy.enabled') !== true) {
+        if ($container->make('config')->get('nvl-tenancy.enabled') !== true) {
             DB::table(SeoTables::get(SeoTables::RedirectLocks))->insertOrIgnore(['name' => 'graph']);
             DB::table(SeoTables::get(SeoTables::RedirectLocks))->where('name', 'graph')->lockForUpdate()->first();
 

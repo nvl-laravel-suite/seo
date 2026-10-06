@@ -32,7 +32,7 @@ final class SeoRedirectResolver
         ?string $locale = null,
         ?string $scope = null,
     ): ?ResolvedRedirectData {
-        if (! (bool) config('seo.redirects.enabled', true)) {
+        if (! (bool) config('nvl-seo.redirects.enabled', true)) {
             return null;
         }
 
@@ -45,7 +45,7 @@ final class SeoRedirectResolver
             return null;
         }
 
-        if ((bool) config('seo.redirects.record_hits', true)) {
+        if ((bool) config('nvl-seo.redirects.record_hits', true)) {
             SeoRedirect::query()->whereKey($redirect->id)->update([
                 'hit_count' => DB::raw('hit_count + 1'),
                 'last_hit_at' => now(),

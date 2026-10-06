@@ -26,8 +26,8 @@ final readonly class DirectSeoImageResolver implements TenantSafeSeoImageResolve
 
         $url = $this->urls->resolve(
             $context->url
-                ?? (is_string(config('seo.site.default_image_url'))
-                    ? config('seo.site.default_image_url')
+                ?? (is_string(config('nvl-seo.site.default_image_url'))
+                    ? config('nvl-seo.site.default_image_url')
                     : null),
         );
 

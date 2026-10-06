@@ -429,11 +429,11 @@ it('preserves mixed owner types and absent profiles in positional results', func
 
 it('exercises the complete opt-in management API lifecycle', function (): void {
     config()->set([
-        'seo.management.enabled' => true,
-        'seo.management.path' => 'api/consumer/seo',
-        'seo.management.name' => 'consumer.seo',
-        'seo.management.middleware' => ['api'],
-        'seo.authorization.ability' => 'manage-consumer-seo',
+        'nvl-seo.management.enabled' => true,
+        'nvl-seo.management.path' => 'api/consumer/seo',
+        'nvl-seo.management.name' => 'consumer.seo',
+        'nvl-seo.management.middleware' => ['api'],
+        'nvl-seo.authorization.ability' => 'manage-consumer-seo',
     ]);
     Gate::define(
         'manage-consumer-seo',
@@ -608,22 +608,22 @@ it('validates public structured-data builders and their resource limits', functi
         ->and(fn () => new SeoImage('https://example.test/image.jpg', mimeType: 'text/html'))
         ->toThrow(InvalidArgumentException::class);
 
-    config()->set('seo.structured_data.maximum_bytes', 10);
+    config()->set('nvl-seo.structured_data.maximum_bytes', 10);
     expect(StructuredDataLimits::accepts([
         '@type' => 'Thing',
         'name' => 'Too many items',
     ]))->toBeFalse();
     config()->set([
-        'seo.structured_data.maximum_bytes' => 262_144,
-        'seo.structured_data.maximum_depth' => 1,
+        'nvl-seo.structured_data.maximum_bytes' => 262_144,
+        'nvl-seo.structured_data.maximum_depth' => 1,
     ]);
     expect(StructuredDataLimits::accepts([
         '@type' => 'Thing',
         'nested' => ['value' => ['deep' => true]],
     ]))->toBeFalse();
     config()->set([
-        'seo.structured_data.maximum_depth' => 16,
-        'seo.structured_data.maximum_items' => 1,
+        'nvl-seo.structured_data.maximum_depth' => 16,
+        'nvl-seo.structured_data.maximum_items' => 1,
     ]);
     expect(StructuredDataLimits::accepts([
         '@type' => 'Thing',
@@ -713,7 +713,7 @@ it('covers owner, route uniqueness, and database constraint boundaries', functio
         ->and(fn () => $registry->aliasForMorphType('missing'))
         ->toThrow(InvalidSeoMutationException::class);
 
-    config()->set('seo.owners', [
+    config()->set('nvl-seo.owners', [
         'first' => TestSeoOwner::class,
         'second' => TestSeoOwner::class,
     ]);
@@ -724,7 +724,7 @@ it('covers owner, route uniqueness, and database constraint boundaries', functio
         app(OwnerRegistry::class),
     ))->configured())
         ->toThrow(InvalidArgumentException::class);
-    config()->set('seo.owners', 'invalid');
+    config()->set('nvl-seo.owners', 'invalid');
     expect(fn () => (new SeoOwnerRegistry(
         app(Repository::class),
         app(TenantBoundary::class),
@@ -760,15 +760,15 @@ it('reports invalid consumer configuration through the doctor contract', functio
         'source_hash' => 'short',
     ]);
     config()->set([
-        'seo.site.base_url' => 'relative',
-        'seo.owners' => 'invalid',
-        'seo.structured_data.mode' => 'invalid',
-        'seo.sitemap.max_urls' => 0,
-        'seo.routes.sitemap_scopes' => [false],
-        'seo.robots.maximum_bytes' => 0,
-        'seo.routes.name' => 'invalid route name',
-        'seo.management.enabled' => true,
-        'seo.management.path' => '../unsafe',
+        'nvl-seo.site.base_url' => 'relative',
+        'nvl-seo.owners' => 'invalid',
+        'nvl-seo.structured_data.mode' => 'invalid',
+        'nvl-seo.sitemap.max_urls' => 0,
+        'nvl-seo.routes.sitemap_scopes' => [false],
+        'nvl-seo.robots.maximum_bytes' => 0,
+        'nvl-seo.routes.name' => 'invalid route name',
+        'nvl-seo.management.enabled' => true,
+        'nvl-seo.management.path' => '../unsafe',
     ]);
 
     $checks = collect(app(SeoDoctor::class)->inspect())->keyBy('key');
@@ -788,20 +788,20 @@ it('reports invalid consumer configuration through the doctor contract', functio
 });
 
 it('fails closed for invalid package bindings, routes, and authorization', function (): void {
-    config()->set('seo.image_resolver', stdClass::class);
+    config()->set('nvl-seo.image_resolver', stdClass::class);
     expect(fn () => (new SeoServiceProvider(app()))->register())
         ->toThrow(InvalidArgumentException::class, 'image_resolver');
 
     config()->set([
-        'seo.image_resolver' => DirectSeoImageResolver::class,
-        'seo.sitemap.artifact_store' => stdClass::class,
+        'nvl-seo.image_resolver' => DirectSeoImageResolver::class,
+        'nvl-seo.sitemap.artifact_store' => stdClass::class,
     ]);
     expect(fn () => (new SeoServiceProvider(app()))->register())
         ->toThrow(InvalidArgumentException::class, 'artifact_store')
         ->and(fn () => SeoRouteConfiguration::sitemapChunkPath())
         ->not->toThrow(InvalidArgumentException::class);
 
-    config()->set('seo.routes.sitemap_chunk_path', 'sitemap.xml');
+    config()->set('nvl-seo.routes.sitemap_chunk_path', 'sitemap.xml');
     expect(fn () => SeoRouteConfiguration::sitemapChunkPath())
         ->toThrow(InvalidArgumentException::class, '{chunk}')
         ->and(fn () => app(ConfiguredSeoAuthorization::class)->authorize(
@@ -885,7 +885,7 @@ it('guards the structured-data extension boundary', function (): void {
 });
 
 it('rejects invalid uncached sitemap chunks and disabled required indexes', function (): void {
-    config()->set('seo.sitemap.cache_seconds', 0);
+    config()->set('nvl-seo.sitemap.cache_seconds', 0);
 
     expect(fn () => app(SitemapGenerator::class)->generateChunk(0))
         ->toThrow(OutOfBoundsException::class)
@@ -903,8 +903,8 @@ it('rejects invalid uncached sitemap chunks and disabled required indexes', func
         ]),
     );
     config()->set([
-        'seo.sitemap.max_urls' => 1,
-        'seo.sitemap.index_enabled' => false,
+        'nvl-seo.sitemap.max_urls' => 1,
+        'nvl-seo.sitemap.index_enabled' => false,
     ]);
 
     expect(fn () => app(SitemapGenerator::class)->generate())

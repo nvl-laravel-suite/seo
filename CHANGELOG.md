@@ -4,6 +4,14 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- Isolate owned cache and lock keys under `nvl:seo:`; preserve generic host entries and explicit store choices.
+
+- Prepare lockstep major 5 with required and development NVL peer floors of `^5.0`. This candidate has not been tagged or published.
+- Use Laravel owner identity and the nvlSeo Blade directive without claiming host global names.
+- Review [UPGRADING.md](UPGRADING.md) before adopting the new names and infrastructure boundaries.
+
 ## [2.2.1] - 2026-09-26
 
 ### Documentation

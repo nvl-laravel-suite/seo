@@ -114,7 +114,7 @@ final readonly class SitemapCache
     /** @param array{connection:string,tenant:string,site:string,origin:string,scope:string} $facts */
     private function baseKey(array $facts): string
     {
-        return SeoConfiguration::string('seo.sitemap.cache_key', 'nvl-seo:sitemap')
+        return SeoConfiguration::string('nvl-seo.sitemap.cache_key', 'nvl:seo:sitemap')
             .':'.hash('sha256', json_encode($facts, JSON_THROW_ON_ERROR));
     }
 
@@ -124,7 +124,7 @@ final readonly class SitemapCache
         $container = Container::getInstance();
         $connection = (new SeoProfile)->getConnection()->getName() ?? 'default';
 
-        if ($container->bound('config') && $container->make('config')->get('tenancy.enabled') === true) {
+        if ($container->bound('config') && $container->make('config')->get('nvl-tenancy.enabled') === true) {
             $site = $container->make(TenantSiteContext::class);
 
             return [
@@ -137,7 +137,7 @@ final readonly class SitemapCache
         }
 
         $applicationUrl = config('app.url', 'http://localhost');
-        $origin = SeoConfiguration::string('seo.site.base_url', is_string($applicationUrl) ? $applicationUrl : 'http://localhost');
+        $origin = SeoConfiguration::string('nvl-seo.site.base_url', is_string($applicationUrl) ? $applicationUrl : 'http://localhost');
 
         return [
             'connection' => $connection,

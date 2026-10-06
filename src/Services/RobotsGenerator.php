@@ -19,7 +19,7 @@ final readonly class RobotsGenerator
 
     public function generate(): string
     {
-        $userAgent = SeoConfiguration::string('seo.robots.user_agent', '*');
+        $userAgent = SeoConfiguration::string('nvl-seo.robots.user_agent', '*');
 
         if (preg_match('/^(?:\*|[A-Za-z][A-Za-z0-9_-]*)$/', $userAgent) !== 1) {
             throw new LogicException('seo.robots.user_agent must be a valid crawler product token.');
@@ -27,15 +27,15 @@ final readonly class RobotsGenerator
 
         $lines = ['User-agent: '.$userAgent];
 
-        foreach ($this->pathList(config('seo.robots.allow', ['/']), 'allow') as $path) {
+        foreach ($this->pathList(config('nvl-seo.robots.allow', ['/']), 'allow') as $path) {
             $lines[] = 'Allow: '.$path;
         }
 
-        foreach ($this->pathList(config('seo.robots.disallow', []), 'disallow') as $path) {
+        foreach ($this->pathList(config('nvl-seo.robots.disallow', []), 'disallow') as $path) {
             $lines[] = 'Disallow: '.$path;
         }
 
-        if ((bool) config('seo.robots.include_sitemap', true)) {
+        if ((bool) config('nvl-seo.robots.include_sitemap', true)) {
             $sitemap = $this->urls->resolve(
                 SeoRouteConfiguration::sitemapPath(),
             );
@@ -49,7 +49,7 @@ final readonly class RobotsGenerator
         $content = implode("\n", $lines)."\n";
         $maximumBytes = min(
             512_000,
-            SeoConfiguration::positiveInteger('seo.robots.maximum_bytes', 512_000),
+            SeoConfiguration::positiveInteger('nvl-seo.robots.maximum_bytes', 512_000),
         );
 
         if (strlen($content) > $maximumBytes) {

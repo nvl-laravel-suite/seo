@@ -19,7 +19,7 @@ final class ConfiguredSeoAuthorization implements SeoAuthorization
      */
     public function authorize(SeoAuthorizationContext $context): void
     {
-        $configuredAbility = config('seo.authorization.ability');
+        $configuredAbility = config('nvl-seo.authorization.ability');
 
         if (! is_string($configuredAbility) || $configuredAbility === '') {
             throw new AuthorizationException(

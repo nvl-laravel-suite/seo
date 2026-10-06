@@ -37,7 +37,7 @@ final class StructuredDataLimits
         }
 
         if (strlen($encoded) > SeoConfiguration::positiveInteger(
-            'seo.structured_data.maximum_bytes',
+            'nvl-seo.structured_data.maximum_bytes',
             262_144,
         )) {
             return false;
@@ -49,8 +49,8 @@ final class StructuredDataLimits
             $value,
             0,
             $items,
-            SeoConfiguration::positiveInteger('seo.structured_data.maximum_depth', 16),
-            SeoConfiguration::positiveInteger('seo.structured_data.maximum_items', 1_000),
+            SeoConfiguration::positiveInteger('nvl-seo.structured_data.maximum_depth', 16),
+            SeoConfiguration::positiveInteger('nvl-seo.structured_data.maximum_items', 1_000),
         );
     }
 

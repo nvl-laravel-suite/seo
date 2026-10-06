@@ -40,18 +40,21 @@ abstract class TestCase extends Orchestra
             'app.url' => 'https://example.test',
             'app.locale' => 'en',
             'app.fallback_locale' => 'en',
-            'translatable.locales' => ['en', 'bg'],
-            'translatable.fallback_locales' => ['en'],
-            'seo.site.base_url' => 'https://example.test',
-            'seo.site.name' => 'Example',
-            'seo.owners' => [
+            'nvl-translatable.locales' => ['en', 'bg'],
+            'nvl-translatable.fallback_locales' => ['en'],
+            'nvl-seo.site.base_url' => 'https://example.test',
+            'nvl-seo.site.name' => 'Example',
+            'nvl-seo.owners' => [
                 'article' => TestSeoOwner::class,
                 'integer-article' => TestIntegerSeoOwner::class,
             ],
-            'seo.routes.enabled' => true,
-            'seo.routes.middleware' => [],
-            'seo.sitemap.cache_seconds' => 3600,
-            'seo.structured_data.providers' => [
+            'nvl-seo.routes.enabled' => true,
+            'nvl-seo.routes.sitemap_path' => 'sitemap.xml',
+            'nvl-seo.routes.sitemap_chunk_path' => 'sitemap-{chunk}.xml',
+            'nvl-seo.routes.robots_path' => 'robots.txt',
+            'nvl-seo.routes.middleware' => [],
+            'nvl-seo.sitemap.cache_seconds' => 3600,
+            'nvl-seo.structured_data.providers' => [
                 [
                     'key' => 'test.configured-resource',
                     'resource' => TestSeoOwner::class,

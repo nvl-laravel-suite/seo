@@ -28,7 +28,7 @@ final class SeoScope
             return [self::normalize($tenantSite->site)];
         }
 
-        $configured = config('seo.routes.sitemap_scopes', []);
+        $configured = config('nvl-seo.routes.sitemap_scopes', []);
 
         if (! is_array($configured)) {
             throw new LogicException(
@@ -64,7 +64,7 @@ final class SeoScope
             $scope = $tenantSite->site;
         }
 
-        $configuredScope = config('seo.site.scope');
+        $configuredScope = config('nvl-seo.site.scope');
         $scope ??= is_string($configuredScope)
             ? $configuredScope
             : 'default';
@@ -88,7 +88,7 @@ final class SeoScope
     private static function tenantSite(): ?TenantSiteContext
     {
         $container = Container::getInstance();
-        if (! $container->bound('config') || $container->make('config')->get('tenancy.enabled') !== true) {
+        if (! $container->bound('config') || $container->make('config')->get('nvl-tenancy.enabled') !== true) {
             return null;
         }
 

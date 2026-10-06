@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 use Nvl\Seo\Services\DirectSeoImageResolver;
 use Nvl\Seo\Services\FilesystemSitemapArtifactStore;
+use Nvl\Support\Config\PackageEnvironment;
 
 return [
     'site' => [
-        'scope' => env('SEO_SITE_SCOPE', 'default'),
-        'name' => env('SEO_SITE_NAME', env('APP_NAME', 'Laravel')),
+        'scope' => PackageEnvironment::get('NVL_SEO_SITE_SCOPE', 'default'),
+        'name' => PackageEnvironment::get('NVL_SEO_SITE_NAME', env('APP_NAME', 'Laravel')),
         'title_separator' => ' | ',
         'title_position' => 'suffix',
-        'base_url' => env('SEO_BASE_URL', env('APP_URL', 'http://localhost')),
-        'default_image_url' => env('SEO_DEFAULT_IMAGE_URL'),
+        'base_url' => PackageEnvironment::get('NVL_SEO_BASE_URL', env('APP_URL', 'http://localhost')),
+        'default_image_url' => PackageEnvironment::get('NVL_SEO_DEFAULT_IMAGE_URL'),
         'open_graph_type' => 'website',
         'twitter_site' => null,
         'twitter_creator' => null,
@@ -37,15 +38,15 @@ return [
         'enabled' => false,
         'middleware' => ['web'],
         'name' => 'nvl.seo.',
-        'sitemap_path' => 'sitemap.xml',
-        'sitemap_chunk_path' => 'sitemap-{chunk}.xml',
+        'sitemap_path' => 'nvl/seo/sitemap.xml',
+        'sitemap_chunk_path' => 'nvl/seo/sitemap-{chunk}.xml',
         'sitemap_scopes' => [],
-        'robots_path' => 'robots.txt',
+        'robots_path' => 'nvl/seo/robots.txt',
     ],
 
     'management' => [
         'enabled' => false,
-        'path' => 'api/v1/seo',
+        'path' => 'nvl/api/v1/seo',
         'name' => 'nvl.seo.management.',
         'middleware' => ['api', 'auth', 'throttle:60,1'],
     ],
@@ -67,7 +68,7 @@ return [
 
     'sitemap' => [
         'cache_seconds' => 3600,
-        'cache_key' => 'nvl-seo:sitemap',
+        'cache_key' => 'nvl:seo:sitemap',
         'artifact_store' => FilesystemSitemapArtifactStore::class,
         'disk' => null,
         'directory' => 'nvl-seo/sitemaps',

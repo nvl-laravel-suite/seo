@@ -57,7 +57,7 @@ final class SeoRedirectChain
         }
 
         $seen = [$source => true];
-        $maximum = SeoConfiguration::positiveInteger('seo.redirects.maximum_chain_length', 20);
+        $maximum = SeoConfiguration::positiveInteger('nvl-seo.redirects.maximum_chain_length', 20);
 
         for ($depth = 0; $depth < $maximum; $depth++) {
             if (isset($seen[$targetPath])) {

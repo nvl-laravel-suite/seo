@@ -25,7 +25,7 @@ final class WarmSeoSitemapCommand extends Command
      */
     public function handle(SitemapGenerator $sitemaps): int
     {
-        if (SeoConfiguration::nonNegativeInteger('seo.sitemap.cache_seconds', 3600) === 0) {
+        if (SeoConfiguration::nonNegativeInteger('nvl-seo.sitemap.cache_seconds', 3600) === 0) {
             $this->components->error(
                 'Sitemap warming requires a positive seo.sitemap.cache_seconds value.',
             );

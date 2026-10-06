@@ -123,7 +123,7 @@ it('rejects crawler identity urls with fragments or foreign origins', function (
         ))
         ->toThrow(InvalidArgumentException::class, 'decimal notation');
 
-    config()->set('seo.sitemap.cache_seconds', 0);
+    config()->set('nvl-seo.sitemap.cache_seconds', 0);
     app(SitemapRegistry::class)->register(
         new class implements SitemapSource
         {
@@ -140,11 +140,11 @@ it('rejects crawler identity urls with fragments or foreign origins', function (
 });
 
 it('rejects base urls containing query strings or fragments', function (): void {
-    config()->set('seo.site.base_url', 'https://example.test/base?tenant=one');
+    config()->set('nvl-seo.site.base_url', 'https://example.test/base?tenant=one');
 
     expect(app(AbsoluteUrl::class)->resolve('/page'))->toBeNull();
 
-    config()->set('seo.site.base_url', 'https://example.test/base#content');
+    config()->set('nvl-seo.site.base_url', 'https://example.test/base#content');
 
     expect(app(AbsoluteUrl::class)->resolve('/page'))->toBeNull();
 });
@@ -152,16 +152,16 @@ it('rejects base urls containing query strings or fragments', function (): void 
 it('isolates sitemap cache identities by configured site url', function (): void {
     $cache = app(SitemapCache::class);
     $firstSiteKey = $cache->key('default');
-    config()->set('seo.site.base_url', 'https://second.example.test');
+    config()->set('nvl-seo.site.base_url', 'https://second.example.test');
 
     expect($cache->key('default'))->not->toBe($firstSiteKey);
 });
 
 it('enforces sitemap path scope for same-origin source entries', function (): void {
     config()->set([
-        'seo.routes.sitemap_path' => 'maps/sitemap.xml',
-        'seo.routes.sitemap_chunk_path' => 'maps/sitemap-{chunk}.xml',
-        'seo.sitemap.cache_seconds' => 0,
+        'nvl-seo.routes.sitemap_path' => 'maps/sitemap.xml',
+        'nvl-seo.routes.sitemap_chunk_path' => 'maps/sitemap-{chunk}.xml',
+        'nvl-seo.sitemap.cache_seconds' => 0,
     ]);
     app(SitemapRegistry::class)->register(
         new class implements SitemapSource
@@ -206,7 +206,7 @@ it('requires atomic lock support before generating cached sitemaps', function ()
 
 it('self heals cached sitemap manifests whose published artifact disappeared', function (): void {
     Storage::fake('seo-healing');
-    config()->set('seo.sitemap.disk', 'seo-healing');
+    config()->set('nvl-seo.sitemap.disk', 'seo-healing');
     $cache = app(SitemapCache::class);
     $generator = app(SitemapGenerator::class);
     $originalNamespace = $cache->namespace('default');
@@ -264,6 +264,22 @@ it('keeps committed profile writes successful when sitemap invalidation fails', 
         ->assertFailed();
 });
 
+it('namespaces default sitemap cache identities and preserves host-selected prefixes', function (): void {
+    $store = new ArrayStore;
+    $repository = new CacheRepository($store);
+    $cache = new SitemapCache($repository, app(SitemapArtifactStore::class));
+    $identity = $cache->capture('default');
+    $foreignKey = str_replace('nvl:seo:sitemap:', 'nvl-seo:sitemap:', $identity->key);
+    $repository->forever($foreignKey, 'host-value');
+
+    expect($identity->key)->toStartWith('nvl:seo:sitemap:');
+    $cache->forgetCaptured($identity);
+    expect($repository->get($foreignKey))->toBe('host-value');
+
+    config()->set('nvl-seo.sitemap.cache_key', 'host-selected-sitemaps');
+    expect($cache->capture('default')->key)->toStartWith('host-selected-sitemaps:');
+});
+
 it('accepts string-encoded integer versions from string-backed cache stores like redis', function (): void {
     $store = new ArrayStore;
     $cacheRepository = new CacheRepository($store);
@@ -272,7 +288,7 @@ it('accepts string-encoded integer versions from string-backed cache stores like
     $identity = $cache->capture('default');
     expect($identity->version)->toBe(1);
 
-    $baseKey = config('seo.sitemap.cache_key', 'nvl-seo:sitemap');
+    $baseKey = config('nvl-seo.sitemap.cache_key', 'nvl:seo:sitemap');
     $facts = [
         'connection' => $identity->connection,
         'tenant' => $identity->tenantId,
@@ -291,8 +307,8 @@ it('accepts string-encoded integer versions from string-backed cache stores like
 
 it('keeps non-default sitemap index and chunk requests in the requested scope', function (): void {
     config()->set([
-        'seo.routes.sitemap_scopes' => ['wholesale'],
-        'seo.sitemap.max_urls' => 1,
+        'nvl-seo.routes.sitemap_scopes' => ['wholesale'],
+        'nvl-seo.sitemap.max_urls' => 1,
     ]);
     $owner = TestSeoOwner::query()->create(['name' => 'Scoped sitemap owner']);
     app(SyncSeoProfileAction::class)->execute(
@@ -368,14 +384,14 @@ it('treats unregistered runtime owner types as advisory until management is enab
             ],
         ]),
     );
-    config()->set('seo.owners', []);
+    config()->set('nvl-seo.owners', []);
     $doctor = app(SeoDoctor::class);
     $advisory = collect($doctor->inspect())->firstWhere('key', 'configuration.owners');
 
     expect($advisory?->passed)->toBeFalse()
         ->and($advisory?->severity)->toBe('warning');
 
-    config()->set('seo.management.enabled', true);
+    config()->set('nvl-seo.management.enabled', true);
     $required = collect($doctor->inspect())->firstWhere('key', 'configuration.owners');
 
     expect($required?->passed)->toBeFalse()
@@ -421,7 +437,7 @@ it('rejects import sources that exceed the requested bounded page', function ():
 });
 
 it('fails closed for invalid management middleware and doctor output formats', function (): void {
-    config()->set('seo.management.middleware', []);
+    config()->set('nvl-seo.management.middleware', []);
 
     expect(fn () => require __DIR__.'/../../routes/management.php')
         ->toThrow(InvalidArgumentException::class, 'non-empty middleware');
@@ -432,7 +448,7 @@ it('fails closed for invalid management middleware and doctor output formats', f
 
 it('publishes sitemap xml to immutable filesystem artifacts and clears them atomically', function (): void {
     Storage::fake('seo-artifacts');
-    config()->set('seo.sitemap.disk', 'seo-artifacts');
+    config()->set('nvl-seo.sitemap.disk', 'seo-artifacts');
     $cache = app(SitemapCache::class);
     $namespace = $cache->namespace('default');
 
@@ -452,7 +468,7 @@ it('publishes sitemap xml to immutable filesystem artifacts and clears them atom
     $this->artisan('nvl:seo:sitemap:clear', ['--scope' => 'invalid scope'])
         ->assertExitCode(Command::INVALID);
 
-    config()->set('seo.sitemap.cache_seconds', 0);
+    config()->set('nvl-seo.sitemap.cache_seconds', 0);
     $this->artisan('nvl:seo:sitemap:warm')
         ->assertExitCode(Command::INVALID);
 });
@@ -580,14 +596,14 @@ it('prunes only redirect tombstones outside the requested retention window', fun
 });
 
 it('rejects robots directive injection and oversized output', function (): void {
-    config()->set('seo.robots.allow', ["/safe\r\nDisallow: /private"]);
+    config()->set('nvl-seo.robots.allow', ["/safe\r\nDisallow: /private"]);
 
     expect(fn () => app(RobotsGenerator::class)->generate())
         ->toThrow(LogicException::class, 'non-empty crawler path');
 
     config()->set([
-        'seo.robots.allow' => ['/'],
-        'seo.robots.maximum_bytes' => 20,
+        'nvl-seo.robots.allow' => ['/'],
+        'nvl-seo.robots.maximum_bytes' => 20,
     ]);
 
     expect(fn () => app(RobotsGenerator::class)->generate())

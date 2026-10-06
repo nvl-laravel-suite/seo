@@ -18,8 +18,9 @@ afterEach(function (): void {
 });
 
 it('references shared aliases while preserving the seo capability allowlist', function (): void {
+    Relation::morphMap(['article' => TestSeoOwner::class]);
     config()->set('nvl-core.owners', ['article' => TestSeoOwner::class, 'integer-article' => TestIntegerSeoOwner::class]);
-    config()->set('seo.owners', ['detail' => 'article']);
+    config()->set('nvl-seo.owners', ['detail' => 'article']);
     $registry = app(SeoOwnerRegistry::class);
 
     expect($registry->modelClass('detail'))->toBe(TestSeoOwner::class)
@@ -37,7 +38,7 @@ it('keeps historical class-backed seo writes until an owner alias is explicitly 
 
 it('allows identical code registration through a shared seo reference', function (): void {
     config()->set('nvl-core.owners', ['article' => TestSeoOwner::class]);
-    config()->set('seo.owners', []);
+    config()->set('nvl-seo.owners', []);
     $registry = app(SeoOwnerRegistry::class);
     $registry->register('detail', 'article');
     $registry->register('detail', 'article');

@@ -33,12 +33,12 @@ final class AbsoluteUrl
         }
 
         $container = Container::getInstance();
-        if ($container->bound('config') && $container->make('config')->get('tenancy.enabled') === true) {
+        if ($container->bound('config') && $container->make('config')->get('nvl-tenancy.enabled') === true) {
             $baseUrl = rtrim($container->make(TenantSiteContext::class)->canonicalOrigin, '/');
         } else {
             $appUrl = config('app.url', 'http://localhost');
             $baseUrl = rtrim(SeoConfiguration::string(
-                'seo.site.base_url',
+                'nvl-seo.site.base_url',
                 is_string($appUrl) ? $appUrl : 'http://localhost',
             ), '/');
         }

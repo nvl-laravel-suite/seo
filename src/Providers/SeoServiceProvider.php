@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Seo\Providers;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -34,11 +35,13 @@ use Nvl\Seo\Services\StructuredDataRegistry;
 use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Seo\Tenancy\SeoResourceRegistrar;
 use Nvl\Support\Doctor\PackageDoctorContributor;
+use Nvl\Support\Globals\GlobalNames;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Support\Providers\TenantServiceProvider;
 use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Support\Traits\MergesPackageConfiguration;
+use Nvl\Support\Traits\RegistersNamespacedResources;
 use Nvl\Tenancy\Http\Middleware\ResolvePublicTenant;
 use Nvl\Tenancy\Services\TenantAdoptionRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
@@ -49,6 +52,7 @@ use Nvl\Translatable\Services\TranslationResourceRegistry;
 final class SeoServiceProvider extends ServiceProvider
 {
     use MergesPackageConfiguration;
+    use RegistersNamespacedResources;
 
     /**
      * Register configuration and package boundary contracts.
@@ -59,7 +63,7 @@ final class SeoServiceProvider extends ServiceProvider
         PackageDoctorContributor::register($this->app, 'nvl/seo', fn (): array => $this->app->make(SeoDoctor::class)->inspect());
 
         $this->app->register(TenantServiceProvider::class);
-        $this->mergePackageConfiguration(__DIR__.'/../../config/seo.php', 'seo');
+        $this->mergePackageConfiguration(__DIR__.'/../../config/nvl-seo.php', 'seo');
         (new SeoResourceRegistrar)->register($this->app->make(TenantResourceRegistry::class));
         $this->app->booted(function (): void {
             if ($this->app->bound(TenantAdoptionRegistry::class)) {
@@ -67,7 +71,7 @@ final class SeoServiceProvider extends ServiceProvider
             }
         });
 
-        $imageResolver = config('seo.image_resolver', DirectSeoImageResolver::class);
+        $imageResolver = config('nvl-seo.image_resolver', DirectSeoImageResolver::class);
 
         if (! is_string($imageResolver)) {
             throw new InvalidArgumentException(
@@ -83,7 +87,7 @@ final class SeoServiceProvider extends ServiceProvider
 
         $this->app->bind(SeoImageResolver::class, $imageResolver);
         $artifactStore = config(
-            'seo.sitemap.artifact_store',
+            'nvl-seo.sitemap.artifact_store',
             FilesystemSitemapArtifactStore::class,
         );
 
@@ -112,7 +116,7 @@ final class SeoServiceProvider extends ServiceProvider
     ): void {
         $typeScriptSources->register(__DIR__.'/..', 'nvl/seo');
 
-        if ((bool) config('seo.migrations.enabled', true)) {
+        if ((bool) config('nvl-seo.migrations.enabled', true)) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
         }
 
@@ -127,10 +131,12 @@ final class SeoServiceProvider extends ServiceProvider
         $sitemaps->registerType(EloquentSeoSitemapSource::class, 'nvl/seo');
         $this->registerConfiguredSitemapSources($sitemaps);
         $this->registerConfiguredStructuredDataProviders($structuredData);
-        Blade::directive(
-            'seo',
-            static fn (string $expression): string => "<?php echo app(\\Nvl\\Seo\\Services\\SeoManager::class)->for({$expression})->toHtml(); ?>",
-        );
+        $names = $this->app->make(GlobalNames::class);
+        $directive = static fn (string $expression): string => "<?php echo app(\\Nvl\\Seo\\Services\\SeoManager::class)->for({$expression})->toHtml(); ?>";
+        $exists = static fn (string $name): bool => array_key_exists($name, Blade::getCustomDirectives());
+        $install = static fn (string $name) => Blade::directive($name, $directive);
+        $names->reserve('seo', 'blade', 'nvlSeo', $exists, $install);
+        $names->register('seo', 'blade', 'seo', 'nvlSeo', $exists, $install);
         $this->registerRoutes();
         $this->registerManagementRoutes();
 
@@ -144,7 +150,7 @@ final class SeoServiceProvider extends ServiceProvider
         }
 
         $this->publishes([
-            __DIR__.'/../../config/seo.php' => config_path('seo.php'),
+            __DIR__.'/../../config/nvl-seo.php' => config_path('nvl-seo.php'),
         ], 'seo-config');
         $this->publishesMigrations([
             __DIR__.'/../../database/migrations' => database_path('migrations'),
@@ -159,7 +165,7 @@ final class SeoServiceProvider extends ServiceProvider
      */
     private function registerConfiguredSitemapSources(SitemapRegistry $sitemaps): void
     {
-        $sources = config('seo.sitemap.sources', []);
+        $sources = config('nvl-seo.sitemap.sources', []);
 
         if (! is_array($sources)) {
             throw new InvalidArgumentException(
@@ -184,7 +190,7 @@ final class SeoServiceProvider extends ServiceProvider
     private function registerConfiguredStructuredDataProviders(
         StructuredDataRegistry $structuredData,
     ): void {
-        $providers = config('seo.structured_data.providers', []);
+        $providers = config('nvl-seo.structured_data.providers', []);
 
         if (! is_array($providers)) {
             throw new InvalidArgumentException(
@@ -233,34 +239,36 @@ final class SeoServiceProvider extends ServiceProvider
      */
     private function registerRoutes(): void
     {
-        if (! (bool) config('seo.routes.enabled', false)) {
+        if ($this->app->routesAreCached() || ! (bool) config('nvl-seo.routes.enabled', false)) {
             return;
         }
 
-        $middleware = config('seo.routes.middleware', ['web']);
+        $middleware = config('nvl-seo.routes.middleware', ['web']);
         $middleware = is_array($middleware) ? $middleware : ['web'];
         $middleware = array_values(array_filter($middleware, is_string(...)));
-        if (config('tenancy.enabled') === true) {
+        if (config('nvl-tenancy.enabled') === true) {
             array_unshift($middleware, ResolvePublicTenant::class);
         }
         $middleware = array_values(array_unique($middleware));
 
-        Route::middleware($middleware)
-            ->name(SeoRouteConfiguration::publicName())
-            ->group(function (): void {
-                Route::get(
-                    SeoRouteConfiguration::sitemapPath(),
-                    SitemapController::class,
-                )->name('sitemap');
-                Route::get(
-                    SeoRouteConfiguration::sitemapChunkPath(),
-                    SitemapChunkController::class,
-                )->whereNumber('chunk')->name('sitemap.chunk');
-                Route::get(
-                    SeoRouteConfiguration::robotsPath(),
-                    RobotsController::class,
-                )->name('robots');
-            });
+        $this->app->make(GlobalNames::class)->loadRoutes('seo', $this->app->make(Router::class), function () use ($middleware): void {
+            Route::middleware($middleware)
+                ->name(SeoRouteConfiguration::publicName())
+                ->group(function (): void {
+                    Route::get(
+                        SeoRouteConfiguration::sitemapPath(),
+                        SitemapController::class,
+                    )->name('sitemap');
+                    Route::get(
+                        SeoRouteConfiguration::sitemapChunkPath(),
+                        SitemapChunkController::class,
+                    )->whereNumber('chunk')->name('sitemap.chunk');
+                    Route::get(
+                        SeoRouteConfiguration::robotsPath(),
+                        RobotsController::class,
+                    )->name('robots');
+                });
+        });
     }
 
     /**
@@ -268,7 +276,7 @@ final class SeoServiceProvider extends ServiceProvider
      */
     private function registerManagementRoutes(): void
     {
-        if (! (bool) config('seo.management.enabled', false)) {
+        if (! (bool) config('nvl-seo.management.enabled', false)) {
             return;
         }
 

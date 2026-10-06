@@ -23,12 +23,12 @@ final class SitemapLocationPolicy
             return false;
         }
 
-        if ((bool) config('seo.sitemap.enforce_same_origin', true)
+        if ((bool) config('nvl-seo.sitemap.enforce_same_origin', true)
             && ! HttpUrl::hasSameOrigin($url, $sitemapUrl)) {
             return false;
         }
 
-        if (! (bool) config('seo.sitemap.enforce_path_scope', true)) {
+        if (! (bool) config('nvl-seo.sitemap.enforce_path_scope', true)) {
             return true;
         }
 
@@ -56,14 +56,14 @@ final class SitemapLocationPolicy
             throw new LogicException('The sitemap URL differs from the verified tenant site origin.');
         }
 
-        if ((bool) config('seo.sitemap.enforce_same_origin', true)
+        if ((bool) config('nvl-seo.sitemap.enforce_same_origin', true)
             && ! HttpUrl::hasSameOrigin($url, $sitemapUrl)) {
             throw new LogicException(
                 "Sitemap entry [{$url}] does not share the sitemap origin.",
             );
         }
 
-        if (! (bool) config('seo.sitemap.enforce_path_scope', true)) {
+        if (! (bool) config('nvl-seo.sitemap.enforce_path_scope', true)) {
             return;
         }
 
@@ -90,7 +90,7 @@ final class SitemapLocationPolicy
     private function verifiedOrigin(string $sitemapUrl): bool
     {
         $container = Container::getInstance();
-        if (! $container->bound('config') || $container->make('config')->get('tenancy.enabled') !== true) {
+        if (! $container->bound('config') || $container->make('config')->get('nvl-tenancy.enabled') !== true) {
             return true;
         }
 

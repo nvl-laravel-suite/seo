@@ -11,11 +11,11 @@ See the [installation and publishing guide](https://github.com/nvl-laravel-suite
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/seo:^2.0` |
+| Installed through | `composer require nvl/seo:^5.0` |
 | Module identifier | `nvl/seo` |
 | PHP namespace | `Nvl\Seo` |
 | Service provider | `Nvl\Seo\Providers\SeoServiceProvider` |
-| Configuration | `config/seo.php` |
+| Configuration | `config/nvl-seo.php` |
 
 A standalone localized SEO system for Laravel 13: polymorphic profiles,
 deterministic translations, canonical and hreflang URLs, social cards, safe
@@ -70,29 +70,29 @@ artifacts, drain jobs, and restart workers before admitting traffic.
 - `ext-json`, `ext-libxml`, `ext-xmlwriter`, and `ext-mbstring`
 
 ```bash
-composer require nvl/seo:^2.0
+composer require nvl/seo:^5.0
 php artisan migrate
-php artisan vendor:publish --tag=seo-config
-php artisan vendor:publish --tag=seo-skills
+php artisan vendor:publish --tag=nvl-seo-config
+php artisan vendor:publish --tag=nvl-seo-skills
 ```
 
 Publish migration sources only when the application requires copied migrations:
 
 ```bash
-php artisan vendor:publish --tag=seo-migrations
+php artisan vendor:publish --tag=nvl-seo-migrations
 ```
 
 Choose exactly one migration owner. For automatic vendor loading, leave
-`seo.migrations.enabled=true` and do not publish `seo-migrations`. For
-host-owned migrations, publish `seo-migrations`, set
-`seo.migrations.enabled=false` before the first migration, and maintain the
+`nvl-seo.migrations.enabled=true` and do not publish `nvl-seo-migrations`. For
+host-owned migrations, publish `nvl-seo-migrations`, set
+`nvl-seo.migrations.enabled=false` before the first migration, and maintain the
 copied files as application migrations. Never run both sources; Laravel
 retimestamps published migrations.
 
 Configure content locales:
 
 ```php
-// config/translatable.php
+// config/nvl-translatable.php
 return [
     'locales' => ['en', 'bg'],
     'fallback_locales' => ['en'],
@@ -274,7 +274,7 @@ $seo->twitter;
 $seo->structuredData;
 ```
 
-Resolution applies requested locale/fallback, profile values and localized overrides, site defaults, title branding, and absolute URL resolution from `seo.site.base_url`.
+Resolution applies requested locale/fallback, profile values and localized overrides, site defaults, title branding, and absolute URL resolution from `nvl-seo.site.base_url`.
 
 If no canonical override exists, the normalized path becomes the self-referential
 canonical. Alternates include every routable translation and `x-default` when
@@ -291,7 +291,7 @@ Render in Blade:
 Or:
 
 ```blade
-@seo($article)
+@nvlSeo($article)
 ```
 
 `SeoHeadRenderer` escapes titles and attributes and encodes JSON-LD with HTML-sensitive flags. It never accepts pre-rendered tags. For Inertia/API frontends, serialize `ResolvedSeoData`.
@@ -509,7 +509,7 @@ it when a bounded editor index already has its owner models; do not eager-load
 
 All three Actions resolve aliases through `SeoOwnerRegistry` and authorize
 `SeoAbility::View` before querying the profile table. Bind `SeoAuthorization`
-or configure `seo.authorization.ability`; the default remains fail-closed.
+or configure `nvl-seo.authorization.ability`; the default remains fail-closed.
 
 ## Optional management API
 
@@ -524,7 +524,7 @@ stable aliases rather than accepting model classes from HTTP:
 
 'management' => [
     'enabled' => true,
-    'path' => 'api/v1/seo',
+    'path' => 'nvl/api/v1/seo',
     'name' => 'nvl.seo.management.',
     'middleware' => ['api', 'auth', 'throttle:60,1'],
 ],
@@ -584,12 +584,14 @@ Enable public routes only if the application does not own them:
     'enabled' => true,
     'middleware' => ['web'],
     'name' => 'nvl.seo.',
-    'sitemap_path' => 'sitemap.xml',
-    'sitemap_chunk_path' => 'sitemap-{chunk}.xml',
+    'sitemap_path' => 'nvl/seo/sitemap.xml',
+    'sitemap_chunk_path' => 'nvl/seo/sitemap-{chunk}.xml',
     'sitemap_scopes' => ['wholesale'],
-    'robots_path' => 'robots.txt',
+    'robots_path' => 'nvl/seo/robots.txt',
 ],
 ```
+
+These defaults reserve NVL-owned URLs. Sitemap directory scope remains enforced: a sitemap under `/nvl/seo` includes only same-origin URLs below that directory. For a site-wide sitemap, explicitly set `nvl-seo.routes.sitemap_path` to `sitemap.xml` and `sitemap_chunk_path` to `sitemap-{chunk}.xml` after reviewing the host's root routes. Keep `nvl-seo.sitemap.enforce_path_scope=true`. Set `robots_path` to `robots.txt` explicitly when the host delegates its standard crawler endpoint to NVL.
 
 `EloquentSeoSitemapSource` reads included/indexable translations in database
 chunks with optional frequency/priority and localized alternates:
@@ -611,7 +613,7 @@ final class StaticPagesSitemapSource implements SitemapSource
 }
 ```
 
-Register the class in `seo.sitemap.sources`.
+Register the class in `nvl-seo.sitemap.sources`.
 
 An owner package can take exclusive responsibility for its profiles by calling
 `SitemapRegistry::register($source, $key, ownerTypes: [$owner::class])`.
@@ -628,8 +630,8 @@ Every source is registered under a unique deterministic key. A cached build
 scans the sources once, writes completed XML to the configured Laravel
 filesystem, and publishes only a small cache manifest after every artifact is
 durable. Concurrent builders use the cache store's atomic lock. Each artifact
-is bounded by both `seo.sitemap.max_urls` (maximum 50,000) and
-`seo.sitemap.max_bytes` (maximum 52,428,800 uncompressed bytes). When multiple
+is bounded by both `nvl-seo.sitemap.max_urls` (maximum 50,000) and
+`nvl-seo.sitemap.max_bytes` (maximum 52,428,800 uncompressed bytes). When multiple
 chunks exist and indexes are enabled, the primary route emits a sitemap index.
 Non-default index links retain their scope through a validated query parameter.
 List every publicly routable non-default scope in `routes.sitemap_scopes`; the
@@ -705,7 +707,7 @@ guaranteed indexing, and is not canonicalization.
 - `robots.user_agent`, `allow`, `disallow`, `include_sitemap`, cache TTL, and
   byte limit.
 
-Keep environment access in config. Application code reads `config('seo...')`.
+Keep environment access in config. Application code reads `config('nvl-seo...')`.
 
 ## TypeScript
 
@@ -786,18 +788,18 @@ Released under the [MIT License](LICENSE).
 Declare a model once in `config/nvl-core.php`:
 
 ```php
-'owners' => ['article' => Article::class],
+'owners' => [Article::class],
 ```
 
-Enable this package capability separately in `config/seo.php`:
+Enable this package capability separately in `config/nvl-seo.php`:
 
 ```php
-'owners' => ['article'],
+'owners' => [Article::class],
 ```
 
-An alias-to-alias map may retain a distinct API key, for example owners = ['articles.detail' => 'article']. Preserve SEO mutation authorization and scopes. Core registration does not add the model to this package's allowlist.
+An API-key-to-class map may retain a distinct API key, for example `owners = ['articles.detail' => Article::class]`. Preserve mutation authorization and scopes. Core registration does not add the model to this package's allowlist.
 
-Existing package class/resolver/handler registrations remain accepted for one major cycle. Run `php artisan nvl:doctor --strict --format=json` to inspect compatibility diagnostics. See [UPGRADING.md](UPGRADING.md) before changing a persisted morph type.
+Laravel's `getMorphClass()` determines stored identity. These class declarations do not install host morph maps. Keep resolvers, handlers and authorization independent; use `nvl:doctor --strict --format=json` to review legacy alias mismatches or stored identity drift. See [UPGRADING.md](UPGRADING.md) before changing the host's morph map.
 
 ## Shared consumer diagnostics
 
@@ -805,7 +807,7 @@ Run `php artisan nvl:doctor --strict --format=json` to combine the read-only che
 
 ## Next major: isolated schema identities
 
-Use `seo.tables.<logical-key>` for every table and `seo.connection` for its database connection. Null connection inherits `nvl-core.connection`, then Laravel's default. Tables are resolved at runtime by the package table definition helper.
+Use `nvl-seo.tables.<logical-key>` for every table and `nvl-seo.connection` for its database connection. Null connection inherits `nvl-core.connection`, then Laravel's default. Tables are resolved at runtime by the package table definition helper.
 
 | Logical key | New default | Previous name |
 | --- | --- | --- |
@@ -814,4 +816,10 @@ Use `seo.tables.<logical-key>` for every table and `seo.connection` for its data
 | `redirects` | `nvl_seo_redirects` | `seo_redirects` |
 | `redirect_locks` | `nvl_seo_redirect_locks` | `seo_redirect_locks` |
 
-Migration filenames contain `nvl_seo_`. Existing installations must complete the upgrade in `UPGRADING.md` before running new migrations. A pending creator rejects an existing target before any migration in the batch runs; legacy storage with old history needs an ownership decision.
+Migration filenames contain `nvl_seo_`. Existing installations must complete the upgrade in `UPGRADING.md` before running new migrations. A pending creator rejects an existing target before that owned migration runs; use `nvl:schema:preflight` for an explicit whole-batch check; legacy storage with old history needs an ownership decision.
+
+Owned cache and lock identities follow `nvl:<package>:<purpose>:…`. The default sitemap cache prefix is `nvl:seo:sitemap` instead of `nvl-seo:sitemap`. An explicitly configured `nvl-seo.sitemap.cache_key` remains host-selected. Old default entries expire naturally; NVL never copies or removes a generic host entry. See [UPGRADING](UPGRADING.md) for coordinated worker and lock lease cutover.
+
+## Canonical configuration ownership
+
+Use `nvl-seo` settings in `config/nvl-seo.php` and canonical package environment names. Old generic roots are foreign unless an upgrading NVL host explicitly selects them in Core's default-off compatibility. Canonical false/null/empty values win; no old roots are populated or written back. Keep logical package/resource IDs unchanged. Review [Core's rename inventory and cache/worker cutover](https://github.com/nvl-laravel-suite/core/blob/main/UPGRADING.md#major-5-canonical-configuration-and-environment).

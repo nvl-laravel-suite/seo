@@ -35,7 +35,7 @@ final readonly class StructuredDataResolver
         StructuredDataContextData $context,
         ?array $persisted,
     ): array {
-        $mode = config('seo.structured_data.mode', 'merge');
+        $mode = config('nvl-seo.structured_data.mode', 'merge');
 
         if (! is_string($mode) || ! in_array($mode, ['persisted', 'generated', 'merge'], true)) {
             throw new InvalidArgumentException(
@@ -70,7 +70,7 @@ final readonly class StructuredDataResolver
     ): array {
         $nodes = [];
 
-        if ((bool) config('seo.structured_data.automatic_web_site', true)) {
+        if ((bool) config('nvl-seo.structured_data.automatic_web_site', true)) {
             $nodes[] = StructuredDataNodeData::make(
                 type: StructuredDataType::WebSite,
                 id: rtrim($context->siteUrl, '/').'#website',
@@ -82,7 +82,7 @@ final readonly class StructuredDataResolver
             )->toJsonLd();
         }
 
-        if ((bool) config('seo.structured_data.automatic_web_page', true)
+        if ((bool) config('nvl-seo.structured_data.automatic_web_page', true)
             && $context->canonicalUrl !== null) {
             $siteId = rtrim($context->siteUrl, '/').'#website';
             $nodes[] = StructuredDataNodeData::make(

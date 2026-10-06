@@ -30,7 +30,7 @@ profile owners retain the existing standalone sitemap behavior.
 
 Version 1.0 is headless, uses dedicated translation rows, and has no application-specific importer.
 
-1. Set `seo.migrations.enabled=false` for an existing adopted schema. Clean
+1. Set `nvl-seo.migrations.enabled=false` for an existing adopted schema. Clean
    package migrations now fail loudly if their tables already exist instead of
    silently recording a migration that rollback could later destroy.
 2. Run `php artisan nvl:seo:doctor --strict --format=json`.
@@ -41,10 +41,10 @@ Version 1.0 is headless, uses dedicated translation rows, and has no application
    revisions for subsequent management writes.
 6. Resolve path conflicts before enabling profiles.
 7. Enable management, sitemap, robots, and redirect routes independently.
-8. Choose `seo.structured_data.mode`; register resource providers for generated
+8. Choose `nvl-seo.structured_data.mode`; register resource providers for generated
    schemas and retain persisted nodes only for editor-owned exceptions.
-9. Replace `seo.management.prefix` with `seo.management.path`, configure
-   `seo.management.name`, and configure `seo.routes.name` for public routes.
+9. Replace `nvl-seo.management.prefix` with `nvl-seo.management.path`, configure
+   `nvl-seo.management.name`, and configure `nvl-seo.routes.name` for public routes.
 10. Use an atomic-lock-capable cache store when sitemap caching is enabled,
     configure a durable private sitemap artifact disk/directory, and set both
     URL and uncompressed-byte limits.
@@ -59,11 +59,9 @@ Verify localized paths, canonical and hreflang output, redirects, sitemap artifa
 
 ## Shared owner registry compatibility
 
-Move model identity declarations to `nvl-core.owners` and reference the alias from `seo` capability configuration as described in the [README](README.md#shared-owner-identity). Preserve package contracts, resolvers/handlers, visibility scopes, and mutation authorization. Core does not grant package capabilities. Conflicting aliases or multiple canonical aliases for one model fail before use.
+Declare owner classes in `nvl-core.owners`, for example `'owners' => [Article::class]`, and reference the same model class from each package capability. Laravel's `getMorphClass()` is the stored owner identity: it returns the host-authored morph alias or the FQCN when no map exists. Core declarations and package allowlists do not add or enforce a host morph map and do not grant authorization.
 
-Legacy class inputs remain accepted for one major cycle and are reported through Core diagnostics. Existing Content, Taxonomy, and Metafields mappings keep their established aliases. Legacy SEO, Media, Comments, Templates, Pages, and Translatable class-backed behavior does not automatically create a new morph alias. Existing host morph mappings are respected.
-
-Adding a canonical Core alias changes Laravel's write-time morph type for that model. Before adding it to an existing class-backed deployment, explicitly convert the known package-owned morph columns and reconcile every other affected host relationship. Keep unrelated rows and host-owned morph tables unchanged. This release performs no automatic owner-data conversion and does not ship `nvl:owners:upgrade`. Preserve existing aliases when no conversion is required, rebuild configuration caches, and restart workers after the cutover.
+Legacy alias references remain read compatibility during major 5 and are removed in major 6. A legacy configured alias must agree with the model's current `getMorphClass()`; mismatches are diagnostics and require a host decision. Doctor can inspect declared package owner columns for stored-versus-current identities without rewriting them. If the host introduces or changes its morph map, review and convert only the affected stored columns and reconcile host relationships before cutover. No automatic owner-data conversion or `nvl:owners:upgrade` is provided. Rebuild configuration caches and restart workers after the coordinated change.
 
 ## Shared Doctor integration
 
@@ -75,12 +73,18 @@ This is a breaking schema identity change. Back up storage and migration history
 
 ```sh
 php artisan nvl:doctor --strict --format=json
-php artisan nvl:schema:upgrade --package=seo --claim-legacy --dry-run --format=json
-php artisan nvl:schema:upgrade --package=seo --claim-legacy --format=json
+php artisan nvl:schema:upgrade --package=seo --claim-legacy --migration-owner=vendor --dry-run --format=json
+php artisan nvl:schema:upgrade --package=seo --claim-legacy --migration-owner=vendor --format=json
 ```
 
 The command validates released columns and relational keys plus creating migration history, renames owned legacy tables to the effective `tables.*` targets and rewrites exact package migration identities while retaining batches and unrelated host records. It refuses foreign/incomplete shapes and conflicting targets. Explicit old table mappings retain those names; remove them when choosing new defaults. A second run is empty.
 
-Unmodified published files, including changed timestamps, map by verified checksum to the exact vendor migration identity and current package migration implementation. Modified host copies remain host-owned. Disable vendor loading when retaining a published owner; duplicate ownership fails before migration. No migration files or stored morph types are rewritten.
+Declare each published path and canonical identity explicitly in `nvl-core.migrations.published`; retimestamped history also needs an exact `legacy` mapping. Use `--migration-owner=vendor` after manually archiving declared copies outside loaded paths, or `--migration-owner=published` after manually replacing executable copies with current migration code and disabling vendor loading. The plan verifies ownership and preserves batches; checksums do not automatically claim files. Modified host copies remain host-owned. No migration files or stored morph types are rewritten.
 
-DDL transactions are driver dependent and per connection. Inspect dry-run warnings for MySQL/MariaDB or split storage; after a failure, inspect completed steps before resuming. Schema-qualified rename targets require an explicit host schema move first. Re-enable your selected migration owner, migrate remaining package changes and rerun Doctor before resuming writes. See the suite upgrade guide for shared owner/locale inputs, Core option defaults and one-major deprecation rules.
+DDL transactions are driver dependent and per connection. Inspect dry-run warnings for MySQL/MariaDB or split storage; after a failure, inspect completed steps before resuming. Schema-qualified rename targets require an explicit host schema move first. Re-enable your selected migration owner, run `nvl:schema:preflight` with the same selected paths and connection, then migrate remaining package changes and rerun Doctor before resuming writes. See the suite upgrade guide for shared owner/locale inputs, Core option defaults and one-major deprecation rules.
+
+## Major 5 cache and lock identities
+
+The default sitemap cache prefix is `nvl:seo:sitemap` instead of `nvl-seo:sitemap`. An explicitly configured `nvl-seo.sitemap.cache_key` remains host-selected. Old default entries expire naturally; NVL never copies or removes a generic host entry.
+
+Drain old mutation workers and maintenance processes, then wait for their outstanding lock leases to end before starting the new major across all nodes. Running old and new lock prefixes concurrently would create independent serialization domains. Restart workers after cutover; preserve host-selected stores and keys, and do not flush a shared cache to remove old NVL entries.
