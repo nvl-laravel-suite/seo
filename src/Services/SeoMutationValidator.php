@@ -13,8 +13,8 @@ use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Support\HttpUrl;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoRedirectTarget;
+use Nvl\Support\Contracts\LocaleCatalog;
 use Nvl\Translatable\Exceptions\InvalidLocaleException;
-use Nvl\Translatable\Services\LocaleRegistry;
 use Spatie\LaravelData\Optional;
 
 /**
@@ -27,7 +27,7 @@ final readonly class SeoMutationValidator
      */
     public function __construct(
         private Factory $validation,
-        private LocaleRegistry $locales,
+        private LocaleCatalog $locales,
     ) {}
 
     /**

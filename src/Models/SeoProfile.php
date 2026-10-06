@@ -18,6 +18,7 @@ use Nvl\Seo\Enums\SitemapChangeFrequency;
 use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Seo\Support\SeoScope;
+use Nvl\Support\Config\PackageStorage;
 use Nvl\Translatable\Contracts\TranslatableModel;
 use Nvl\Translatable\Enums\TranslationMutationPolicy;
 use Nvl\Translatable\RelatedTranslationDefinition;
@@ -208,5 +209,17 @@ final class SeoProfile extends Model implements TranslatableModel
     protected static function newFactory(): SeoProfileFactory
     {
         return SeoProfileFactory::new();
+    }
+
+    /** Resolve the configured package storage table. */
+    public function getTable(): string
+    {
+        return SeoTables::get(SeoTables::Profiles);
+    }
+
+    /** Resolve the package connection through shared infrastructure defaults. */
+    public function getConnectionName(): ?string
+    {
+        return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('seo') ?? parent::getConnectionName());
     }
 }

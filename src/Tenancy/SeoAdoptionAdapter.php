@@ -11,10 +11,10 @@ use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
 use Nvl\Seo\Models\SeoRedirect;
 use Nvl\Seo\Services\SeoOwnerRegistry;
+use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Tenancy\Contracts\TenantAdoptionAdapter;
-use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Tenancy\Services\TenantAdoptionBoundary;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Tenancy\ValueObjects\TenantAdoptionPlan;
 use Nvl\Tenancy\ValueObjects\TenantBackfillResult;
 use Nvl\Tenancy\ValueObjects\TenantVerification;
@@ -110,7 +110,7 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
             return new TenantBackfillResult('profiles:'.$last->id, $profiles->count());
         }
 
-        $connection->table(SeoTables::RedirectLocks)->whereNull('tenant_id')->delete();
+        $connection->table(SeoTables::get(SeoTables::RedirectLocks))->whereNull('tenant_id')->delete();
 
         return new TenantBackfillResult(null, 0);
     }
@@ -181,7 +181,7 @@ final readonly class SeoAdoptionAdapter implements TenantAdoptionAdapter
     public function activate(TenantAdoptionPlan $plan): void
     {
         $this->assertVerified($plan, 'SEO tenant ownership did not verify.');
-        $path = dirname(__DIR__, 2).'/database/tenancy/2026_09_16_170013_constrain_seo_ownership.php';
+        $path = dirname(__DIR__, 2).'/database/tenancy/2026_09_16_170013_nvl_seo_constrain_seo_ownership.php';
         $this->migrator->usingConnection($plan->connection, fn () => $this->migrator->run([$path], ['force' => true]));
         $this->assertVerified($plan, 'SEO tenant ownership failed after constraint activation.');
     }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Seo\Data;
 
 use Illuminate\Validation\Rule;
+use Nvl\Support\Facades\Locales;
 use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /** Validated optional preview locale. */
@@ -16,9 +17,6 @@ final class SeoPreviewQueryData extends SeoManagementInputData
     /** @return array<string, mixed> */
     public static function rules(): array
     {
-        $configured = config('translatable.locales', ['en']);
-        $locales = is_array($configured) ? array_values(array_filter($configured, 'is_string')) : ['en'];
-
-        return ['locale' => ['nullable', 'string', 'max:35', Rule::in($locales)]];
+        return ['locale' => ['nullable', 'string', 'max:35', Rule::in(Locales::supported())]];
     }
 }

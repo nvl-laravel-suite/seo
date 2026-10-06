@@ -16,9 +16,10 @@ use Nvl\Seo\Models\SeoProfileTranslation;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoImageContext;
 use Nvl\Seo\Support\SeoModelIdentifier;
-use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
-use Nvl\Tenancy\Services\TenantBoundary;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
+use Nvl\Support\Contracts\LocaleCatalog;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Translatable\Services\ContentLocale;
 
 /**
@@ -34,6 +35,7 @@ final readonly class SeoMetadataResolver
         private Repository $configuration,
         private TenantBoundary $tenancy,
         private TenantResourceRegistry $tenantResources,
+        private LocaleCatalog $locales,
     ) {}
 
     public function resolve(
@@ -97,7 +99,7 @@ final readonly class SeoMetadataResolver
             }
         }
 
-        $fallbackLocale = config('translatable.fallback_locales.0');
+        $fallbackLocale = $this->locales->fallbacks()[0] ?? null;
         if (is_string($fallbackLocale) && isset($alternates[$fallbackLocale])) {
             $alternates['x-default'] = $alternates[$fallbackLocale];
         }

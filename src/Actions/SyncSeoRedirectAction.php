@@ -19,9 +19,9 @@ use Nvl\Seo\Support\DatabaseConstraintViolation;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoRedirectTarget;
 use Nvl\Seo\Support\SeoScope;
-use Nvl\Tenancy\Contracts\TenantContext;
-use Nvl\Tenancy\Services\TenantBoundary;
-use Nvl\Translatable\Services\LocaleRegistry;
+use Nvl\Support\Contracts\LocaleCatalog;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Tenancy\Contracts\TenantContext;
 use Spatie\LaravelData\Optional;
 
 /**
@@ -31,7 +31,7 @@ final readonly class SyncSeoRedirectAction
 {
     public function __construct(
         private SeoRedirectChain $chains,
-        private LocaleRegistry $locales,
+        private LocaleCatalog $locales,
         private SeoMutationValidator $validator,
     ) {}
 
@@ -150,16 +150,16 @@ final readonly class SyncSeoRedirectAction
     {
         $container = Container::getInstance();
         if ($container->make('config')->get('tenancy.enabled') !== true) {
-            DB::table(SeoTables::RedirectLocks)->insertOrIgnore(['name' => 'graph']);
-            DB::table(SeoTables::RedirectLocks)->where('name', 'graph')->lockForUpdate()->first();
+            DB::table(SeoTables::get(SeoTables::RedirectLocks))->insertOrIgnore(['name' => 'graph']);
+            DB::table(SeoTables::get(SeoTables::RedirectLocks))->where('name', 'graph')->lockForUpdate()->first();
 
             return;
         }
 
         $tenantId = $container->make(TenantContext::class)->requireTenant()->value;
         $name = substr(hash('sha256', $container->make(TenantBoundary::class)->key('seo.redirects', 'graph')), 0, 32);
-        DB::table(SeoTables::RedirectLocks)->insertOrIgnore(['tenant_id' => $tenantId, 'name' => $name]);
-        DB::table(SeoTables::RedirectLocks)
+        DB::table(SeoTables::get(SeoTables::RedirectLocks))->insertOrIgnore(['tenant_id' => $tenantId, 'name' => $name]);
+        DB::table(SeoTables::get(SeoTables::RedirectLocks))
             ->where('tenant_id', $tenantId)
             ->where('name', $name)
             ->lockForUpdate()

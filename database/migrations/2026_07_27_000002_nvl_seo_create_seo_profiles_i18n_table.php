@@ -6,12 +6,19 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Nvl\Seo\Definitions\Tables\SeoTables;
+use Nvl\Support\Config\PackageStorage;
 
 return new class extends Migration
 {
+    /** Use the effective package connection for Laravel's migration transaction. */
+    public function getConnection(): ?string
+    {
+        return PackageStorage::connection('seo');
+    }
+
     public function up(): void
     {
-        Schema::create(SeoTables::I18n, function (Blueprint $table): void {
+        Schema::connection(PackageStorage::connection('seo'))->create(SeoTables::get(SeoTables::I18n), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('seo_profile_id');
             $table->string('scope', 100);
@@ -48,13 +55,13 @@ return new class extends Migration
 
             $table->foreign('seo_profile_id')
                 ->references('id')
-                ->on(SeoTables::Profiles)
+                ->on(SeoTables::get(SeoTables::Profiles))
                 ->cascadeOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists(SeoTables::I18n);
+        Schema::connection(PackageStorage::connection('seo'))->dropIfExists(SeoTables::get(SeoTables::I18n));
     }
 };

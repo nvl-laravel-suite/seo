@@ -7,7 +7,7 @@ namespace Nvl\Seo\Services;
 use Illuminate\Container\Container;
 use LogicException;
 use Nvl\Seo\Support\HttpUrl;
-use Nvl\Tenancy\ValueObjects\TenantSiteContext;
+use Nvl\Support\Tenancy\ValueObjects\TenantSiteContext;
 
 /**
  * Enforces crawler protocol origin and path ownership for sitemap URLs.

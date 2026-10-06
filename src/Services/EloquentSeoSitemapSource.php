@@ -9,6 +9,7 @@ use Nvl\Seo\Contracts\TenantSafeSitemapSource;
 use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Support\SeoRouteConfiguration;
+use Nvl\Support\Contracts\LocaleCatalog;
 
 /**
  * Streams all indexable profile translations from bounded Eloquent chunks.
@@ -17,6 +18,7 @@ final readonly class EloquentSeoSitemapSource implements TenantSafeSitemapSource
 {
     public function __construct(
         private AbsoluteUrl $urls,
+        private LocaleCatalog $locales,
         private ?SitemapLocationPolicy $locations = null,
         private ?SitemapRegistry $sources = null,
     ) {}
@@ -86,7 +88,7 @@ final readonly class EloquentSeoSitemapSource implements TenantSafeSitemapSource
             }
         }
 
-        $fallbackLocale = config('translatable.fallback_locales.0');
+        $fallbackLocale = $this->locales->fallbacks()[0] ?? null;
         if (is_string($fallbackLocale) && isset($alternates[$fallbackLocale])) {
             $alternates['x-default'] = $alternates[$fallbackLocale];
         }

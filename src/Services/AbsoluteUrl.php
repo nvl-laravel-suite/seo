@@ -7,7 +7,7 @@ namespace Nvl\Seo\Services;
 use Illuminate\Container\Container;
 use Nvl\Seo\Support\HttpUrl;
 use Nvl\Seo\Support\SeoConfiguration;
-use Nvl\Tenancy\ValueObjects\TenantSiteContext;
+use Nvl\Support\Tenancy\ValueObjects\TenantSiteContext;
 
 /**
  * Resolves configured paths to absolute canonical URLs.

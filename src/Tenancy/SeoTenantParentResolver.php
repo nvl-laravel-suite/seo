@@ -6,7 +6,7 @@ namespace Nvl\Seo\Tenancy;
 
 use Illuminate\Database\Eloquent\Model;
 use Nvl\Seo\Services\SeoOwnerRegistry;
-use Nvl\Tenancy\Contracts\TenantParentResolver;
+use Nvl\Support\Tenancy\Contracts\TenantParentResolver;
 
 /** Exposes registered SEO owner morph types to the tenant boundary. */
 final readonly class SeoTenantParentResolver implements TenantParentResolver

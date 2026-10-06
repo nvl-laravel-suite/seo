@@ -7,15 +7,15 @@ namespace Nvl\Seo\Tenancy;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
 use Nvl\Seo\Models\SeoRedirect;
-use Nvl\Tenancy\Enums\TenantResourceKind;
+use Nvl\Support\Tenancy\Enums\TenantResourceKind;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
+use Nvl\Support\Tenancy\ValueObjects\TenantResourceDefinition;
 use Nvl\Tenancy\Services\TenantAdoptionRegistry;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
-use Nvl\Tenancy\ValueObjects\TenantResourceDefinition;
 
 /** Registers the SEO ownership graph and package adopter. */
 final class SeoResourceRegistrar
 {
-    public function register(TenantResourceRegistry $resources, TenantAdoptionRegistry $adoption): void
+    public function register(TenantResourceRegistry $resources, ?TenantAdoptionRegistry $adoption = null): void
     {
         $resources->registerParentResolver('seo.profiles', SeoTenantParentResolver::class);
 
@@ -27,6 +27,6 @@ final class SeoResourceRegistrar
             $resources->register($definition);
         }
 
-        $adoption->register('seo', SeoAdoptionAdapter::class);
+        $adoption?->register('seo', SeoAdoptionAdapter::class);
     }
 }

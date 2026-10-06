@@ -780,3 +780,38 @@ See [UPGRADING.md](UPGRADING.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](
 ## License
 
 Released under the [MIT License](LICENSE).
+
+## Shared owner identity
+
+Declare a model once in `config/nvl-core.php`:
+
+```php
+'owners' => ['article' => Article::class],
+```
+
+Enable this package capability separately in `config/seo.php`:
+
+```php
+'owners' => ['article'],
+```
+
+An alias-to-alias map may retain a distinct API key, for example owners = ['articles.detail' => 'article']. Preserve SEO mutation authorization and scopes. Core registration does not add the model to this package's allowlist.
+
+Existing package class/resolver/handler registrations remain accepted for one major cycle. Run `php artisan nvl:doctor --strict --format=json` to inspect compatibility diagnostics. See [UPGRADING.md](UPGRADING.md) before changing a persisted morph type.
+
+## Shared consumer diagnostics
+
+Run `php artisan nvl:doctor --strict --format=json` to combine the read-only checks from loaded NVL package providers. Errors fail the gate, and strict mode also fails warnings. This package's existing Doctor command remains available and uses the same package-owned inspection service.
+
+## Next major: isolated schema identities
+
+Use `seo.tables.<logical-key>` for every table and `seo.connection` for its database connection. Null connection inherits `nvl-core.connection`, then Laravel's default. Tables are resolved at runtime by the package table definition helper.
+
+| Logical key | New default | Previous name |
+| --- | --- | --- |
+| `profiles` | `nvl_seo_profiles` | `seo_profiles` |
+| `i18n` | `nvl_seo_i18n` | `seo_profiles_i18n` |
+| `redirects` | `nvl_seo_redirects` | `seo_redirects` |
+| `redirect_locks` | `nvl_seo_redirect_locks` | `seo_redirect_locks` |
+
+Migration filenames contain `nvl_seo_`. Existing installations must complete the upgrade in `UPGRADING.md` before running new migrations. A pending creator rejects an existing target before any migration in the batch runs; legacy storage with old history needs an ownership decision.

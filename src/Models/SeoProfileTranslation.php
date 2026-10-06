@@ -12,6 +12,7 @@ use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\TwitterCard;
 use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Seo\Support\SeoPath;
+use Nvl\Support\Config\PackageStorage;
 
 /**
  * Locale-specific SEO metadata for one profile.
@@ -109,5 +110,17 @@ final class SeoProfileTranslation extends Model
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
+    }
+
+    /** Resolve the configured package storage table. */
+    public function getTable(): string
+    {
+        return SeoTables::get(SeoTables::I18n);
+    }
+
+    /** Resolve the package connection through shared infrastructure defaults. */
+    public function getConnectionName(): ?string
+    {
+        return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('seo') ?? parent::getConnectionName());
     }
 }

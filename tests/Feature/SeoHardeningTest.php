@@ -7,7 +7,6 @@ use Illuminate\Cache\ApcWrapper;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Console\Command;
-use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
@@ -620,7 +619,7 @@ it('rolls package migrations back cleanly and fails loudly on an occupied table'
     });
 
     expect(fn () => $this->artisan('migrate', ['--force' => true])->run())
-        ->toThrow(QueryException::class, 'already exists');
+        ->toThrow(LogicException::class, 'cannot create existing table');
 
     Schema::drop(SeoTables::Profiles);
 

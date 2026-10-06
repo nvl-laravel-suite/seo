@@ -9,7 +9,7 @@ use Nvl\Seo\Data\ResolvedRedirectData;
 use Nvl\Seo\Models\SeoRedirect;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoScope;
-use Nvl\Translatable\Services\LocaleRegistry;
+use Nvl\Support\Contracts\LocaleCatalog;
 
 /**
  * Resolves active redirects and records bounded hit metadata.
@@ -20,7 +20,7 @@ final class SeoRedirectResolver
      * Create the redirect resolver.
      */
     public function __construct(
-        private readonly LocaleRegistry $locales,
+        private readonly LocaleCatalog $locales,
         private readonly SeoRedirectLookup $redirects,
     ) {}
 

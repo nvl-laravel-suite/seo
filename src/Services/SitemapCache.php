@@ -12,7 +12,7 @@ use Nvl\Seo\Data\SitemapCacheIdentity;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoScope;
-use Nvl\Tenancy\ValueObjects\TenantSiteContext;
+use Nvl\Support\Tenancy\ValueObjects\TenantSiteContext;
 use Throwable;
 
 /**

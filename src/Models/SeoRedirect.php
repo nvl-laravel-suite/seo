@@ -13,9 +13,10 @@ use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoScope;
-use Nvl\Tenancy\Contracts\TenantContext;
-use Nvl\Tenancy\Enums\TenantContextMode;
-use Nvl\Tenancy\Exceptions\TenantContextMissing;
+use Nvl\Support\Config\PackageStorage;
+use Nvl\Support\Tenancy\Contracts\TenantContext;
+use Nvl\Support\Tenancy\Enums\TenantContextMode;
+use Nvl\Support\Tenancy\Exceptions\TenantContextMissing;
 use Nvl\Translatable\Support\LocaleCode;
 
 /**
@@ -139,5 +140,17 @@ final class SeoRedirect extends Model
             $locale,
             SeoPath::normalize($source) ?? '/',
         ]));
+    }
+
+    /** Resolve the configured package storage table. */
+    public function getTable(): string
+    {
+        return SeoTables::get(SeoTables::Redirects);
+    }
+
+    /** Resolve the package connection through shared infrastructure defaults. */
+    public function getConnectionName(): ?string
+    {
+        return PackageStorage::connectionName($this->connection ?? PackageStorage::connection('seo') ?? parent::getConnectionName());
     }
 }

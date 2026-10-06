@@ -9,7 +9,7 @@ use Nvl\Seo\Support\HttpUrl;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoRedirectTarget;
-use Nvl\Translatable\Services\LocaleRegistry;
+use Nvl\Support\Contracts\LocaleCatalog;
 
 /**
  * Detects loops and flattens relative redirect chains before persistence.
@@ -20,7 +20,7 @@ final class SeoRedirectChain
      * Create the redirect-chain resolver.
      */
     public function __construct(
-        private readonly LocaleRegistry $locales,
+        private readonly LocaleCatalog $locales,
         private readonly SeoRedirectLookup $redirects,
         private readonly AbsoluteUrl $urls,
     ) {}

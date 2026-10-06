@@ -27,17 +27,20 @@ use Nvl\Seo\Services\ConfiguredSeoAuthorization;
 use Nvl\Seo\Services\DirectSeoImageResolver;
 use Nvl\Seo\Services\EloquentSeoSitemapSource;
 use Nvl\Seo\Services\FilesystemSitemapArtifactStore;
+use Nvl\Seo\Services\SeoDoctor;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Seo\Services\StructuredDataRegistry;
 use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Seo\Tenancy\SeoResourceRegistrar;
+use Nvl\Support\Doctor\PackageDoctorContributor;
+use Nvl\Support\Providers\SupportServiceProvider;
+use Nvl\Support\Providers\TenantServiceProvider;
+use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Tenancy\Http\Middleware\ResolvePublicTenant;
-use Nvl\Tenancy\Providers\TenancyServiceProvider;
 use Nvl\Tenancy\Services\TenantAdoptionRegistry;
-use Nvl\Tenancy\Services\TenantExtensionGuard;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
 /**
@@ -52,12 +55,17 @@ final class SeoServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->register(TenancyServiceProvider::class);
+        $this->app->register(SupportServiceProvider::class);
+        PackageDoctorContributor::register($this->app, 'nvl/seo', fn (): array => $this->app->make(SeoDoctor::class)->inspect());
+
+        $this->app->register(TenantServiceProvider::class);
         $this->mergePackageConfiguration(__DIR__.'/../../config/seo.php', 'seo');
-        (new SeoResourceRegistrar)->register(
-            $this->app->make(TenantResourceRegistry::class),
-            $this->app->make(TenantAdoptionRegistry::class),
-        );
+        (new SeoResourceRegistrar)->register($this->app->make(TenantResourceRegistry::class));
+        $this->app->booted(function (): void {
+            if ($this->app->bound(TenantAdoptionRegistry::class)) {
+                (new SeoResourceRegistrar)->register($this->app->make(TenantResourceRegistry::class), $this->app->make(TenantAdoptionRegistry::class));
+            }
+        });
 
         $imageResolver = config('seo.image_resolver', DirectSeoImageResolver::class);
 

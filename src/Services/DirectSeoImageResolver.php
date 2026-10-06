@@ -7,7 +7,7 @@ namespace Nvl\Seo\Services;
 use Nvl\Seo\Contracts\TenantSafeSeoImageResolver;
 use Nvl\Seo\Data\SeoImage;
 use Nvl\Seo\Support\SeoImageContext;
-use Nvl\Tenancy\Exceptions\TenantBoundaryViolation;
+use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 
 /**
  * Resolves translation URLs and falls back to the configured site image.

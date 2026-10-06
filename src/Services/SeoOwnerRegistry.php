@@ -10,21 +10,16 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Support\SeoModelIdentifier;
-use Nvl\Tenancy\Services\TenantBoundary;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
+use Nvl\Support\OwnerRegistry;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Resolves explicitly registered owner aliases for HTTP and import boundaries.
  */
 final class SeoOwnerRegistry
 {
-    public function __construct(
-        private readonly Repository $configuration,
-        private readonly TenantBoundary $tenancy,
-        private readonly TenantResourceRegistry $resources,
-    ) {}
-
-    /** @var array<string, class-string<Model>> */
+    /** @var array<string, string> */
     private array $registered = [];
 
     /**
@@ -37,14 +32,22 @@ final class SeoOwnerRegistry
      */
     private ?array $morphAliases = null;
 
+    /** Create the capability registry against the shared identity and tenancy boundaries. */
+    public function __construct(
+        private readonly Repository $configuration,
+        private readonly TenantBoundary $tenancy,
+        private readonly TenantResourceRegistry $resources,
+        private readonly OwnerRegistry $identities,
+    ) {}
+
     /** Register one code-owned owner declaration without mutating cached configuration. */
     public function register(string $alias, string $model): void
     {
-        if (isset($this->registered[$alias]) && $this->registered[$alias] !== $model) {
+        $modelClass = $this->identities->reference($model, "seo.owners.{$alias}", $alias);
+        $existingReference = $this->registered[$alias] ?? null;
+        if ($existingReference !== null
+            && $this->identities->reference($existingReference, "seo.owners.{$alias}", $alias) !== $modelClass) {
             throw new InvalidArgumentException("SEO owner alias [{$alias}] is already registered.");
-        }
-        if (! is_a($model, Model::class, true)) {
-            throw new InvalidArgumentException('SEO owner registrations require an Eloquent model.');
         }
         $this->registered[$alias] = $model;
         $this->owners = null;
@@ -159,16 +162,18 @@ final class SeoOwnerRegistry
         $morphAliases = [];
 
         foreach ($configured as $alias => $modelClass) {
+            if (is_int($alias) && is_string($modelClass)) {
+                $alias = $modelClass;
+            }
             if (! is_string($alias)
                 || preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]*$/', $alias) !== 1
-                || ! is_string($modelClass)
-                || ! is_a($modelClass, Model::class, true)) {
+                || ! is_string($modelClass)) {
                 throw new InvalidArgumentException(
                     'Every seo.owners entry must use a safe alias and an Eloquent model class.',
                 );
             }
 
-            /** @var class-string<Model> $modelClass */
+            $modelClass = $this->identities->reference($modelClass, "seo.owners.{$alias}", $alias);
             $owners[$alias] = $modelClass;
             $morphType = (new $modelClass)->getMorphClass();
 

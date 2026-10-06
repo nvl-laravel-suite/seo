@@ -7,7 +7,7 @@ namespace Nvl\Seo\Support;
 use Illuminate\Container\Container;
 use LogicException;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
-use Nvl\Tenancy\ValueObjects\TenantSiteContext;
+use Nvl\Support\Tenancy\ValueObjects\TenantSiteContext;
 
 /**
  * Normalizes a stable site/storefront SEO identity.

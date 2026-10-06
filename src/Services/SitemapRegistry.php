@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Contracts\TenantSafeSitemapSource;
-use Nvl\Tenancy\Services\TenantExtensionGuard;
-use Nvl\Tenancy\Services\TenantResourceRegistry;
+use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
+use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Collects sitemap sources from the package and host application.

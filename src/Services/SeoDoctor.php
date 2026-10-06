@@ -68,7 +68,7 @@ final readonly class SeoDoctor
     private function schemaChecks(): array
     {
         $tables = [
-            SeoTables::Profiles => [
+            SeoTables::get(SeoTables::Profiles) => [
                 'columns' => [
                     'id', 'scope', 'seoable_type', 'seoable_id', 'revision',
                     'status', 'archived_at', 'is_indexable', 'is_followable',
@@ -83,7 +83,7 @@ final readonly class SeoDoctor
                     'seo_profiles_sitemap_scan_index' => false,
                 ],
             ],
-            SeoTables::I18n => [
+            SeoTables::get(SeoTables::I18n) => [
                 'columns' => [
                     'id', 'seo_profile_id', 'scope', 'locale', 'path',
                     'path_hash', 'title', 'description', 'canonical_url',
@@ -97,7 +97,7 @@ final readonly class SeoDoctor
                     'seo_profiles_i18n_route_unique' => true,
                 ],
             ],
-            SeoTables::Redirects => [
+            SeoTables::get(SeoTables::Redirects) => [
                 'columns' => [
                     'id', 'scope', 'locale', 'source_path', 'source_hash',
                     'target', 'status_code', 'revision', 'is_active',
@@ -108,30 +108,30 @@ final readonly class SeoDoctor
                     'seo_redirects_source_hash_unique' => true,
                 ],
             ],
-            SeoTables::RedirectLocks => [
+            SeoTables::get(SeoTables::RedirectLocks) => [
                 'columns' => ['name'],
                 'indexes' => [],
             ],
         ];
         if (config('tenancy.enabled') === true) {
-            $tables[SeoTables::Profiles]['columns'][] = 'tenant_id';
-            $tables[SeoTables::Profiles]['indexes'] = [
+            $tables[SeoTables::get(SeoTables::Profiles)]['columns'][] = 'tenant_id';
+            $tables[SeoTables::get(SeoTables::Profiles)]['indexes'] = [
                 'seo_profiles_tenant_scope_owner_unique' => true,
                 'seo_profiles_owner_index' => false,
                 'seo_profiles_tenant_sitemap_scan_idx' => false,
             ];
-            $tables[SeoTables::I18n]['columns'][] = 'tenant_id';
-            $tables[SeoTables::I18n]['indexes'] = [
+            $tables[SeoTables::get(SeoTables::I18n)]['columns'][] = 'tenant_id';
+            $tables[SeoTables::get(SeoTables::I18n)]['indexes'] = [
                 'seo_profiles_i18n_owner_locale_unique' => true,
                 'seo_i18n_tenant_route_unique' => true,
                 'seo_i18n_tenant_profile_idx' => false,
             ];
-            $tables[SeoTables::Redirects]['columns'][] = 'tenant_id';
-            $tables[SeoTables::Redirects]['indexes'] = [
+            $tables[SeoTables::get(SeoTables::Redirects)]['columns'][] = 'tenant_id';
+            $tables[SeoTables::get(SeoTables::Redirects)]['indexes'] = [
                 'seo_redirects_tenant_source_hash_unique' => true,
                 'seo_redirects_tenant_lookup_idx' => false,
             ];
-            $tables[SeoTables::RedirectLocks]['columns'][] = 'tenant_id';
+            $tables[SeoTables::get(SeoTables::RedirectLocks)]['columns'][] = 'tenant_id';
         }
         $checks = [];
 
@@ -186,7 +186,7 @@ final readonly class SeoDoctor
             );
             $indexes = collect(Schema::getIndexes($table));
 
-            foreach ($requirements['indexes'] as $name => $unique) {
+            foreach ($requirements['indexes'] ?? [] as $name => $unique) {
                 $index = null;
 
                 foreach ($indexes as $candidate) {
@@ -207,7 +207,7 @@ final readonly class SeoDoctor
                 );
             }
 
-            if ($table === SeoTables::Redirects) {
+            if ($table === SeoTables::get(SeoTables::Redirects)) {
                 $targetIndexExists = $indexes->contains(
                     static fn (array $index): bool => ($index['name'] ?? null)
                         === 'seo_redirects_target_index',
@@ -252,7 +252,7 @@ final readonly class SeoDoctor
                 }
             }
 
-            if ($table === SeoTables::Profiles
+            if ($table === SeoTables::get(SeoTables::Profiles)
                 && Schema::hasColumn($table, 'revision')
                 && Schema::hasColumn($table, 'status')) {
                 $invalidProfilesExist = DB::table($table)
@@ -342,8 +342,8 @@ final readonly class SeoDoctor
                 $registeredMorphTypes[] = (new $modelClass)->getMorphClass();
             }
 
-            $storedMorphTypes = Schema::hasTable(SeoTables::Profiles)
-                ? DB::table(SeoTables::Profiles)
+            $storedMorphTypes = Schema::hasTable(SeoTables::get(SeoTables::Profiles))
+                ? DB::table(SeoTables::get(SeoTables::Profiles))
                     ->distinct()
                     ->orderBy('seoable_type')
                     ->pluck('seoable_type')
