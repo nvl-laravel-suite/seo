@@ -8,6 +8,8 @@ use Nvl\Seo\Support\SeoAuthorizationContext;
 
 /**
  * Consumer-owned authorization boundary for optional management operations.
+ *
+ * @api
  */
 interface SeoAuthorization
 {

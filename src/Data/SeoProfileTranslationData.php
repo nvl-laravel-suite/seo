@@ -12,6 +12,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Privileged management representation of one localized SEO profile row.
+ *
+ * @api
  */
 #[TypeScript]
 final class SeoProfileTranslationData extends Data
@@ -44,6 +46,8 @@ final class SeoProfileTranslationData extends Data
 
     /**
      * Create the management representation from one translation model.
+     *
+     * @internal
      */
     public static function fromModel(SeoProfileTranslation $translation): self
     {

@@ -8,6 +8,8 @@ use Nvl\Seo\Data\SitemapEntry;
 
 /**
  * Streams canonical URLs owned by one application capability.
+ *
+ * @api
  */
 interface SitemapSource
 {

@@ -10,6 +10,8 @@ use Nvl\Seo\Support\SeoScope;
 
 /**
  * Returns bounded aggregate status for management dashboards and imports.
+ *
+ * @api
  */
 final class SeoProfileStatusAction
 {

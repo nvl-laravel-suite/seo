@@ -9,6 +9,8 @@ use Nvl\Seo\Support\SeoImageContext;
 
 /**
  * Resolves social image URLs from direct URLs or application media references.
+ *
+ * @api
  */
 interface SeoImageResolver
 {

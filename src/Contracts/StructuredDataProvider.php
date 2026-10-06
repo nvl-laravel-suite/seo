@@ -10,6 +10,8 @@ use Nvl\Seo\Data\StructuredDataNodeData;
 
 /**
  * Builds schema.org nodes for one registered Eloquent resource family.
+ *
+ * @api
  */
 interface StructuredDataProvider
 {

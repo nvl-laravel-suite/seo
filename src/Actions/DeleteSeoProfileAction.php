@@ -12,6 +12,8 @@ use Nvl\Seo\Services\SitemapCache;
 
 /**
  * Deletes one SEO profile and its translations atomically.
+ *
+ * @api
  */
 final readonly class DeleteSeoProfileAction
 {

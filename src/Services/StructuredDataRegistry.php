@@ -12,6 +12,8 @@ use Nvl\Seo\Data\StructuredDataNodeData;
 
 /**
  * Registers deterministic resource-to-JSON-LD provider extensions.
+ *
+ * @api
  */
 final class StructuredDataRegistry
 {

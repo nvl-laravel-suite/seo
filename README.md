@@ -134,12 +134,15 @@ final class Article extends Model
 ```
 
 ```php
-$article->seoProfiles();             // all scopes
-$article->seoProfile();              // configured default
-$article->seoProfile('publication'); // explicit scope
+use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
+
+$profile = app(GetOwnerSeoProfileAction::class)->execute($article, scope: 'publication');
 ```
 
-The trait only reads relations; writes always go through Actions.
+`GetOwnerSeoProfileAction` supplies the authorized `SeoProfileData` projection.
+Use `ListOwnerSeoProfilesAction` for owner lists. The trait's `seoProfiles()` and
+`seoProfile()` methods are internal storage/query helpers; consumers obtain
+projections through the Actions and never traverse these relations.
 
 Polymorphic owner rows cannot have a database-level cascading foreign key. The
 trait deliberately does not install a deleting observer, because owner deletion
@@ -778,6 +781,12 @@ composer quality
 The package gate runs Pint, PHPStan at maximum strictness, and isolated Testbench/Pest tests. Maintainer CI adds dependency analysis, Composer audit, integration tests, and Laravel 13 gates.
 
 See [UPGRADING.md](UPGRADING.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [CHANGELOG.md](CHANGELOG.md).
+
+## Supported PHP usage
+
+The source `@api` declarations identify supported workflows, extension contracts, and value types. Public members marked `@internal` and untagged implementation types remain package-owned. Concrete Actions retain their existing constructors, qualifiers, and `execute()` signatures.
+
+A package model returned or accepted by a public workflow is an identity/result handle. Use its declared type and `getKey()`, `getKeyName()`, `getMorphClass()`, `getRouteKey()`, `getRouteKeyName()`, `is()`, `isNot()`, and `relationLoaded()`. Read only explicitly declared in-memory `@nvl-consumer-read` fields; ordinary model PHPDocs and fillable attributes do not grant consumer reads. Obtain display projections through public reads. Persistence, additional model queries, relation access/loading, and generic model serialization are outside this contract. Host-model queries remain available, while traversal or aggregates of package capability relations require the package public reader or authorized adapter.
 
 ## License
 

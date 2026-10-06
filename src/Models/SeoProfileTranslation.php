@@ -40,6 +40,8 @@ use Nvl\Support\Config\PackageStorage;
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property-read SeoProfile $profile
+ *
+ * @api
  */
 final class SeoProfileTranslation extends Model
 {

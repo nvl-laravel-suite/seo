@@ -16,6 +16,8 @@ use Nvl\Seo\Support\SeoScope;
 
 /**
  * Returns the optimistic revision identity for one owner's scoped SEO profile.
+ *
+ * @api
  */
 final readonly class GetOwnerSeoRevisionAction
 {

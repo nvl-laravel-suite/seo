@@ -13,6 +13,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Allowlisted profile management query.
+ *
+ * @api
  */
 #[MapInputName(CamelCaseMapper::class)]
 #[TypeScript]

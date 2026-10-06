@@ -16,6 +16,8 @@ use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Resolves explicitly registered owner aliases for HTTP and import boundaries.
+ *
+ * @api
  */
 final class SeoOwnerRegistry
 {

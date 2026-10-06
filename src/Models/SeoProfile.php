@@ -50,6 +50,8 @@ use Nvl\Translatable\Translatable;
  * @property-read Collection<int, SeoProfileTranslation> $translations
  *
  * @method static Builder<static> forOwner(Model $owner, ?string $scope = null)
+ *
+ * @api
  */
 final class SeoProfile extends Model implements TranslatableModel
 {

@@ -12,6 +12,8 @@ use Nvl\Seo\Support\StructuredDataLimits;
 
 /**
  * Builds safe schema.org JSON-LD object shapes without presentation markup.
+ *
+ * @api
  */
 final class StructuredDataBuilder
 {

@@ -26,6 +26,8 @@ use Spatie\LaravelData\Optional;
 
 /**
  * Creates or updates a redirect with loop detection and chain flattening.
+ *
+ * @api
  */
 final readonly class SyncSeoRedirectAction
 {

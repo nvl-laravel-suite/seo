@@ -9,6 +9,8 @@ use Nvl\Seo\Support\HttpUrl;
 
 /**
  * Resolved social-preview image independent of its storage backend.
+ *
+ * @api
  */
 final readonly class SeoImage
 {

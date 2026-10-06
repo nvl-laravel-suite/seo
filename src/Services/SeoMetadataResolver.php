@@ -24,6 +24,8 @@ use Nvl\Translatable\Services\ContentLocale;
 
 /**
  * Resolves persisted SEO, deterministic locale fallbacks, and site defaults.
+ *
+ * @api
  */
 final readonly class SeoMetadataResolver
 {

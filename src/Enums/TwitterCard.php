@@ -8,6 +8,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Supported X/Twitter card presentation modes.
+ *
+ * @api
  */
 #[TypeScript]
 enum TwitterCard: string

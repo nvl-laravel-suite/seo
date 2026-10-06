@@ -9,6 +9,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Runtime redirect decision after chain flattening and expiry checks.
+ *
+ * @api
  */
 #[TypeScript]
 final class ResolvedRedirectData extends Data

@@ -9,6 +9,8 @@ use InvalidArgumentException;
 
 /**
  * Normalizes and fingerprints route paths consistently across writes and reads.
+ *
+ * @api
  */
 final class SeoPath
 {

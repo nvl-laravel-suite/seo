@@ -13,6 +13,8 @@ use Nvl\Support\Contracts\LocaleCatalog;
 
 /**
  * Detects loops and flattens relative redirect chains before persistence.
+ *
+ * @api
  */
 final class SeoRedirectChain
 {

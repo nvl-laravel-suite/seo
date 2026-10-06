@@ -15,6 +15,8 @@ use Nvl\Translatable\Enums\TranslationSyncMode;
  *
  * Delegation to SyncSeoProfileAction is deliberate so duplicate writes cannot bypass
  * path conflict, translation, revision, event, or sitemap invalidation invariants.
+ *
+ * @api
  */
 final readonly class DuplicateSeoProfileAction
 {

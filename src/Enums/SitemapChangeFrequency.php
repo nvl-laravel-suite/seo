@@ -8,6 +8,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Standard sitemap change-frequency hints.
+ *
+ * @api
  */
 #[TypeScript]
 enum SitemapChangeFrequency: string

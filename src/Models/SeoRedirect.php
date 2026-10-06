@@ -36,6 +36,8 @@ use Nvl\Translatable\Support\LocaleCode;
  * @property Carbon|null $last_hit_at
  * @property int $revision
  * @property array<string, mixed>|null $metadata
+ *
+ * @api
  */
 final class SeoRedirect extends Model
 {

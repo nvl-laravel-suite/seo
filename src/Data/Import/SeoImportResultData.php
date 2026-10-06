@@ -9,6 +9,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Reports one completed, bounded SEO import page.
+ *
+ * @api
  */
 #[TypeScript]
 final class SeoImportResultData extends Data

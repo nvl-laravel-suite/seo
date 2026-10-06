@@ -15,6 +15,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Privileged management representation of one SEO profile.
+ *
+ * @api
  */
 #[MapInputName(CamelCaseMapper::class)]
 #[MapOutputName(CamelCaseMapper::class)]
@@ -53,6 +55,8 @@ final class SeoProfileData extends Data
 
     /**
      * Create the complete management representation for one registered owner alias.
+     *
+     * @internal
      */
     public static function fromModel(SeoProfile $profile, string $ownerAlias): self
     {

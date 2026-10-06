@@ -11,6 +11,8 @@ use Nvl\Seo\Support\HttpUrl;
 
 /**
  * One canonical sitemap URL and its optional localized alternates.
+ *
+ * @api
  */
 final readonly class SitemapEntry
 {

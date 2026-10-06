@@ -17,6 +17,8 @@ use Nvl\Seo\Support\SeoScope;
 
 /**
  * Lists profiles through a fixed, allowlisted query surface.
+ *
+ * @api
  */
 final class ListSeoProfilesAction
 {

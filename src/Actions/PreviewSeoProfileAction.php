@@ -10,6 +10,8 @@ use Nvl\Seo\Services\SeoMetadataResolver;
 
 /**
  * Resolves the exact runtime metadata shown to a crawler or social client.
+ *
+ * @api
  */
 final readonly class PreviewSeoProfileAction
 {

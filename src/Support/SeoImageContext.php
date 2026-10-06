@@ -9,6 +9,8 @@ use Nvl\Seo\Models\SeoProfileTranslation;
 
 /**
  * Supplies image resolvers with fallback-aware values and their owning models.
+ *
+ * @api
  */
 final readonly class SeoImageContext
 {

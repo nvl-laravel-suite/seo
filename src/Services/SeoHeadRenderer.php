@@ -10,6 +10,8 @@ use Nvl\Seo\Data\ResolvedSeoData;
 
 /**
  * Renders escaped, deterministic head markup from resolved metadata.
+ *
+ * @api
  */
 final class SeoHeadRenderer
 {

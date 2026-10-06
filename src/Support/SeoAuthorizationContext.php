@@ -10,6 +10,8 @@ use Nvl\Seo\Models\SeoProfile;
 
 /**
  * Carries complete source and target context to consumer-owned SEO authorization.
+ *
+ * @api
  */
 final readonly class SeoAuthorizationContext
 {

@@ -13,6 +13,8 @@ use Nvl\Support\Contracts\LocaleCatalog;
 
 /**
  * Resolves active redirects and records bounded hit metadata.
+ *
+ * @api
  */
 final class SeoRedirectResolver
 {

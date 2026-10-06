@@ -6,6 +6,8 @@ namespace Nvl\Seo\Enums;
 
 /**
  * Provides convenient schema.org types without restricting custom vocabulary terms.
+ *
+ * @api
  */
 enum StructuredDataType: string
 {

@@ -31,6 +31,8 @@ use Spatie\LaravelData\Optional;
  *
  * The owner is intentionally model-only because its concrete type is the
  * polymorphic identity and cannot be safely inferred from an untyped string.
+ *
+ * @api
  */
 final readonly class SyncSeoProfileAction
 {

@@ -10,6 +10,8 @@ use Nvl\Seo\Models\SeoRedirect;
 
 /**
  * Permanently removes soft-deleted redirects after a retention period.
+ *
+ * @internal
  */
 final class PruneSeoRedirectsAction
 {

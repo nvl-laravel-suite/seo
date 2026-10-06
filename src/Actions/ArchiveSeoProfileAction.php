@@ -12,6 +12,8 @@ use Nvl\Seo\Services\SitemapCache;
 
 /**
  * Archives or restores a profile without destroying historical metadata.
+ *
+ * @api
  */
 final readonly class ArchiveSeoProfileAction
 {

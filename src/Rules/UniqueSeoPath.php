@@ -13,6 +13,8 @@ use Nvl\Translatable\Support\LocaleCode;
 
 /**
  * Provides an early validation error for the database-enforced route invariant.
+ *
+ * @api
  */
 final readonly class UniqueSeoPath implements ValidationRule
 {

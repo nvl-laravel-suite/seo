@@ -17,6 +17,8 @@ use Nvl\Seo\Support\SeoScope;
 
 /**
  * Returns one complete authorized SEO profile from its owning model.
+ *
+ * @api
  */
 final readonly class GetOwnerSeoProfileAction
 {

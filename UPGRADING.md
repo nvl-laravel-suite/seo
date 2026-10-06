@@ -88,3 +88,13 @@ DDL transactions are driver dependent and per connection. Inspect dry-run warnin
 The default sitemap cache prefix is `nvl:seo:sitemap` instead of `nvl-seo:sitemap`. An explicitly configured `nvl-seo.sitemap.cache_key` remains host-selected. Old default entries expire naturally; NVL never copies or removes a generic host entry.
 
 Drain old mutation workers and maintenance processes, then wait for their outstanding lock leases to end before starting the new major across all nodes. Running old and new lock prefixes concurrently would create independent serialization domains. Restart workers after cutover; preserve host-selected stores and keys, and do not flush a shared cache to remove old NVL entries.
+
+## Tagged consumer PHP boundary
+
+Use source `@api` workflows, extension contracts, and value types for application integration. Direct use of untagged implementations or `@internal` members is unsupported. This classification keeps existing concrete Action signatures and runtime behavior; it does not authorize package model persistence, ad hoc queries, relation traversal, or generic model serialization. Returned models are identity/result handles with only the explicitly declared in-memory read fields described in the README.
+
+The implementation Actions `PruneSeoRedirectsAction` are explicitly internal. Run `nvl:seo:redirects:prune` for retention maintenance; use the supported redirect Actions for application changes.
+
+`HasSeo::seoProfiles()` are internal storage or lifecycle seams. Migrate direct traversal, eager/lazy loading, and aggregate queries to the package authorized read Actions or explicit C1 host scopes/adapters. Native host queries and opted-in Translatable behavior remain supported.
+
+`SeoProfileData::fromModel`, `SeoProfileTranslationData::fromModel`, and `HasSeo::seoProfile` are internal projectors/query helpers. Use `GetOwnerSeoProfileAction` or `ListOwnerSeoProfilesAction` for authorized owner projections instead of loading or projecting package relations.

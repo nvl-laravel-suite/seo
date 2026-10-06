@@ -11,6 +11,8 @@ use Nvl\Seo\Services\SeoOwnerRegistry;
 
 /**
  * Imports one bounded, rerunnable page through canonical profile Actions.
+ *
+ * @api
  */
 final readonly class ImportSeoProfilesAction
 {

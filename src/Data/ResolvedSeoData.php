@@ -11,6 +11,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Complete, frontend-neutral metadata resolved for one page locale.
+ *
+ * @api
  */
 #[TypeScript]
 final class ResolvedSeoData extends Data

@@ -19,6 +19,8 @@ use XMLWriter;
 
 /**
  * Produces bounded, cached XML sitemap artifacts from registered iterable sources.
+ *
+ * @api
  */
 final readonly class SitemapGenerator
 {

@@ -15,6 +15,8 @@ use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Collects sitemap sources from the package and host application.
+ *
+ * @api
  */
 final class SitemapRegistry
 {

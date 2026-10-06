@@ -6,7 +6,11 @@ namespace Nvl\Seo\Contracts;
 
 use Nvl\Seo\Support\SeoImageContext;
 
-/** Verifies an external image reference before any tenant-aware resolution work. */
+/**
+ * Verifies an external image reference before any tenant-aware resolution work.
+ *
+ * @api
+ */
 interface TenantSafeSeoImageResolver extends SeoImageResolver
 {
     public function assertTenantSafe(SeoImageContext $context): void;

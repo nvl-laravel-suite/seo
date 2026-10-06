@@ -8,6 +8,8 @@ use Nvl\Seo\Data\Import\SeoImportPageData;
 
 /**
  * Consumer-owned, cursor-paginated source for neutral profile adoption.
+ *
+ * @api
  */
 interface SeoImportSource
 {

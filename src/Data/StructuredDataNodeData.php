@@ -13,6 +13,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Describes one context-free schema.org node returned by a resource provider.
+ *
+ * @api
  */
 #[TypeScript]
 final class StructuredDataNodeData extends Data

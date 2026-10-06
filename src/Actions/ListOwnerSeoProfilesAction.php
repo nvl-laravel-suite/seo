@@ -19,6 +19,8 @@ use Nvl\Seo\Support\SeoScope;
 
 /**
  * Returns bounded authorized SEO profiles for an ordered owner collection.
+ *
+ * @api
  */
 final readonly class ListOwnerSeoProfilesAction
 {

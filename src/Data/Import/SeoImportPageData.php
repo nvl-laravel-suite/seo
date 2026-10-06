@@ -11,6 +11,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * One deterministic page from a consumer-owned SEO import source.
+ *
+ * @api
  */
 #[TypeScript]
 final class SeoImportPageData extends Data

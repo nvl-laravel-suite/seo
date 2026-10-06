@@ -12,6 +12,8 @@ use Nvl\Translatable\Support\LocaleCode;
 
 /**
  * Resolves one SEO profile by its unique site, locale, and normalized path.
+ *
+ * @api
  */
 final class SeoRouteResolver
 {

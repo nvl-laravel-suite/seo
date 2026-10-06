@@ -14,6 +14,10 @@ use Nvl\Seo\Support\SeoScope;
  * Adds scoped SEO profile access to an Eloquent owner.
  *
  * @mixin Model
+ *
+ * @api
+ *
+ * @nvl-consumer-relation seoProfiles
  */
 trait HasSeo
 {
@@ -21,6 +25,8 @@ trait HasSeo
      * Return every site-scoped SEO profile attached to this model.
      *
      * @return MorphMany<SeoProfile, $this>
+     *
+     * @internal
      */
     public function seoProfiles(): MorphMany
     {
@@ -37,6 +43,8 @@ trait HasSeo
 
     /**
      * Resolve the profile for one site scope.
+     *
+     * @internal
      */
     public function seoProfile(?string $scope = null): ?SeoProfile
     {

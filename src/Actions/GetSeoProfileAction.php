@@ -14,6 +14,8 @@ use Nvl\Seo\Support\SeoAuthorizationContext;
 
 /**
  * Loads one complete profile for management inspection.
+ *
+ * @api
  */
 final readonly class GetSeoProfileAction
 {

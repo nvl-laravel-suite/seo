@@ -10,6 +10,8 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Neutral owner alias plus validated profile mutation supplied by an importer.
+ *
+ * @api
  */
 #[TypeScript]
 final class SeoImportRecordData extends Data

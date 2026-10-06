@@ -6,6 +6,8 @@ namespace Nvl\Seo\Contracts;
 
 /**
  * Persists complete sitemap XML artifacts outside the general cache store.
+ *
+ * @api
  */
 interface SitemapArtifactStore
 {

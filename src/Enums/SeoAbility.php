@@ -6,6 +6,8 @@ namespace Nvl\Seo\Enums;
 
 /**
  * Stable management capabilities passed to consumer authorization.
+ *
+ * @api
  */
 enum SeoAbility: string
 {
