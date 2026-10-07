@@ -98,7 +98,7 @@ it('registers migrations, type sources, and centralized translation management',
         ->and(Schema::hasTable(SeoTables::I18n))->toBeTrue()
         ->and(app(TranslationResourceRegistry::class)->has('seo.profiles'))->toBeTrue()
         ->and(collect(app(TypeScriptSourceRegistry::class)->all())
-            ->contains(fn (string $path): bool => str_ends_with($path, '/packages/nvl/seo/src')))
+            ->contains(fn (string $path): bool => realpath($path) === realpath(dirname(__DIR__, 2).'/src')))
         ->toBeTrue()
         ->and(app(StructuredDataRegistry::class)->keys())
         ->toContain('test.configured-resource');
