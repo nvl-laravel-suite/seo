@@ -47,6 +47,7 @@ final class SeoRedirect extends Model
 
     /** @use HasFactory<SeoRedirectFactory> */
     use HasFactory;
+
     use HasUuids;
     use SoftDeletes;
 

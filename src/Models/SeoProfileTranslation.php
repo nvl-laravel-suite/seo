@@ -51,6 +51,7 @@ final class SeoProfileTranslation extends Model
 
     /** @use HasFactory<SeoProfileTranslationFactory> */
     use HasFactory;
+
     use HasUuids;
 
     public const string TENANT_RESOURCE = 'seo.translations';
