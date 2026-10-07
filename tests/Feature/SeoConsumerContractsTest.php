@@ -54,6 +54,7 @@ use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Seo\Support\StructuredDataLimits;
 use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
+use Nvl\Support\Http\PackageExceptionRenderer;
 use Nvl\Support\OwnerRegistry;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Tenancy\Services\TenantBoundary;
@@ -810,7 +811,7 @@ it('fails closed for invalid package bindings, routes, and authorization', funct
         ->toThrow(AuthorizationException::class);
 
     $exception = InvalidSeoMutationException::because('Consumer error');
-    expect($exception->render(Request::create('/consumer', 'GET')))->toBeFalse();
+    expect(app(PackageExceptionRenderer::class)->render($exception, Request::create('/consumer', 'GET')))->toBeNull();
 });
 
 it('returns stable failures for invalid owners, stale creates, and route conflicts', function (): void {
@@ -825,25 +826,25 @@ it('returns stable failures for invalid owners, stale creates, and route conflic
     ))->toThrow(StaleSeoProfileException::class);
 
     $request = Request::create('/consumer', 'GET', server: ['HTTP_ACCEPT' => 'application/json']);
-    $conflict = SeoPathConflictException::forRoute(
+    $conflict = app(PackageExceptionRenderer::class)->render(SeoPathConflictException::forRoute(
         'default',
         'en',
         '/claimed',
         'existing-profile',
-    )->render($request);
-    $concurrent = SeoPathConflictException::concurrent('catalog')->render($request);
+    ), $request);
+    $concurrent = app(PackageExceptionRenderer::class)->render(SeoPathConflictException::concurrent('catalog'), $request);
 
     expect($conflict->getStatusCode())->toBe(409)
-        ->and($conflict->getData(true)['error']['code'])->toBe('seo_path_conflict')
-        ->and($conflict->getData(true)['error']['context'])->toBe([
+        ->and($conflict->getData(true)['code'])->toBe('seo_path_conflict')
+        ->and($conflict->getData(true)['context'])->toBe([
             'scope' => 'default',
             'locale' => 'en',
             'path' => '/claimed',
             'profileId' => 'existing-profile',
         ])
         ->and($concurrent->getStatusCode())->toBe(409)
-        ->and($concurrent->getData(true)['error']['code'])->toBe('seo_path_conflict')
-        ->and($concurrent->getData(true)['error']['context'])->toBe([
+        ->and($concurrent->getData(true)['code'])->toBe('seo_path_conflict')
+        ->and($concurrent->getData(true)['context'])->toBe([
             'scope' => 'catalog',
         ]);
 });
