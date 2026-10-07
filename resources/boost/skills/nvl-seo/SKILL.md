@@ -56,7 +56,7 @@ them for soft-deleted owners. Do not add a hidden model observer.
 
 ## Render metadata
 
-Resolve with `SeoMetadataResolver`; render with `SeoHeadRenderer`, `SeoManager`, or `@seo($owner)`.
+Resolve with `SeoMetadataResolver`; render with `SeoHeadRenderer`, `SeoManager`, or `@nvlSeo($owner)`.
 
 - Escape every attribute and title.
 - Encode JSON-LD with all HTML-sensitive JSON flags.
