@@ -56,8 +56,8 @@ use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
 use Nvl\Support\Http\PackageExceptionRenderer;
 use Nvl\Support\OwnerRegistry;
+use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
-use Nvl\Tenancy\Services\TenantBoundary;
 use Spatie\LaravelData\DataCollection;
 
 function seoConsumerOwner(string $name = 'Consumer owner'): TestSeoOwner
