@@ -40,7 +40,7 @@ See the [installation and publishing guide](https://github.com/nvl-laravel-suite
 | Service provider | `Nvl\Seo\Providers\SeoServiceProvider` |
 | Configuration | `config/nvl-seo.php` |
 
-A standalone localized SEO system for Laravel 13: polymorphic profiles,
+A standalone localized SEO system for Laravel 12–13: polymorphic profiles,
 deterministic translations, canonical and hreflang URLs, social cards, safe
 JSON-LD, media integration, robots policies, and bounded cached XML sitemaps.
 
@@ -87,7 +87,7 @@ artifacts, drain jobs, and restart workers before admitting traffic.
 ## Requirements and installation
 
 - PHP 8.4+
-- Laravel 13
+- Laravel 12–13
 - `nvl/translatable` 2.x
 - `nvl/core` 2.x
 - `ext-json`, `ext-libxml`, `ext-xmlwriter`, and `ext-mbstring`
@@ -802,7 +802,7 @@ composer install
 composer quality
 ```
 
-The package gate runs Pint, PHPStan at maximum strictness, and isolated Testbench/Pest tests. Maintainer CI adds dependency analysis, Composer audit, integration tests, and Laravel 13 gates.
+The package gate runs Pint, PHPStan at maximum strictness, and isolated Testbench/Pest tests. Maintainer CI adds dependency analysis, Composer audit, integration tests, and Laravel 12–13 gates.
 
 See [UPGRADING.md](UPGRADING.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [CHANGELOG.md](CHANGELOG.md).
 
