@@ -802,7 +802,7 @@ composer install
 composer quality
 ```
 
-The package gate runs Pint, PHPStan at maximum strictness, and isolated Testbench/Pest tests. Maintainer CI adds dependency analysis, Composer audit, integration tests, and Laravel 12–13 gates.
+The package gate runs Pint, PHPStan at maximum strictness, and isolated Testbench/Pest tests. Local Dagger verification adds dependency analysis, Composer audit, integration tests and PHP 8.4/Laravel 13 release checks; Laravel 12 and PHP 8.5 require separate compatibility evidence.
 
 See [UPGRADING.md](UPGRADING.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [CHANGELOG.md](CHANGELOG.md).
 
@@ -941,7 +941,7 @@ parameters:
         exceptions: []
 ```
 
-Rules read installed public metadata without suite boot. They flag internal symbols, package model queries/writes, capability relations and owned tables; they cannot prove dynamic code or runtime authorization. Exact exceptions require `file`, `identifier`, `symbol`, and a documented `reason`. New C3/C4/E tests, archives and guide execution remain pending until the integration phase records results.
+Rules read installed public metadata without suite boot. They flag internal symbols, package model queries/writes, capability relations and owned tables; they cannot prove dynamic code or runtime authorization. Exact exceptions require `file`, `identifier`, `symbol`, and a documented `reason`. The published 5.x family is verified through the local Dagger release gate on PHP 8.4/Laravel 13, including owning suites, MySQL/PostgreSQL persistence contracts and sealed Tenancy consumers. Fresh public Composer installation, discovery and configuration/route caching are verified. PHP 8.5, Laravel 12, MariaDB and the full independent archive matrix require separate evidence. See the [verification and release policy](https://github.com/nvl-laravel-suite/laravel-suite#verification-and-releases).
 
 ### Shipped factory states
 
