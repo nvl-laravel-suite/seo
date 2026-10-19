@@ -11,6 +11,7 @@ use LogicException;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Data\SitemapCacheIdentity;
 use Nvl\Seo\Data\SitemapEntry;
+use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Seo\Support\SeoScope;
@@ -131,6 +132,9 @@ final readonly class SitemapGenerator
      */
     private function ensureCachedArtifacts(string $scope): array
     {
+        if (SeoOwnership::declared()) {
+            $this->sources->all();
+        }
         $identity = $this->cacheKeys->capture($scope);
         $key = $identity->key;
         $namespace = $identity->namespace;

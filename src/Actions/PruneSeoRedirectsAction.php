@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Actions;
 
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Seo\Models\SeoRedirect;
+use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
+use Nvl\Support\Ownership\Services\OwnerSiteContext;
 
 /**
  * Permanently removes soft-deleted redirects after a retention period.
@@ -24,14 +25,16 @@ final class PruneSeoRedirectsAction
             throw new InvalidArgumentException('SEO redirect retention must be at least one day.');
         }
 
-        $redirects = (new SeoRedirect)->getTable();
+        if (OwnerSiteContext::current() !== null) {
+            throw new OwnershipViolation('Public site admission cannot prune retained redirects.');
+        }
+        $connection = (new SeoRedirect)->getConnection();
         $deletedBefore = now()->subDays($retentionDays);
 
-        return DB::transaction(
-            static fn (): int => DB::table($redirects)
-                ->whereNotNull('deleted_at')
+        return $connection->transaction(
+            static fn (): int => SeoRedirect::onlyTrashed()
                 ->where('deleted_at', '<=', $deletedBefore)
-                ->delete(),
+                ->toBase()->delete(),
         );
     }
 }

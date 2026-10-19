@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Nvl\Seo\Models\Concerns;
 
 use Illuminate\Container\Container;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Ownership\Contracts\OwnershipWriter;
 use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
@@ -45,6 +47,9 @@ trait GuardsTenantOwnership
     /** Register the package-owned query and mutation boundary. */
     protected static function bootGuardsTenantOwnership(): void
     {
+        static::addGlobalScope('nvl-seo-host-ownership', static function (Builder $query): void {
+            SeoOwnership::declared();
+        });
         static::creating(static function (Model $model): void {
             $container = Container::getInstance();
             if ($container->make('config')->get('nvl-tenancy.enabled') !== true) {

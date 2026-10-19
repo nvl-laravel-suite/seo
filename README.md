@@ -64,6 +64,8 @@ For support, [open an issue](https://github.com/nvl-laravel-suite/seo/issues). F
 
 See the [installation and publishing guide](https://github.com/nvl-laravel-suite/laravel-suite/blob/main/docs/installation.md) for Composer setup, configuration, migration ownership, and agent skills.
 
+Native owned SEO hosts require explicit `ownership.owner_resources`; an unscoped SEO graph cannot contain native owned hosts, including registrations added later. Warm sitemap reads revalidate source capabilities. Redirect pruning uses the configured SEO source and the admitted owner; run scheduled maintenance through an authorized owner workflow. An unadmitted CLI command or public site context cannot prune redirects.
+
 ## Quick reference
 
 | Item | Value |

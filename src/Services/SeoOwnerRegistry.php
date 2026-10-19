@@ -49,6 +49,7 @@ final class SeoOwnerRegistry
     public function register(string $alias, string $model): void
     {
         $modelClass = $this->identities->reference($model, "seo.owners.{$alias}", $alias);
+        SeoOwnership::assertCompatibleHost($modelClass);
         $existingReference = $this->registered[$alias] ?? null;
         if ($existingReference !== null
             && $this->identities->reference($existingReference, "seo.owners.{$alias}", $alias) !== $modelClass) {

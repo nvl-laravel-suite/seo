@@ -27,6 +27,7 @@ final class SeoResourceRegistrar
             }
         }
         $owned = $parents !== [];
+        SeoOwnership::assertCompatibleHosts($owned);
         $resources->register(new OwnershipResourceDefinition('seo.profiles', 'seo', SeoProfile::class, $owned ? OwnershipDefinition::inherited('seoable') : OwnershipDefinition::unscoped(), parentResources: $parents, immutableFields: $owned ? ['scope'] : []));
         $resources->register(new OwnershipResourceDefinition('seo.translations', 'seo', SeoProfileTranslation::class, $owned ? OwnershipDefinition::inherited('profile') : OwnershipDefinition::unscoped(), parentResource: $owned ? 'seo.profiles' : null, immutableFields: $owned ? ['scope'] : []));
         $resources->register(new OwnershipResourceDefinition('seo.redirects', 'seo', SeoRedirect::class, $owned ? OwnershipDefinition::captured() : OwnershipDefinition::unscoped(), immutableFields: $owned ? ['scope'] : []));

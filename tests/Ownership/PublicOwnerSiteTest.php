@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Nvl\Ownership\Contracts\OwnerSiteResolver;
 use Nvl\Ownership\Services\OwnerIdentityResolver;
 use Nvl\Ownership\Services\PublicOwnerSiteRunner;
+use Nvl\Seo\Actions\PruneSeoRedirectsAction;
 use Nvl\Seo\Actions\SyncSeoProfileAction;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
@@ -18,6 +19,7 @@ use Nvl\Seo\Tests\Fixtures\OwnershipCompany;
 use Nvl\Seo\Tests\Fixtures\OwnershipContentOwner;
 use Nvl\Seo\Tests\Fixtures\UnsafeOwnedSitemap;
 use Nvl\Support\Ownership\Contracts\OwnershipWriter;
+use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 use Nvl\Support\Ownership\ValueObjects\VerifiedOwnerSiteContext;
 
 beforeEach(function (): void {
@@ -77,4 +79,29 @@ it('rejects a sitemap extension that lacks an ownership capability before execut
 it('warms a real sitemap through the same verified origin at the scheduled command boundary', function (): void {
     $this->artisan('nvl:seo:sitemap:warm', ['--origin' => 'https://a.seo.test'])->assertSuccessful();
     $this->artisan('nvl:seo:sitemap:warm')->assertExitCode(2);
+});
+
+it('revalidates reduced public resource capabilities before serving a warm sitemap', function (): void {
+    $request = Request::create('https://a.seo.test');
+    $runner = app(PublicOwnerSiteRunner::class);
+    $runner->run($request, fn () => app(SitemapGenerator::class)->generate());
+    $original = app(OwnerSiteResolver::class);
+    $this->app->bind(OwnerSiteResolver::class, static fn () => new class($original) implements OwnerSiteResolver
+    {
+        public function __construct(private OwnerSiteResolver $original) {}
+
+        public function resolve(Request $request): ?VerifiedOwnerSiteContext
+        {
+            $site = $this->original->resolve($request);
+
+            return $site === null ? null : new VerifiedOwnerSiteContext($site->owner, $site->site, $site->canonicalOrigin, array_values(array_diff($site->resources, ['seo.translations'])));
+        }
+    });
+    expect(fn () => $runner->run($request, fn () => app(SitemapGenerator::class)->generate()))
+        ->toThrow(OwnershipViolation::class);
+});
+
+it('does not grant redirect maintenance through public site admission', function (): void {
+    expect(fn () => app(PublicOwnerSiteRunner::class)->run(Request::create('https://a.seo.test'), fn () => app(PruneSeoRedirectsAction::class)->execute()))
+        ->toThrow(OwnershipViolation::class);
 });

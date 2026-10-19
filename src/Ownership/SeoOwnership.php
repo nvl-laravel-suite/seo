@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Nvl\Seo\Ownership;
 
 use Illuminate\Database\Eloquent\Model;
+use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Support\Exceptions\BusinessException;
+use Nvl\Support\Ownership\Contracts\Ownable;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Ownership\Contracts\OwnershipContext;
 use Nvl\Support\Ownership\Enums\OwnershipContextMode;
+use Nvl\Support\Ownership\Exceptions\OwnershipConfigurationInvalid;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
 use Nvl\Support\Ownership\ValueObjects\OwnershipJobEnvelope;
@@ -26,7 +29,43 @@ final class SeoOwnership
     /** Determine whether this package graph declares native primary ownership. */
     public static function declared(): bool
     {
-        return (app(OwnershipResourceRegistry::class)->all()['seo.profiles'] ?? null)?->ownership->strategy !== null && app(OwnershipResourceRegistry::class)->get('seo.profiles')->ownership->strategy !== 'unscoped';
+        $resources = app(OwnershipResourceRegistry::class)->all();
+        $owned = isset($resources['seo.profiles']) && $resources['seo.profiles']->ownership->strategy !== 'unscoped';
+        self::assertCompatibleHosts($owned);
+
+        return $owned;
+    }
+
+    /** Reject globally scoped metadata for native owned hosts before reads or writes. */
+    public static function assertCompatibleHosts(bool $owned): void
+    {
+        if (! $owned) {
+            foreach (app(SeoOwnerRegistry::class)->configured() as $class) {
+                self::assertCompatibleHost($class, false);
+            }
+        }
+    }
+
+    /** Validate late host registrations against the already compiled metadata graph.
+     * @param  class-string<Model>  $class
+     */
+    public static function assertCompatibleHost(string $class, ?bool $owned = null): void
+    {
+        $resources = app(OwnershipResourceRegistry::class)->all();
+        $owned ??= isset($resources['seo.profiles'])
+            ? $resources['seo.profiles']->ownership->strategy !== 'unscoped'
+            : config('nvl-seo.ownership.owner_resources', []) !== [];
+        if ($owned) {
+            return;
+        }
+        if (is_a($class, Ownable::class, true) && $class::ownershipDefinition()->strategy !== 'unscoped') {
+            throw new OwnershipConfigurationInvalid('Owned SEO hosts require inherited native profile ownership.');
+        }
+        foreach ($resources as $resource) {
+            if ($resource->model === $class && $resource->ownership->strategy !== 'unscoped') {
+                throw new OwnershipConfigurationInvalid('Owned SEO hosts require inherited native profile ownership.');
+            }
+        }
     }
 
     /** Construct the failure contract of the selected ownership authority. */

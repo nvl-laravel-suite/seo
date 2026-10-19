@@ -34,6 +34,7 @@ use Nvl\Translatable\Support\LocaleCode;
  * @property string $target
  * @property int $status_code
  * @property bool $is_active
+ * @property Carbon|null $deleted_at
  * @property Carbon|null $expires_at
  * @property int $hit_count
  * @property Carbon|null $last_hit_at
