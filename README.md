@@ -37,12 +37,12 @@ job; any asynchronous export must use a separately authorized system workflow.
 ## Quickstart
 
 ```sh
-composer require nvl/seo:^5.1
+composer require nvl/seo:^6.0
 php artisan nvl:install seo --dry-run
 php artisan nvl:install seo
 ```
 
-Required NVL dependencies: `nvl/core` (`^5.1`), `nvl/translatable` (`^5.1`). Register authorized owners and scope/locale policy before managing profiles. Resolve route/path inputs on the server.
+Required NVL dependencies: `nvl/core` (`^6.0`), `nvl/translatable` (`^6.0`). Register authorized owners and scope/locale policy before managing profiles. Resolve route/path inputs on the server.
 Review the published common config, select one migration owner, and run schema preflight before existing-table upgrades. The installer does not enable features or run migrations. Follow the detailed installation and capability sections below before invoking a storage/provider operation.
 
 Inject `Nvl\Seo\Contracts\SeoProfileStatusContract` in a host service. After supplying the trusted inputs described above, the first public call is:
@@ -70,7 +70,7 @@ Native owned SEO hosts require explicit `ownership.owner_resources`; an unscoped
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/seo:^5.1` |
+| Installed through | `composer require nvl/seo:^6.0` |
 | Module identifier | `nvl/seo` |
 | PHP namespace | `Nvl\Seo` |
 | Service provider | `Nvl\Seo\Providers\SeoServiceProvider` |
@@ -129,7 +129,7 @@ artifacts, drain jobs, and restart workers before admitting traffic.
 - `ext-json`, `ext-libxml`, `ext-xmlwriter`, and `ext-mbstring`
 
 ```bash
-composer require nvl/seo:^5.1
+composer require nvl/seo:^6.0
 php artisan migrate
 php artisan vendor:publish --tag=nvl-seo-translations
 php artisan vendor:publish --tag=nvl-seo-config
