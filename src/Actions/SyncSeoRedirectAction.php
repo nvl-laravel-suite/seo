@@ -24,7 +24,6 @@ use Nvl\Seo\Support\SeoScope;
 use Nvl\Support\Contracts\LocaleCatalog;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
-use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 use Nvl\Support\Tenancy\Contracts\TenantContext;
 use Spatie\LaravelData\Optional;
 
@@ -173,7 +172,7 @@ final readonly class SyncSeoRedirectAction implements SyncSeoRedirectContract
         }
 
         $tenantId = $container->make(TenantContext::class)->requireTenant()->value;
-        $name = substr(hash('sha256', $container->make(TenantBoundary::class)->key('seo.redirects', 'graph')), 0, 32);
+        $name = substr(hash('sha256', $container->make(OwnershipBoundary::class)->key('seo.redirects', 'graph')), 0, 32);
         DB::table(SeoTables::get(SeoTables::RedirectLocks))->insertOrIgnore(['tenant_id' => $tenantId, 'name' => $name]);
         DB::table(SeoTables::get(SeoTables::RedirectLocks))
             ->where('tenant_id', $tenantId)
