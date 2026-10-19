@@ -19,6 +19,7 @@ use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Seo\Support\SeoScope;
 use Nvl\Support\Config\PackageStorage;
+use Nvl\Support\Ownership\Contracts\Ownable;
 use Nvl\Translatable\Contracts\TranslatableModel;
 use Nvl\Translatable\Enums\TranslationMutationPolicy;
 use Nvl\Translatable\RelatedTranslationDefinition;
@@ -53,7 +54,7 @@ use Nvl\Translatable\Translatable;
  *
  * @api
  */
-final class SeoProfile extends Model implements TranslatableModel
+final class SeoProfile extends Model implements Ownable, TranslatableModel
 {
     use GuardsTenantOwnership;
 

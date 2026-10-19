@@ -7,6 +7,7 @@ namespace Nvl\Seo\Services;
 use Illuminate\Container\Container;
 use Nvl\Seo\Support\HttpUrl;
 use Nvl\Seo\Support\SeoConfiguration;
+use Nvl\Support\Ownership\Services\OwnerSiteContext;
 use Nvl\Support\Tenancy\ValueObjects\TenantSiteContext;
 
 /**
@@ -33,7 +34,9 @@ final class AbsoluteUrl
         }
 
         $container = Container::getInstance();
-        if ($container->bound('config') && $container->make('config')->get('nvl-tenancy.enabled') === true) {
+        if (OwnerSiteContext::current() !== null) {
+            $baseUrl = OwnerSiteContext::require()->canonicalOrigin;
+        } elseif ($container->bound('config') && $container->make('config')->get('nvl-tenancy.enabled') === true) {
             $baseUrl = rtrim($container->make(TenantSiteContext::class)->canonicalOrigin, '/');
         } else {
             $appUrl = config('app.url', 'http://localhost');

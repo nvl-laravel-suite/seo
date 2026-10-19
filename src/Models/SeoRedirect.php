@@ -16,6 +16,7 @@ use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoScope;
 use Nvl\Support\Config\PackageStorage;
+use Nvl\Support\Ownership\Contracts\Ownable;
 use Nvl\Support\Tenancy\Contracts\TenantContext;
 use Nvl\Support\Tenancy\Enums\TenantContextMode;
 use Nvl\Support\Tenancy\Exceptions\TenantContextMissing;
@@ -41,7 +42,7 @@ use Nvl\Translatable\Support\LocaleCode;
  *
  * @api
  */
-final class SeoRedirect extends Model
+final class SeoRedirect extends Model implements Ownable
 {
     use GuardsTenantOwnership;
 

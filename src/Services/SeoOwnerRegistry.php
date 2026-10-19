@@ -9,9 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
+use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Support\OwnerRegistry;
-use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary as TenantBoundary;
+use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
@@ -40,6 +42,7 @@ final class SeoOwnerRegistry
         private readonly TenantBoundary $tenancy,
         private readonly TenantResourceRegistry $resources,
         private readonly OwnerRegistry $identities,
+        private readonly OwnershipResourceRegistry $ownershipResources,
     ) {}
 
     /** Register one code-owned owner declaration without mutating cached configuration. */
@@ -66,8 +69,8 @@ final class SeoOwnerRegistry
 
         /** @var Model $model */
         $model = $modelClass::query()->findOrFail($id);
-        if ($this->configuration->get('nvl-tenancy.enabled') === true) {
-            $resource = $this->resources->forModel($model);
+        if (SeoOwnership::active()) {
+            $resource = (SeoOwnership::declared() ? $this->ownershipResources : $this->resources)->forModel($model);
             $this->tenancy->assertRecord($model, $resource->key);
         }
 

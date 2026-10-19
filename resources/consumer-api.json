@@ -216,6 +216,26 @@
             "properties": [],
             "constants": []
         },
+        "Nvl\\Seo\\Contracts\\OwnershipSafeSeoImageResolver": {
+            "kind": "interface",
+            "file": "src/Contracts/OwnershipSafeSeoImageResolver.php",
+            "methods": [
+                "assertOwnershipSafe",
+                "resolve"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\OwnershipSafeSitemapSource": {
+            "kind": "interface",
+            "file": "src/Contracts/OwnershipSafeSitemapSource.php",
+            "methods": [
+                "entries",
+                "ownershipResources"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Seo\\Contracts\\PreviewSeoProfileContract": {
             "kind": "interface",
             "file": "src/Contracts/PreviewSeoProfileContract.php",
@@ -1188,6 +1208,7 @@
     },
     "tables": {
         "i18n": "nvl_seo_i18n",
+        "owner_redirect_locks": "nvl_seo_owner_redirect_locks",
         "profiles": "nvl_seo_profiles",
         "redirect_locks": "nvl_seo_redirect_locks",
         "redirects": "nvl_seo_redirects"

@@ -8,6 +8,7 @@ use Nvl\Support\Config\PackageEnvironment;
 
 /** Complete runtime defaults; publication sections are declared in ../resources/config/sections.json. */
 return [
+    'ownership' => ['owner_resources' => []],
     'site' => [
         'scope' => PackageEnvironment::get('NVL_SEO_SITE_SCOPE', 'default'),
         'name' => PackageEnvironment::get('NVL_SEO_SITE_NAME', env('APP_NAME', 'Laravel')),

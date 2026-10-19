@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
+use Nvl\Ownership\Http\Middleware\ResolvePublicOwnerSite;
+use Nvl\Ownership\Services\OwnershipAdoptionRegistry;
 use Nvl\Seo\Actions\ArchiveSeoProfileAction;
 use Nvl\Seo\Actions\DeleteSeoProfileAction;
 use Nvl\Seo\Actions\DuplicateSeoProfileAction;
@@ -50,6 +52,9 @@ use Nvl\Seo\Http\Controllers\RobotsController;
 use Nvl\Seo\Http\Controllers\SitemapChunkController;
 use Nvl\Seo\Http\Controllers\SitemapController;
 use Nvl\Seo\Models\SeoProfile;
+use Nvl\Seo\Ownership\SeoAdoptionAdapter;
+use Nvl\Seo\Ownership\SeoOwnership;
+use Nvl\Seo\Ownership\SeoResourceRegistrar as OwnershipSeoResourceRegistrar;
 use Nvl\Seo\Services\ConfiguredSeoAuthorization;
 use Nvl\Seo\Services\DirectSeoImageResolver;
 use Nvl\Seo\Services\EloquentSeoSitemapSource;
@@ -62,6 +67,8 @@ use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Seo\Tenancy\SeoResourceRegistrar;
 use Nvl\Support\Doctor\PackageDoctorContributor;
 use Nvl\Support\Globals\GlobalNames;
+use Nvl\Support\Ownership\Contracts\OwnershipIntegratedProvider;
+use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Support\Providers\TenantServiceProvider;
 use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
@@ -75,7 +82,7 @@ use Nvl\Translatable\Services\TranslationResourceRegistry;
 /**
  * Registers the localized SEO runtime and its optional public routes.
  */
-final class SeoServiceProvider extends ServiceProvider
+final class SeoServiceProvider extends ServiceProvider implements OwnershipIntegratedProvider
 {
     use MergesPackageConfiguration;
     use RegistersNamespacedResources;
@@ -154,6 +161,11 @@ final class SeoServiceProvider extends ServiceProvider
         SitemapRegistry $sitemaps,
         StructuredDataRegistry $structuredData,
     ): void {
+        (new OwnershipSeoResourceRegistrar)->register($this->app->make(OwnershipResourceRegistry::class));
+        if ($this->app->bound(OwnershipAdoptionRegistry::class)) {
+            $this->app->make(OwnershipAdoptionRegistry::class)->register('seo', SeoAdoptionAdapter::class);
+        }
+
         $this->app->make(GlobalNames::class)->translations('seo', __DIR__.'/../../lang', $this->app->make('translation.loader'));
         $this->publishes([
             __DIR__.'/../../lang' => lang_path('vendor/nvl-seo'),
@@ -292,6 +304,9 @@ final class SeoServiceProvider extends ServiceProvider
         $middleware = array_values(array_filter($middleware, is_string(...)));
         if (config('nvl-tenancy.enabled') === true) {
             array_unshift($middleware, ResolvePublicTenant::class);
+        }
+        if (SeoOwnership::declared()) {
+            array_unshift($middleware, ResolvePublicOwnerSite::class);
         }
         $middleware = array_values(array_unique($middleware));
 

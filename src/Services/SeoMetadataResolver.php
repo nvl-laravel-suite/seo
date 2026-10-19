@@ -6,6 +6,7 @@ namespace Nvl\Seo\Services;
 
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
+use Nvl\Seo\Contracts\OwnershipSafeSeoImageResolver;
 use Nvl\Seo\Contracts\SeoImageResolver;
 use Nvl\Seo\Contracts\TenantSafeSeoImageResolver;
 use Nvl\Seo\Data\ResolvedSeoData;
@@ -13,11 +14,13 @@ use Nvl\Seo\Data\StructuredDataContextData;
 use Nvl\Seo\Enums\TwitterCard;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
+use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoImageContext;
 use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Support\Contracts\LocaleCatalog;
-use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary as TenantBoundary;
+use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
 use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Translatable\Services\ContentLocale;
@@ -38,6 +41,7 @@ final readonly class SeoMetadataResolver
         private TenantBoundary $tenancy,
         private TenantResourceRegistry $tenantResources,
         private LocaleCatalog $locales,
+        private OwnershipResourceRegistry $ownershipResources,
     ) {}
 
     public function resolve(
@@ -83,7 +87,12 @@ final readonly class SeoMetadataResolver
             reference: $this->translatedString($profile, 'image_reference', $locale),
             alt: $this->translatedString($profile, 'image_alt', $locale),
         );
-        if ($this->configuration->get('nvl-tenancy.enabled') === true) {
+        if (SeoOwnership::declared()) {
+            if (! $this->images instanceof OwnershipSafeSeoImageResolver) {
+                throw new \LogicException('The SEO image resolver has no ownership capability.');
+            }
+            $this->images->assertOwnershipSafe($imageContext);
+        } elseif (SeoOwnership::active()) {
             if (! $this->images instanceof TenantSafeSeoImageResolver) {
                 throw new \LogicException('The adopted SEO image resolver has no tenant safety boundary.');
             }
@@ -199,11 +208,11 @@ final readonly class SeoMetadataResolver
     /** Canonically reload supplied models before any metadata, image, or provider work. */
     private function canonicalOwner(Model|SeoProfile $owner): Model|SeoProfile
     {
-        if ($this->configuration->get('nvl-tenancy.enabled') !== true) {
+        if (! SeoOwnership::active()) {
             return $owner;
         }
 
-        $resource = $this->tenantResources->forModel($owner);
+        $resource = (SeoOwnership::declared() ? $this->ownershipResources : $this->tenantResources)->forModel($owner);
         $canonical = $owner->newQuery()->findOrFail($owner->getKey());
         if (! $canonical instanceof Model) {
             throw new TenantBoundaryViolation('The SEO owner cannot be resolved canonically.');
@@ -300,7 +309,7 @@ final readonly class SeoMetadataResolver
 
     private function stringConfig(string $key): ?string
     {
-        $value = config($key);
+        $value = $this->configuration->get($key);
 
         return is_string($value) && $value !== '' ? $value : null;
     }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Actions;
 
-use Illuminate\Support\Facades\DB;
 use Nvl\Seo\Contracts\DeleteSeoProfileContract;
 use Nvl\Seo\Events\SeoProfileChanged;
 use Nvl\Seo\Exceptions\StaleSeoProfileException;
@@ -44,7 +43,7 @@ final readonly class DeleteSeoProfileAction implements DeleteSeoProfileContract
 
             if ($deleted) {
                 $identity = $this->sitemapCache->capture($scope);
-                DB::afterCommit(function () use ($identity): void {
+                (new SeoProfile)->getConnection()->afterCommit(function () use ($identity): void {
                     $this->sitemapCache->forgetCaptured($identity);
                 });
                 $this->domainEvents->dispatch(new SeoProfileChanged($id, $scope, 'deleted'), $profile->getConnection());

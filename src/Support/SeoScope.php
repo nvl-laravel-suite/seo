@@ -7,6 +7,8 @@ namespace Nvl\Seo\Support;
 use Illuminate\Container\Container;
 use LogicException;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
+use Nvl\Support\Ownership\Services\OwnerSiteContext;
+use Nvl\Support\Ownership\ValueObjects\VerifiedOwnerSiteContext;
 use Nvl\Support\Tenancy\ValueObjects\TenantSiteContext;
 
 /**
@@ -24,7 +26,7 @@ final class SeoScope
     public static function publicSitemapScopes(): array
     {
         $tenantSite = self::tenantSite();
-        if ($tenantSite instanceof TenantSiteContext) {
+        if ($tenantSite instanceof TenantSiteContext || $tenantSite instanceof VerifiedOwnerSiteContext) {
             return [self::normalize($tenantSite->site)];
         }
 
@@ -57,7 +59,7 @@ final class SeoScope
     public static function normalize(?string $scope = null): string
     {
         $tenantSite = self::tenantSite();
-        if ($tenantSite instanceof TenantSiteContext) {
+        if ($tenantSite instanceof TenantSiteContext || $tenantSite instanceof VerifiedOwnerSiteContext) {
             if ($scope !== null && mb_strtolower(trim($scope)) !== mb_strtolower(trim($tenantSite->site))) {
                 throw InvalidSeoMutationException::forField('scope', 'The SEO scope differs from the verified tenant site.');
             }
@@ -85,8 +87,11 @@ final class SeoScope
     }
 
     /** Resolve public site identity only in adopted mode. */
-    private static function tenantSite(): ?TenantSiteContext
+    private static function tenantSite(): TenantSiteContext|VerifiedOwnerSiteContext|null
     {
+        if (OwnerSiteContext::current() !== null) {
+            return OwnerSiteContext::require();
+        }
         $container = Container::getInstance();
         if (! $container->bound('config') || $container->make('config')->get('nvl-tenancy.enabled') !== true) {
             return null;

@@ -14,6 +14,7 @@ use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Exceptions\StaleSeoRedirectException;
 use Nvl\Seo\Models\SeoRedirect;
+use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Services\SeoMutationValidator;
 use Nvl\Seo\Services\SeoRedirectChain;
 use Nvl\Seo\Support\DatabaseConstraintViolation;
@@ -21,6 +22,8 @@ use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoRedirectTarget;
 use Nvl\Seo\Support\SeoScope;
 use Nvl\Support\Contracts\LocaleCatalog;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
+use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 use Nvl\Support\Tenancy\Contracts\TenantContext;
 use Spatie\LaravelData\Optional;
@@ -55,7 +58,7 @@ final readonly class SyncSeoRedirectAction implements SyncSeoRedirectContract
         $redirectId = $redirect instanceof SeoRedirect ? $redirect->id : $redirect;
 
         try {
-            return DB::transaction(function () use (
+            return (new SeoRedirect)->getConnection()->transaction(function () use (
                 $data,
                 $locale,
                 $redirectId,
@@ -152,6 +155,16 @@ final readonly class SyncSeoRedirectAction implements SyncSeoRedirectContract
     private function lockGraph(): void
     {
         $container = Container::getInstance();
+        if (SeoOwnership::declared()) {
+            $connection = (new SeoRedirect)->getConnection();
+            $name = substr(hash('sha256', $container->make(OwnershipBoundary::class)->key('seo.redirects', 'graph')), 0, 32);
+            $connection->table(SeoTables::get(SeoTables::OwnerRedirectLocks))->insertOrIgnore(['name' => $name]);
+            if ($connection->table(SeoTables::get(SeoTables::OwnerRedirectLocks))->where('name', $name)->lockForUpdate()->first() === null) {
+                throw new OwnershipViolation('The canonical SEO redirect lock could not be acquired.');
+            }
+
+            return;
+        }
         if ($container->make('config')->get('nvl-tenancy.enabled') !== true) {
             DB::table(SeoTables::get(SeoTables::RedirectLocks))->insertOrIgnore(['name' => 'graph']);
             DB::table(SeoTables::get(SeoTables::RedirectLocks))->where('name', 'graph')->lockForUpdate()->first();

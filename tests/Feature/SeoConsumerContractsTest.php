@@ -56,7 +56,8 @@ use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
 use Nvl\Support\Http\PackageExceptionRenderer;
 use Nvl\Support\OwnerRegistry;
-use Nvl\Support\Tenancy\Contracts\TenantBoundary;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary as TenantBoundary;
+use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Spatie\LaravelData\DataCollection;
 
@@ -708,6 +709,7 @@ it('covers owner, route uniqueness, and database constraint boundaries', functio
         app(TenantBoundary::class),
         app(TenantResourceRegistry::class),
         app(OwnerRegistry::class),
+        app(OwnershipResourceRegistry::class),
     );
     expect(fn () => $registry->modelClass('missing'))
         ->toThrow(InvalidSeoMutationException::class)
@@ -723,6 +725,7 @@ it('covers owner, route uniqueness, and database constraint boundaries', functio
         app(TenantBoundary::class),
         app(TenantResourceRegistry::class),
         app(OwnerRegistry::class),
+        app(OwnershipResourceRegistry::class),
     ))->configured())
         ->toThrow(InvalidArgumentException::class);
     config()->set('nvl-seo.owners', 'invalid');
@@ -731,6 +734,7 @@ it('covers owner, route uniqueness, and database constraint boundaries', functio
         app(TenantBoundary::class),
         app(TenantResourceRegistry::class),
         app(OwnerRegistry::class),
+        app(OwnershipResourceRegistry::class),
     ))->configured())
         ->toThrow(InvalidArgumentException::class);
 });

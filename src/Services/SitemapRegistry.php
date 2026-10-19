@@ -8,8 +8,11 @@ use Illuminate\Container\Container;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
+use Nvl\Seo\Contracts\OwnershipSafeSitemapSource;
 use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Contracts\TenantSafeSitemapSource;
+use Nvl\Seo\Ownership\SeoOwnership;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
 use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
@@ -95,7 +98,8 @@ final class SitemapRegistry
         ksort($this->sources);
 
         $resolved = [];
-        $enabled = $this->container->make('config')->get('nvl-tenancy.enabled') === true;
+        $owned = SeoOwnership::declared();
+        $enabled = $owned || $this->container->make('config')->get('nvl-tenancy.enabled') === true;
         foreach ($this->sources as $key => $declaration) {
             if ($enabled && $declaration['class'] === null) {
                 throw new InvalidArgumentException(
@@ -109,7 +113,14 @@ final class SitemapRegistry
             if (! $source instanceof SitemapSource) {
                 throw new InvalidArgumentException("Sitemap source [{$key}] could not be resolved.");
             }
-            if ($enabled) {
+            if ($owned) {
+                if (! $source instanceof OwnershipSafeSitemapSource || $source->ownershipResources() === []) {
+                    throw new InvalidArgumentException('Owned sitemap sources must declare canonical ownership capabilities.');
+                }
+                foreach ($source->ownershipResources() as $resource) {
+                    $this->container->make(OwnershipBoundary::class)->key($resource, 'sitemap-source');
+                }
+            } elseif ($enabled) {
                 if (! $source instanceof TenantSafeSitemapSource || $source->tenantResources() === []) {
                     throw new InvalidArgumentException("Tenant sitemap source [{$key}] has no resource capability.");
                 }

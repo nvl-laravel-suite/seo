@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Nvl\Seo\Models\Concerns;
 
 use Illuminate\Container\Container;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
+use Nvl\Support\Ownership\Contracts\OwnershipWriter;
+use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
+use Nvl\Support\Ownership\Traits\HasOwnership;
 use Nvl\Support\Tenancy\Contracts\TenantBoundary;
 use Nvl\Support\Tenancy\Enums\TenantResourceKind;
 use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
@@ -16,13 +19,32 @@ use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 /** Applies SEO's mandatory tenant predicate and immutable ownership stamp. */
 trait GuardsTenantOwnership
 {
+    use HasOwnership { save as private saveOwned; }
+
+    /** Persist fixed children through the same native source assignment as roots.
+     * @param  array<string,mixed>  $options
+     */
+    public function save(array $options = []): bool
+    {
+        $resource = app(OwnershipResourceRegistry::class)->get(self::TENANT_RESOURCE);
+        if (! $this->exists && $resource->ownership->strategy === 'inherited' && ! array_key_exists('owner_scope_key', $this->getAttributes())) {
+            $saved = false;
+            app(OwnershipWriter::class)->create(static::class, function (array $attributes) use ($options, &$saved): Model {
+                $this->forceFill($attributes);
+                $saved = $this->saveOwned($options);
+
+                return $this;
+            });
+
+            return $saved;
+        }
+
+        return $this->saveOwned($options);
+    }
+
     /** Register the package-owned query and mutation boundary. */
     protected static function bootGuardsTenantOwnership(): void
     {
-        static::addGlobalScope('tenant-boundary', static function (Builder $query): void {
-            Container::getInstance()->make(TenantBoundary::class)->query($query, self::TENANT_RESOURCE);
-        });
-
         static::creating(static function (Model $model): void {
             $container = Container::getInstance();
             if ($container->make('config')->get('nvl-tenancy.enabled') !== true) {
@@ -65,7 +87,7 @@ trait GuardsTenantOwnership
                 throw new TenantBoundaryViolation('Persisted SEO ownership is immutable.');
             }
 
-            Container::getInstance()->make(TenantBoundary::class)->assertRecord($model, self::TENANT_RESOURCE);
+            Container::getInstance()->make(OwnershipBoundary::class)->assertRecord($model, self::TENANT_RESOURCE);
         });
     }
 }

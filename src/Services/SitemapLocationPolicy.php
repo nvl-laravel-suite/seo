@@ -7,6 +7,7 @@ namespace Nvl\Seo\Services;
 use Illuminate\Container\Container;
 use LogicException;
 use Nvl\Seo\Support\HttpUrl;
+use Nvl\Support\Ownership\Services\OwnerSiteContext;
 use Nvl\Support\Tenancy\ValueObjects\TenantSiteContext;
 
 /**
@@ -89,6 +90,9 @@ final class SitemapLocationPolicy
     /** Require the sitemap itself to use the verified public origin in adopted mode. */
     private function verifiedOrigin(string $sitemapUrl): bool
     {
+        if (OwnerSiteContext::current() !== null) {
+            return HttpUrl::hasSameOrigin($sitemapUrl, OwnerSiteContext::require()->canonicalOrigin);
+        }
         $container = Container::getInstance();
         if (! $container->bound('config') || $container->make('config')->get('nvl-tenancy.enabled') !== true) {
             return true;

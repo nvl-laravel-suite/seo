@@ -19,6 +19,8 @@ final class SeoTables
 
     public const string RedirectLocks = 'nvl_seo_redirect_locks';
 
+    public const string OwnerRedirectLocks = 'nvl_seo_owner_redirect_locks';
+
     /** Return one configured logical or historical package table. */
     public static function get(string $key): string
     {

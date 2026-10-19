@@ -29,6 +29,7 @@
                 "defaults.title",
                 "defaults.twitter_card",
                 "image_resolver",
+                "ownership.owner_resources",
                 "redirects.maximum_chain_length",
                 "redirects.record_hits",
                 "robots.allow",
@@ -65,7 +66,8 @@
                 "structured_data.maximum_depth",
                 "structured_data.maximum_items",
                 "structured_data.mode",
-                "structured_data.providers"
+                "structured_data.providers",
+                "tables.owner_redirect_locks"
             ]
         }
     }

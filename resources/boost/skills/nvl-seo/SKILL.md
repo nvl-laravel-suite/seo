@@ -5,6 +5,21 @@ description: Implement, integrate, test, or review nvl/seo in Laravel 13. Use fo
 
 # NVL SEO
 
+## Native ownership and verified public admission
+
+- Keep the default unscoped graph independent from NVL Auth, Tenancy and Ownership.
+- Use the package README ownership section for configured roots, exact native host
+  resources and reviewed per-row adoption; never infer an owner from request input.
+- Resolve owned public work with `OwnerSiteResolver` and `PublicOwnerSiteRunner`.
+  Use only the admitted `VerifiedOwnerSiteContext` for owner/site/origin/resources;
+  preserve locale and content scope as separate identities. Public admission cannot
+  become actor/system/central/queue authority.
+- Retain actual-source transactions, native parent/pivot constraints and canonical
+  re-reads. Existing tenant rows/IDs/morph values and released migrations remain intact.
+- Declare `nvl-seo.ownership.owner_resources`; keep profiles inherited and redirects
+  captured. Use ownership-safe image/sitemap contracts and owner-local artifacts.
+- Warm scheduled owned sitemaps with `--origin` through the verified public resolver.
+
 ## Tenant/site identity
 
 - In adopted mode, require the active tenant and verified `TenantSiteContext`.

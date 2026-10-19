@@ -6,7 +6,6 @@ namespace Nvl\Seo\Actions;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Seo\Contracts\SyncSeoProfileContract;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
@@ -125,7 +124,7 @@ final readonly class SyncSeoProfileAction implements SyncSeoProfileContract
 
                 $profile->refresh()->load('translations');
                 $identity = $this->sitemapCache->capture($profile->scope);
-                DB::afterCommit(function () use ($identity): void {
+                (new SeoProfile)->getConnection()->afterCommit(function () use ($identity): void {
                     $this->sitemapCache->forgetCaptured($identity);
                 });
                 $this->domainEvents->dispatch(new SeoProfileChanged($profile->id, $profile->scope, 'synced'), $profile->getConnection());

@@ -15,6 +15,7 @@ use Nvl\Seo\Enums\TwitterCard;
 use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Support\Config\PackageStorage;
+use Nvl\Support\Ownership\Contracts\Ownable;
 
 /**
  * Locale-specific SEO metadata for one profile.
@@ -45,7 +46,7 @@ use Nvl\Support\Config\PackageStorage;
  *
  * @api
  */
-final class SeoProfileTranslation extends Model
+final class SeoProfileTranslation extends Model implements Ownable
 {
     use GuardsTenantOwnership;
 

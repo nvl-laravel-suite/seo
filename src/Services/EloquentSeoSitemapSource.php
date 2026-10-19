@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace Nvl\Seo\Services;
 
 use LogicException;
+use Nvl\Seo\Contracts\OwnershipSafeSitemapSource;
 use Nvl\Seo\Contracts\TenantSafeSitemapSource;
 use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Models\SeoProfile;
+use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Support\Contracts\LocaleCatalog;
 
 /**
  * Streams all indexable profile translations from bounded Eloquent chunks.
  */
-final readonly class EloquentSeoSitemapSource implements TenantSafeSitemapSource
+final readonly class EloquentSeoSitemapSource implements OwnershipSafeSitemapSource, TenantSafeSitemapSource
 {
     public function __construct(
         private AbsoluteUrl $urls,
@@ -30,6 +32,7 @@ final readonly class EloquentSeoSitemapSource implements TenantSafeSitemapSource
     {
         $profiles = SeoProfile::query()
             ->select([
+                ...(SeoOwnership::declared() ? ['owner_scope_key', 'seoable_type', 'seoable_id'] : []),
                 'id',
                 'scope',
                 'sitemap_priority',
@@ -41,7 +44,7 @@ final readonly class EloquentSeoSitemapSource implements TenantSafeSitemapSource
             ->where('is_indexable', true)
             ->where('sitemap_included', true)
             ->with([
-                'translations:id,seo_profile_id,locale,path,canonical_url',
+                'translations',
             ])
             ->lazyById(500, column: 'id');
 
@@ -50,6 +53,12 @@ final readonly class EloquentSeoSitemapSource implements TenantSafeSitemapSource
                 yield $entry;
             }
         }
+    }
+
+    /** @return list<string> */
+    public function ownershipResources(): array
+    {
+        return ['seo.profiles', 'seo.translations'];
     }
 
     /** @return list<string> */

@@ -10,8 +10,11 @@ use LogicException;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Data\SitemapCacheIdentity;
 use Nvl\Seo\Models\SeoProfile;
+use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoScope;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
+use Nvl\Support\Ownership\Services\OwnerSiteContext;
 use Nvl\Support\Tenancy\ValueObjects\TenantSiteContext;
 use Throwable;
 
@@ -50,7 +53,7 @@ final readonly class SitemapCache
         $scope = SeoScope::normalize($scope);
         $facts = $this->facts($scope);
         $base = $this->baseKey($facts);
-        $version = $this->version($base.':version');
+        $version = $this->version($this->versionKey($facts));
         $key = $base.':v'.$version;
 
         return new SitemapCacheIdentity(
@@ -87,7 +90,9 @@ final readonly class SitemapCache
                 'origin' => $identity->origin,
                 'scope' => $identity->scope,
             ]);
-            $versionKey = $base.':version';
+            $versionKey = $this->versionKey([
+                'connection' => $identity->connection, 'tenant' => $identity->tenantId, 'site' => $identity->site, 'origin' => $identity->origin, 'scope' => $identity->scope,
+            ]);
             $this->cache->add($versionKey, 1);
             $version = $this->cache->increment($versionKey);
 
@@ -118,12 +123,35 @@ final readonly class SitemapCache
             .':'.hash('sha256', json_encode($facts, JSON_THROW_ON_ERROR));
     }
 
+    /** Use one owner/site version across admitted origin aliases and management mutations.
+     * @param  array{connection:string,tenant:string,site:string,origin:string,scope:string}  $facts
+     */
+    private function versionKey(array $facts): string
+    {
+        if (str_starts_with($facts['tenant'], 'nvl:ownership:')) {
+            $facts['origin'] = '*';
+        }
+
+        return $this->baseKey($facts).':version';
+    }
+
     /** @return array{connection:string,tenant:string,site:string,origin:string,scope:string} */
     private function facts(string $scope): array
     {
         $container = Container::getInstance();
         $connection = (new SeoProfile)->getConnection()->getName() ?? 'default';
 
+        if (SeoOwnership::declared()) {
+            $site = OwnerSiteContext::current();
+
+            return [
+                'connection' => $connection,
+                'tenant' => $container->make(OwnershipBoundary::class)->key('seo.profiles', 'sitemap'),
+                'site' => $site->site ?? $scope,
+                'origin' => $site->canonicalOrigin ?? '*',
+                'scope' => $scope,
+            ];
+        }
         if ($container->bound('config') && $container->make('config')->get('nvl-tenancy.enabled') === true) {
             $site = $container->make(TenantSiteContext::class);
 

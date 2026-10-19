@@ -1,14 +1,48 @@
 # NVL SEO — API and usage
 
+## Optional native ownership and public sites
+
+SEO remains unscoped without ownership; it requires neither NVL Auth nor Tenancy.
+Set `nvl-seo.ownership.owner_resources` to the exact registered native host keys
+(for Pages, include `pages.pages`). Profiles and locale rows inherit their canonical
+host; redirects capture their complete native primary owner. Every resource and
+retained row must pass reviewed adoption before activation. Profile paths and
+redirect identities become owner-local. The adopter preserves IDs and source/target
+paths, rebinds the derived legacy tenant redirect hash and restores native child
+FKs while retaining legacy composites. A separate optional owner-redirect lock
+serializes mutations without reusing released tenant lock rows.
+
+Bind `Nvl\Ownership\Contracts\OwnerSiteResolver` to your persisted public origin
+registry and return `VerifiedOwnerSiteContext` with the full owner, site, canonical
+origin and explicit read resources. Owned public routes admit this context before
+bindings or cache work. Canonical, alternate, sitemap and robots URLs use the
+verified origin; a caller cannot choose an owner or foreign site through query
+parameters. Public admission grants no management or sharing rights.
+
+Sitemap artifact identities include the native owner/generation, actual source,
+site, origin, scope and version. Management edits invalidate that owner/site's
+public version even outside HTTP. Register owned sources by class with
+`OwnershipSafeSitemapSource::ownershipResources()`; the source graph is admitted
+before enumeration. Model-backed social images require
+`OwnershipSafeSeoImageResolver::assertOwnershipSafe()` and a canonical same-owner
+Media lookup before resolution. The direct URL resolver rejects opaque Media
+references.
+
+For synchronous scheduled builds, run
+`php artisan nvl:seo:sitemap:warm --origin=https://example.test`.
+The command resolves and revalidates the same host mapping. Owned warming without
+an origin fails closed. Public admission cannot be captured into an actor/system
+job; any asynchronous export must use a separately authorized system workflow.
+
 ## Quickstart
 
 ```sh
-composer require nvl/seo:^5.0
+composer require nvl/seo:^5.1
 php artisan nvl:install seo --dry-run
 php artisan nvl:install seo
 ```
 
-Required NVL dependencies: `nvl/core` (`^5.0`), `nvl/translatable` (`^5.0`). Register authorized owners and scope/locale policy before managing profiles. Resolve route/path inputs on the server.
+Required NVL dependencies: `nvl/core` (`^5.1`), `nvl/translatable` (`^5.1`). Register authorized owners and scope/locale policy before managing profiles. Resolve route/path inputs on the server.
 Review the published common config, select one migration owner, and run schema preflight before existing-table upgrades. The installer does not enable features or run migrations. Follow the detailed installation and capability sections below before invoking a storage/provider operation.
 
 Inject `Nvl\Seo\Contracts\SeoProfileStatusContract` in a host service. After supplying the trusted inputs described above, the first public call is:
@@ -34,7 +68,7 @@ See the [installation and publishing guide](https://github.com/nvl-laravel-suite
 
 | Item | Value |
 |---|---|
-| Installed through | `composer require nvl/seo:^5.0` |
+| Installed through | `composer require nvl/seo:^5.1` |
 | Module identifier | `nvl/seo` |
 | PHP namespace | `Nvl\Seo` |
 | Service provider | `Nvl\Seo\Providers\SeoServiceProvider` |
@@ -93,7 +127,7 @@ artifacts, drain jobs, and restart workers before admitting traffic.
 - `ext-json`, `ext-libxml`, `ext-xmlwriter`, and `ext-mbstring`
 
 ```bash
-composer require nvl/seo:^5.0
+composer require nvl/seo:^5.1
 php artisan migrate
 php artisan vendor:publish --tag=nvl-seo-translations
 php artisan vendor:publish --tag=nvl-seo-config
