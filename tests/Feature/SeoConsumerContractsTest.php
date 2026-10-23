@@ -44,6 +44,7 @@ use Nvl\Seo\Services\ConfiguredSeoAuthorization;
 use Nvl\Seo\Services\DirectSeoImageResolver;
 use Nvl\Seo\Services\SeoDoctor;
 use Nvl\Seo\Services\SeoOwnerRegistry;
+use Nvl\Seo\Services\SeoProfilePresenter;
 use Nvl\Seo\Services\SitemapGenerator;
 use Nvl\Seo\Services\StructuredDataBuilder;
 use Nvl\Seo\Services\StructuredDataRegistry;
@@ -73,6 +74,11 @@ function allowSeoConsumerReads(): void
         public function authorize(SeoAuthorizationContext $context): void {}
     });
 }
+
+it('rejects whitespace-only owner identifiers while preserving nonempty identifier bytes', function (): void {
+    expect(fn () => SeoModelIdentifier::normalize(" \t\r\n "))->toThrow(InvalidArgumentException::class)
+        ->and(SeoModelIdentifier::normalize(' Owner-A '))->toBe(' Owner-A ');
+});
 
 it('returns management profile details and pages as stable DTOs without mapping queries', function (): void {
     allowSeoConsumerReads();
@@ -359,12 +365,39 @@ it('returns authorized owner SEO profiles positionally with fixed query counts',
     expect($single)->toHaveCount(1)
         ->and($single[0])->toBeInstanceOf(SeoProfileData::class)
         ->and($single[0]?->ownerId)->toBe((string) $owners[0]->getKey())
-        ->and($singleQueries)->toBeLessThanOrEqual(2)
+        ->and($singleQueries)->toBeLessThanOrEqual(3)
         ->and($populated)->toHaveCount(25)
         ->and($populated[24]?->ownerId)->toBe((string) $owners[24]->getKey())
         ->and($populatedQueries)->toBe($singleQueries)
         ->and($authorization->contexts)->toHaveCount(26);
 });
+
+it('preserves directly injected policies in the public owner-reader constructors', function (string $operation): void {
+    $owner = seoConsumerOwner('Manually constructed reader');
+    allowSeoConsumerReads();
+    $authorization = new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            throw new AuthorizationException('Directly injected policy denied.');
+        }
+    };
+    $reader = match ($operation) {
+        'profile' => new GetOwnerSeoProfileAction($authorization, app(SeoOwnerRegistry::class), app(SeoProfilePresenter::class)),
+        'revision' => new GetOwnerSeoRevisionAction($authorization, app(SeoOwnerRegistry::class)),
+        'batch' => new ListOwnerSeoProfilesAction($authorization, app(SeoOwnerRegistry::class), app(SeoProfilePresenter::class)),
+    };
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        expect(fn () => $reader->execute($operation === 'batch' ? [$owner] : $owner))
+            ->toThrow(AuthorizationException::class, 'Directly injected policy denied.')
+            ->and(DB::getQueryLog())->toBeEmpty();
+    } finally {
+        DB::disableQueryLog();
+    }
+})->with(['profile', 'revision', 'batch']);
 
 it('denies bulk owner SEO reads before profile queries and bounds owner input', function (): void {
     $owners = [seoConsumerOwner('Denied bulk owner')];

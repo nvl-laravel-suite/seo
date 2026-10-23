@@ -17,9 +17,9 @@ final class SeoModelIdentifier
      */
     public static function normalize(string|int $identifier): string
     {
-        $identifier = trim((string) $identifier);
+        $identifier = (string) $identifier;
 
-        if ($identifier === '') {
+        if (trim($identifier) === '') {
             throw new InvalidArgumentException(
                 'An SEO owner identifier must not be empty.',
             );

@@ -8,6 +8,7 @@ use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
+use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoModelIdentifier;
@@ -76,6 +77,23 @@ final class SeoOwnerRegistry
         }
 
         return $model;
+    }
+
+    /**
+     * Admit canonical owners through this registry's existing ownership dependencies.
+     *
+     * @internal
+     *
+     * @param  iterable<array-key, Model>  $owners
+     * @return list<array{owner: Model, alias: string, type: string, id: string}>
+     */
+    public function admitForRead(iterable $owners, string $scope, SeoAuthorization $authorization): array
+    {
+        return (new SeoOwnerReadAdmission(
+            $this->tenancy,
+            $this->ownershipResources,
+            $this->resources,
+        ))->admit($owners, $scope, $this, $authorization);
     }
 
     /**

@@ -36,6 +36,16 @@
             "properties": [],
             "constants": []
         },
+        "Nvl\\Seo\\Actions\\FindSeoRedirectAction": {
+            "kind": "class",
+            "file": "src/Actions/FindSeoRedirectAction.php",
+            "methods": [
+                "__construct",
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Seo\\Actions\\GetOwnerSeoProfileAction": {
             "kind": "class",
             "file": "src/Actions/GetOwnerSeoProfileAction.php",
@@ -156,6 +166,15 @@
         "Nvl\\Seo\\Contracts\\DuplicateSeoProfileContract": {
             "kind": "interface",
             "file": "src/Contracts/DuplicateSeoProfileContract.php",
+            "methods": [
+                "execute"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Contracts\\FindSeoRedirectContract": {
+            "kind": "interface",
+            "file": "src/Contracts/FindSeoRedirectContract.php",
             "methods": [
                 "execute"
             ],
@@ -555,6 +574,7 @@
             ],
             "properties": [
                 "ownerAlias",
+                "ownerId",
                 "page",
                 "perPage",
                 "scope",
@@ -599,6 +619,26 @@
                 "twitterDescription",
                 "twitterTitle",
                 "updatedAt"
+            ],
+            "constants": []
+        },
+        "Nvl\\Seo\\Data\\SeoRedirectData": {
+            "kind": "class",
+            "file": "src/Data/SeoRedirectData.php",
+            "methods": [
+                "__construct"
+            ],
+            "properties": [
+                "expiresAt",
+                "id",
+                "isActive",
+                "locale",
+                "metadata",
+                "revision",
+                "scope",
+                "source",
+                "statusCode",
+                "target"
             ],
             "constants": []
         },
@@ -1117,6 +1157,8 @@
                 "owner",
                 "ownerAlias",
                 "profile",
+                "redirectLocale",
+                "redirectSource",
                 "scope",
                 "targetOwner",
                 "targetOwnerAlias"

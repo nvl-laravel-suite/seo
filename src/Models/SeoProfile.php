@@ -16,6 +16,7 @@ use Nvl\Seo\Database\Factories\SeoProfileFactory;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\SitemapChangeFrequency;
 use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Seo\Support\ExactSeoOwnerText;
 use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Seo\Support\SeoScope;
 use Nvl\Support\Config\PackageStorage;
@@ -119,9 +120,12 @@ final class SeoProfile extends Model implements Ownable, TranslatableModel
      */
     public function scopeForOwner(Builder $query, Model $owner, ?string $scope = null): void
     {
+        $driver = $query->getModel()->getConnection()->getDriverName();
+        $type = $owner->getMorphClass();
+        $identifier = SeoModelIdentifier::required($owner);
         $query
-            ->where('seoable_type', $owner->getMorphClass())
-            ->where('seoable_id', SeoModelIdentifier::required($owner))
+            ->whereRaw(new ExactSeoOwnerText($query->qualifyColumn('seoable_type'), $driver), [$type, $type])
+            ->whereRaw(new ExactSeoOwnerText($query->qualifyColumn('seoable_id'), $driver), [$identifier, $identifier])
             ->where('scope', SeoScope::normalize($scope));
     }
 

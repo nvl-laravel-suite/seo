@@ -26,5 +26,7 @@ final readonly class SeoAuthorizationContext
         public ?Model $targetOwner = null,
         public ?string $targetOwnerAlias = null,
         public ?string $scope = null,
+        public ?string $redirectSource = null,
+        public ?string $redirectLocale = null,
     ) {}
 }

@@ -615,12 +615,43 @@ registered source owner/alias, target owner/alias for duplicates, and scope.
 | `GET` | `/profiles/{profile}/preview` | `nvl.seo.management.profiles.preview` | Resolve a locale preview |
 | `DELETE` | `/profiles/{profile}` | `nvl.seo.management.profiles.destroy` | Optimistic delete |
 
-List filters are `scope`, `status`, `ownerAlias`, `page`, and `perPage`
+List filters are `scope`, `status`, `ownerAlias`, `ownerId`, `page`, and `perPage`
 (maximum 200). Responses use `data.items` and `data.meta`. Create accepts
 `ownerAlias`, `ownerId`, optional `scope`, and a nested `profile` payload.
 Update, archive, and delete require the current revision. Duplicate clears
 localized paths and canonicals by default; `copyPaths=true` is explicit and
 still subject to path-conflict enforcement.
+
+For owner-specific cleanup across sites, inject `ListSeoProfilesContract` and
+provide both the registered alias and native identifier. Omit `scope` to include
+every scope, and follow all paginator pages before deleting obsolete profiles:
+
+```php
+use Nvl\Seo\Data\SeoProfileQuery;
+
+$page = $profiles->execute(new SeoProfileQuery(
+    ownerAlias: 'product', ownerId: $product->getKey(), page: 1, perPage: 200,
+));
+```
+
+An `ownerId` requires an `ownerAlias`. Authorization receives the resolved owner,
+and the native ownership scope still applies. Each deletion retains the profile's
+optimistic revision requirement.
+
+Inject `FindSeoRedirectContract` for a side-effect-free management read:
+
+```php
+$current = $redirects->execute('/old-product', 'shop', 'en');
+$expectedRevision = $current?->revision ?? 0;
+```
+
+The result is `SeoRedirectData`, including its ID, revision, target and active or
+expiry state. The lookup uses the exact source, scope and locale; it has no locale
+fallback, includes inactive and expired rows, and treats soft-deleted rows as absent.
+It authorizes `SeoAbility::ManageRedirects` with the normalized source/scope/locale,
+does not record hits, and never changes a revision. Supply the returned revision
+to `SyncSeoRedirectContract` to retain stale-write rejection. Runtime redirect
+resolution remains separate and continues recording actual hits.
 
 Package domain failures use a stable JSON envelope for API requests:
 

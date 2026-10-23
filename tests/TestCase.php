@@ -11,6 +11,7 @@ use Nvl\Data\Providers\DataServiceProvider;
 use Nvl\Seo\Providers\SeoServiceProvider;
 use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
+use Nvl\Seo\Tests\Fixtures\TestStringSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestStructuredDataProvider;
 use Nvl\Support\Providers\LocaleServiceProvider;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
@@ -49,6 +50,7 @@ abstract class TestCase extends Orchestra
             'nvl-seo.owners' => [
                 'article' => TestSeoOwner::class,
                 'integer-article' => TestIntegerSeoOwner::class,
+                'string-article' => TestStringSeoOwner::class,
             ],
             'nvl-seo.routes.enabled' => true,
             'nvl-seo.routes.sitemap_path' => 'sitemap.xml',
@@ -76,6 +78,16 @@ abstract class TestCase extends Orchestra
         });
         Schema::create('seo_test_integer_owners', function (Blueprint $table): void {
             $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
+        $driver = Schema::getConnection()->getDriverName();
+        Schema::create('seo_test_string_owners', function (Blueprint $table) use ($driver): void {
+            $table->string('id')->collation(match ($driver) {
+                'mysql', 'mariadb' => 'utf8mb4_bin',
+                'pgsql' => 'C',
+                default => 'BINARY',
+            })->primary();
             $table->string('name');
             $table->timestamps();
         });

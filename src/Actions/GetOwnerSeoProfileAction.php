@@ -8,12 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 use Nvl\Seo\Contracts\GetOwnerSeoProfileContract;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Data\SeoProfileData;
-use Nvl\Seo\Enums\SeoAbility;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Seo\Services\SeoProfilePresenter;
-use Nvl\Seo\Support\SeoAuthorizationContext;
-use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Seo\Support\SeoScope;
 
 /**
@@ -38,19 +35,10 @@ final readonly class GetOwnerSeoProfileAction implements GetOwnerSeoProfileContr
     public function execute(Model $owner, ?string $scope = null): ?SeoProfileData
     {
         $scope = SeoScope::normalize($scope);
-        $ownerAlias = $this->owners->aliasFor($owner);
-        $ownerId = SeoModelIdentifier::required($owner);
-        $this->authorization->authorize(new SeoAuthorizationContext(
-            ability: SeoAbility::View,
-            owner: $owner,
-            ownerAlias: $ownerAlias,
-            scope: $scope,
-        ));
+        $owner = $this->owners->admitForRead([$owner], $scope, $this->authorization)[0]['owner'];
         $profile = SeoProfile::query()
             ->with('translations')
-            ->where('seoable_type', $owner->getMorphClass())
-            ->where('seoable_id', $ownerId)
-            ->where('scope', $scope)
+            ->forOwner($owner, $scope)
             ->first();
 
         return $profile instanceof SeoProfile

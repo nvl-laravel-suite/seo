@@ -2,12 +2,17 @@
 
 declare(strict_types=1);
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Nvl\Data\Services\TypeScriptSourceRegistry;
 use Nvl\Seo\Actions\ArchiveSeoProfileAction;
 use Nvl\Seo\Actions\DeleteSeoProfileAction;
@@ -17,6 +22,10 @@ use Nvl\Seo\Actions\PreviewSeoProfileAction;
 use Nvl\Seo\Actions\SeoProfileStatusAction;
 use Nvl\Seo\Actions\SyncSeoProfileAction;
 use Nvl\Seo\Actions\SyncSeoRedirectAction;
+use Nvl\Seo\Contracts\FindSeoRedirectContract;
+use Nvl\Seo\Contracts\GetOwnerSeoProfileContract;
+use Nvl\Seo\Contracts\GetOwnerSeoRevisionContract;
+use Nvl\Seo\Contracts\ListOwnerSeoProfilesContract;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Contracts\StructuredDataProvider;
@@ -28,6 +37,7 @@ use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Data\StructuredDataContextData;
 use Nvl\Seo\Data\StructuredDataNodeData;
 use Nvl\Seo\Definitions\Tables\SeoTables;
+use Nvl\Seo\Enums\SeoAbility;
 use Nvl\Seo\Enums\StructuredDataType;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Exceptions\SeoPathConflictException;
@@ -50,6 +60,7 @@ use Nvl\Seo\Services\StructuredDataRegistry;
 use Nvl\Seo\Support\SeoAuthorizationContext;
 use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
+use Nvl\Seo\Tests\Fixtures\TestStringSeoOwner;
 use Nvl\Translatable\Actions\SyncTranslationResourceAction;
 use Nvl\Translatable\Data\TranslationActorData;
 use Nvl\Translatable\Data\TranslationMutationData;
@@ -770,6 +781,233 @@ it('flattens redirect chains, rejects loops and stale revisions, and records hit
 
     expect($preserved->target)
         ->toBe('https://example.test/final?campaign=legacy#offer');
+});
+
+it('lists every scope for one authorized owner without including other owners', function (): void {
+    $owner = seoOwner();
+    $other = seoOwner('Other article');
+    $writer = app(SyncSeoProfileAction::class);
+    $writer->execute($owner, seoPayload());
+    $writer->execute($owner, seoPayload(), 'second-site');
+    $writer->execute($other, seoPayload(['translations' => [
+        'en' => ['path' => '/other'], 'bg' => ['path' => '/bg/other'],
+    ]]));
+    $contexts = new ArrayObject;
+    app()->instance(SeoAuthorization::class, new class($contexts) implements SeoAuthorization
+    {
+        public function __construct(private ArrayObject $contexts) {}
+
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            $this->contexts[] = $context;
+        }
+    });
+
+    $page = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
+        ownerAlias: 'article', perPage: 1, ownerId: $owner->id,
+    ));
+
+    expect($page->total())->toBe(2)
+        ->and($page->count())->toBe(1)
+        ->and($contexts[0]->owner?->getKey())->toBe($owner->id)
+        ->and($contexts[0]->scope)->toBeNull();
+});
+
+it('requires an owner alias when filtering profile management by owner identity', function (): void {
+    expect(fn () => SeoProfileQuery::validateAndCreate(['ownerId' => 'owner-1']))
+        ->toThrow(ValidationException::class);
+    expect(fn () => app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(ownerId: 'owner-1')))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('uses the resolved canonical integer key for owner profile filtering', function (): void {
+    $owner = TestIntegerSeoOwner::query()->create(['name' => 'Native integer']);
+    app(SyncSeoProfileAction::class)->execute($owner, seoPayload());
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void {}
+    });
+    $page = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
+        ownerAlias: 'integer-article', ownerId: '00'.$owner->getKey(),
+    ));
+
+    expect($page->total())->toBe(1);
+});
+
+it('keeps case-distinct and padded owner identities isolated under native package collation', function (): void {
+    $driver = DB::connection()->getDriverName();
+    if ($driver === 'sqlite') {
+        Schema::table(SeoTables::get(SeoTables::Profiles), static function (Blueprint $table): void {
+            $table->string('seoable_id')->collation('NOCASE')->change();
+        });
+    }
+    $owner = new TestStringSeoOwner;
+    $owner->forceFill(['id' => 'Owner-A', 'name' => 'Upper'])->save();
+    $foreign = new TestStringSeoOwner;
+    $foreign->forceFill(['id' => 'owner-a', 'name' => 'Lower'])->save();
+    $profile = app(SyncSeoProfileAction::class)->execute($owner, seoPayload(), 'one');
+    app(SyncSeoProfileAction::class)->execute($foreign, seoPayload(), 'two');
+    $padded = $profile->replicate();
+    $padded->forceFill(['scope' => 'three', 'seoable_id' => 'Owner-A '])->save();
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void {}
+    });
+
+    $page = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
+        ownerAlias: 'string-article', ownerId: $owner->getKey(),
+    ));
+    expect($page->total())->toBe(1)
+        ->and($page->items()[0]->ownerId)->toBe('Owner-A');
+});
+
+it('keeps owner reads and mutations separate from collating or trimmed identities', function (
+    string $ownerId,
+    string $foreignId,
+    string $operation,
+): void {
+    $driver = DB::connection()->getDriverName();
+    if ($driver === 'sqlite') {
+        Schema::table(SeoTables::get(SeoTables::Profiles), static function (Blueprint $table): void {
+            $table->string('seoable_id')->collation('NOCASE')->change();
+        });
+    }
+    $owner = new TestStringSeoOwner;
+    $owner->forceFill(['id' => $ownerId, 'name' => 'Requested owner'])->save();
+    $foreign = new TestStringSeoOwner;
+    $foreign->forceFill(['id' => $foreignId, 'name' => 'Foreign owner'])->save();
+    $profile = app(SyncSeoProfileAction::class)->execute($foreign, seoPayload(), 'audit');
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void {}
+    });
+
+    if ($operation === 'profile') {
+        expect(app(GetOwnerSeoProfileContract::class)->execute($owner, 'audit'))->toBeNull();
+    } elseif ($operation === 'revision') {
+        $revision = app(GetOwnerSeoRevisionContract::class)->execute($owner, 'audit');
+        expect($revision->profileId)->toBeNull()
+            ->and($revision->revision)->toBe(0)
+            ->and($revision->ownerId)->toBe($ownerId);
+    } elseif ($operation === 'relation') {
+        expect($owner->seoProfiles()->count())->toBe(0);
+    } elseif ($operation === 'existence') {
+        expect(TestStringSeoOwner::query()->whereKey($ownerId)->whereHas('seoProfiles')->exists())->toBeFalse();
+    } else {
+        try {
+            $created = app(SyncSeoProfileAction::class)->execute($owner, SeoProfilePayload::from([
+                'sitemapPriority' => '0.2',
+            ]), 'audit');
+            expect($created->seoable_id)->toBe($ownerId);
+        } catch (StaleSeoProfileException) {
+            // A collating native unique index may reject the second identity, but must never mutate the first.
+        }
+        expect($profile->fresh()?->revision)->toBe(1)
+            ->and($profile->fresh()?->sitemap_priority)->toBe('0.8');
+    }
+})->with([
+    'case-distinct' => ['Owner-A', 'owner-a'],
+    'leading-space' => [' Owner-A', 'Owner-A'],
+])->with(['profile', 'revision', 'relation', 'existence', 'mutation']);
+
+it('admits current persisted owners before exposing single or batched SEO profiles', function (string $state, string $operation): void {
+    $owner = seoOwner('Allowed owner');
+    app(SyncSeoProfileAction::class)->execute($owner, seoPayload(), 'audit');
+    $originalScopes = TestSeoOwner::getAllGlobalScopes();
+
+    try {
+        if ($state === 'relation') {
+            $owner->setRelation('policyGrant', $owner->replicate());
+        } elseif ($state === 'deleted') {
+            TestSeoOwner::query()->whereKey($owner->getKey())->delete();
+        } else {
+            TestSeoOwner::query()->whereKey($owner->getKey())->update(['name' => 'Revoked owner']);
+            if ($state === 'hidden') {
+                TestSeoOwner::addGlobalScope('visible-owner', static function (Builder $query): void {
+                    $query->where('name', 'Allowed owner');
+                });
+            }
+        }
+        app()->instance(SeoAuthorization::class, new class($state === 'relation') implements SeoAuthorization
+        {
+            public function __construct(private bool $requiresRelation) {}
+
+            public function authorize(SeoAuthorizationContext $context): void
+            {
+                if ($context->owner?->getAttribute('name') !== 'Allowed owner'
+                    || ($this->requiresRelation && ! $context->owner->relationLoaded('policyGrant'))) {
+                    throw new AuthorizationException('The current owner cannot be viewed.');
+                }
+            }
+        });
+        $read = match ($operation) {
+            'profile' => fn () => app(GetOwnerSeoProfileContract::class)->execute($owner, 'audit'),
+            'revision' => fn () => app(GetOwnerSeoRevisionContract::class)->execute($owner, 'audit'),
+            'batch' => fn () => app(ListOwnerSeoProfilesContract::class)->execute([$owner], 'audit'),
+        };
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        expect($read)->toThrow(in_array($state, ['changed', 'relation'], true) ? AuthorizationException::class : ModelNotFoundException::class)
+            ->and(collect(DB::getQueryLog())->contains(
+                static fn (array $query): bool => str_contains($query['query'], SeoTables::get(SeoTables::Profiles)),
+            ))->toBeFalse();
+    } finally {
+        DB::disableQueryLog();
+        TestSeoOwner::setAllGlobalScopes($originalScopes);
+    }
+})->with(['changed', 'hidden', 'deleted', 'relation'])->with(['profile', 'revision', 'batch']);
+
+it('reads exact management redirects with their revisions without recording hits', function (): void {
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            expect($context->ability)->toBe(SeoAbility::ManageRedirects)
+                ->and($context->scope)->toBe('catalogue');
+        }
+    });
+    $writer = app(SyncSeoRedirectAction::class);
+    $neutral = $writer->execute(null, SeoRedirectPayload::from([
+        'sourcePath' => '/old', 'target' => '/neutral',
+    ]), 'catalogue');
+    $localized = $writer->execute(null, SeoRedirectPayload::from([
+        'sourcePath' => '/old', 'target' => '/localized', 'locale' => 'en',
+        'isActive' => false, 'expiresAt' => now()->subDay()->toIso8601String(),
+    ]), 'catalogue');
+    $reader = app(FindSeoRedirectContract::class);
+    $snapshot = $reader->execute('/old', 'catalogue', 'en');
+
+    expect($snapshot?->id)->toBe($localized->id)
+        ->and($snapshot?->revision)->toBe(1)
+        ->and($snapshot?->target)->toBe('/localized')
+        ->and($snapshot?->isActive)->toBeFalse()
+        ->and($reader->execute('/old', 'catalogue')?->id)->toBe($neutral->id)
+        ->and($reader->execute('/old', 'catalogue', 'bg'))->toBeNull()
+        ->and($localized->fresh()?->hit_count)->toBe(0)
+        ->and($localized->fresh()?->last_hit_at)->toBeNull();
+
+    $writer->execute($localized, SeoRedirectPayload::from([
+        'sourcePath' => '/old', 'target' => '/edited', 'locale' => 'en', 'expectedRevision' => 1,
+    ]), 'catalogue');
+    expect($reader->execute('/old', 'catalogue', 'en')?->revision)->toBe(2)
+        ->and(fn () => $writer->execute($localized, SeoRedirectPayload::from([
+            'sourcePath' => '/old', 'target' => '/stale', 'locale' => 'en',
+            'expectedRevision' => $snapshot?->revision,
+        ]), 'catalogue'))->toThrow(StaleSeoRedirectException::class);
+});
+
+it('authorizes redirect management reads before exposing a stored or absent identity', function (): void {
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            throw new AuthorizationException;
+        }
+    });
+
+    expect(fn () => app(FindSeoRedirectContract::class)->execute('/absent'))
+        ->toThrow(AuthorizationException::class);
 });
 
 it('generates bounded sitemap indexes and reports package health', function (): void {

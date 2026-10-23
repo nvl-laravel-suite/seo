@@ -140,10 +140,12 @@ final readonly class SyncSeoProfileAction implements SyncSeoProfileContract
                 throw SeoPathConflictException::concurrent($scope, $exception);
             }
 
+            $profileModel = new SeoProfile;
+            $profileTable = $profileModel->getConnection()->getTablePrefix().$profileModel->getTable();
             if (DatabaseConstraintViolation::matches($exception, [
                 'seo_profiles_scope_owner_unique',
                 'seo_profiles_tenant_scope_owner_unique',
-                'seo_profiles.scope, seo_profiles.seoable_type, seo_profiles.seoable_id',
+                "{$profileTable}.scope, {$profileTable}.seoable_type, {$profileTable}.seoable_id",
             ])) {
                 throw StaleSeoProfileException::forProfile('new', $exception);
             }

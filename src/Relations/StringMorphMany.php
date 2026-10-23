@@ -7,7 +7,10 @@ namespace Nvl\Seo\Relations;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use InvalidArgumentException;
+use LogicException;
+use Nvl\Seo\Support\ExactSeoOwnerText;
 
 /**
  * A morph-many relation whose foreign identifier is normalized to text.
@@ -26,10 +29,11 @@ final class StringMorphMany extends MorphMany
         }
 
         $query = $this->getRelationQuery();
-
+        $identifier = $this->normalizeIdentifier($this->getParentKey());
+        $driver = $query->getModel()->getConnection()->getDriverName();
         $query
-            ->where($this->morphType, $this->morphClass)
-            ->where($this->foreignKey, '=', $this->normalizeIdentifier($this->getParentKey()))
+            ->whereRaw(new ExactSeoOwnerText($this->morphType, $driver), [$this->morphClass, $this->morphClass])
+            ->whereRaw(new ExactSeoOwnerText($this->foreignKey, $driver), [$identifier, $identifier])
             ->whereNotNull($this->foreignKey);
     }
 
@@ -50,7 +54,37 @@ final class StringMorphMany extends MorphMany
             $this->getRelationQuery(),
         );
 
-        $this->getRelationQuery()->where($this->morphType, $this->morphClass);
+        $query = $this->getRelationQuery();
+        $query->whereRaw(new ExactSeoOwnerText($this->morphType, $query->getModel()->getConnection()->getDriverName()), [$this->morphClass, $this->morphClass]);
+    }
+
+    /**
+     * Limit eager results per exact foreign identifier without changing direct relation limits.
+     *
+     * @param  int  $value
+     * @return $this
+     */
+    public function limit($value): static
+    {
+        parent::limit($value);
+
+        if ($this->parent->exists) {
+            return $this;
+        }
+        $query = $this->getQuery()->getQuery();
+        if ($query->groupLimit === null) {
+            return $this;
+        }
+        $grammar = $query->getGrammar();
+        if ($grammar instanceof MySqlGrammar && $grammar->useLegacyGroupLimit($query)) {
+            throw new LogicException('Exact SEO eager limits require window-function capable MySQL.');
+        }
+        $query->groupLimit['column'] = new ExactSeoOwnerPartition(
+            $this->getExistenceCompareKey(),
+            $this->getRelated()->getConnection()->getDriverName(),
+        );
+
+        return $this;
     }
 
     /**
@@ -64,11 +98,12 @@ final class StringMorphMany extends MorphMany
     ): Builder {
         $parentKey = $this->textColumnExpression($query, $this->getQualifiedParentKeyName());
         $foreignKey = $query->getQuery()->getGrammar()->wrap($this->getExistenceCompareKey());
+        $driver = $query->getModel()->getConnection()->getDriverName();
 
         return $query
             ->select($columns)
-            ->whereRaw(new TextColumnComparison($parentKey, $foreignKey))
-            ->where($query->qualifyColumn($this->getMorphType()), $this->morphClass);
+            ->whereRaw(new TextColumnComparison($parentKey, $foreignKey, $driver))
+            ->whereRaw(new ExactSeoOwnerText($query->qualifyColumn($this->getMorphType()), $driver), [$this->morphClass, $this->morphClass]);
     }
 
     /**

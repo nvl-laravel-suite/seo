@@ -8,11 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 use Nvl\Seo\Contracts\GetOwnerSeoRevisionContract;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Data\SeoOwnerRevisionData;
-use Nvl\Seo\Enums\SeoAbility;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Services\SeoOwnerRegistry;
-use Nvl\Seo\Support\SeoAuthorizationContext;
-use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Seo\Support\SeoScope;
 
 /**
@@ -36,23 +33,15 @@ final readonly class GetOwnerSeoRevisionAction implements GetOwnerSeoRevisionCon
     public function execute(Model $owner, ?string $scope = null): SeoOwnerRevisionData
     {
         $scope = SeoScope::normalize($scope);
-        $ownerAlias = $this->owners->aliasFor($owner);
-        $ownerId = SeoModelIdentifier::required($owner);
-        $this->authorization->authorize(new SeoAuthorizationContext(
-            ability: SeoAbility::View,
-            owner: $owner,
-            ownerAlias: $ownerAlias,
-            scope: $scope,
-        ));
+        $identity = $this->owners->admitForRead([$owner], $scope, $this->authorization)[0];
+        $owner = $identity['owner'];
         $profile = SeoProfile::query()
-            ->where('seoable_type', $owner->getMorphClass())
-            ->where('seoable_id', $ownerId)
-            ->where('scope', $scope)
+            ->forOwner($owner, $scope)
             ->first(['id', 'revision']);
 
         return new SeoOwnerRevisionData(
-            ownerAlias: $ownerAlias,
-            ownerId: $ownerId,
+            ownerAlias: $identity['alias'],
+            ownerId: $identity['id'],
             scope: $scope,
             profileId: $profile instanceof SeoProfile ? $profile->id : null,
             revision: $profile instanceof SeoProfile ? $profile->revision : 0,
