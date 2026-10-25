@@ -10,8 +10,6 @@ use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Attributes\MapOutputName;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Mappers\CamelCaseMapper;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Privileged management representation of one SEO profile.
@@ -20,7 +18,6 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
  */
 #[MapInputName(CamelCaseMapper::class)]
 #[MapOutputName(CamelCaseMapper::class)]
-#[TypeScript]
 final class SeoProfileData extends Data
 {
     /**
@@ -33,7 +30,6 @@ final class SeoProfileData extends Data
         public readonly string $ownerAlias,
         public readonly string $ownerMorphType,
         public readonly string $ownerId,
-        #[LiteralTypeScriptType("'active' | 'archived'")]
         public readonly string $status,
         public readonly int $revision,
         public readonly bool $isIndexable,
@@ -44,12 +40,10 @@ final class SeoProfileData extends Data
         public readonly bool $sitemapIncluded,
         public readonly ?string $sitemapPriority,
         public readonly ?SitemapChangeFrequency $sitemapChangeFrequency,
-        #[LiteralTypeScriptType('Record<string, unknown> | null')]
         public readonly ?array $metadata,
         public readonly ?string $archivedAt,
         public readonly string $createdAt,
         public readonly string $updatedAt,
-        #[LiteralTypeScriptType('Record<string, Nvl.Seo.Data.SeoProfileTranslationData>')]
         public readonly array $translations,
     ) {}
 

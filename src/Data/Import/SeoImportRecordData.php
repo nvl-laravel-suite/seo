@@ -6,14 +6,12 @@ namespace Nvl\Seo\Data\Import;
 
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Neutral owner alias plus validated profile mutation supplied by an importer.
  *
  * @api
  */
-#[TypeScript]
 final class SeoImportRecordData extends Data
 {
     public function __construct(

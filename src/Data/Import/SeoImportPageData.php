@@ -7,14 +7,12 @@ namespace Nvl\Seo\Data\Import;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\DataCollection;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * One deterministic page from a consumer-owned SEO import source.
  *
  * @api
  */
-#[TypeScript]
 final class SeoImportPageData extends Data
 {
     /**

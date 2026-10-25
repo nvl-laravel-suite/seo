@@ -10,7 +10,6 @@ use Nvl\Seo\Rules\OwnerIdentifier;
 use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Mappers\CamelCaseMapper;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Allowlisted profile management query.
@@ -18,7 +17,6 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
  * @api
  */
 #[MapInputName(CamelCaseMapper::class)]
-#[TypeScript]
 final class SeoProfileQuery extends Data
 {
     public function __construct(

@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Enums;
 
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
-
 /**
  * Standard sitemap change-frequency hints.
  *
  * @api
  */
-#[TypeScript]
 enum SitemapChangeFrequency: string
 {
     case Always = 'always';

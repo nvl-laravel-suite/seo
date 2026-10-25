@@ -7,10 +7,8 @@ namespace Nvl\Seo\Data;
 use Illuminate\Validation\Rule;
 use Nvl\Seo\Support\SeoScope;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /** Validated public sitemap selector. */
-#[TypeScript]
 final class SeoSitemapQueryData extends Data
 {
     public function __construct(public readonly ?string $scope = null) {}

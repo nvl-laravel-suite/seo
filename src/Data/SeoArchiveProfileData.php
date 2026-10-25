@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Data;
 
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
-
 /** Validated optimistic archive or restore mutation. */
-#[TypeScript]
 final class SeoArchiveProfileData extends SeoManagementInputData
 {
     public function __construct(

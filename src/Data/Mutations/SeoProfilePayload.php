@@ -16,9 +16,6 @@ use Spatie\LaravelData\Attributes\MapOutputName;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Mappers\CamelCaseMapper;
 use Spatie\LaravelData\Optional;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\Optional as TypeScriptOptional;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Complete patch/replace contract for an owner's scoped SEO profile.
@@ -27,7 +24,6 @@ use Spatie\TypeScriptTransformer\Attributes\TypeScript;
  */
 #[MapInputName(CamelCaseMapper::class)]
 #[MapOutputName(CamelCaseMapper::class)]
-#[TypeScript]
 final class SeoProfilePayload extends Data
 {
     use DataTransform;
@@ -59,30 +55,16 @@ final class SeoProfilePayload extends Data
      * @param  array<string, mixed>|Optional|null  $metadata
      */
     public function __construct(
-        #[TypeScriptOptional]
         public readonly bool|Optional $isIndexable = new Optional,
-        #[TypeScriptOptional]
         public readonly bool|Optional $isFollowable = new Optional,
-        #[TypeScriptOptional]
         public readonly int|Optional|null $maxSnippet = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $maxImagePreview = new Optional,
-        #[TypeScriptOptional]
         public readonly int|Optional|null $maxVideoPreview = new Optional,
-        #[TypeScriptOptional]
         public readonly bool|Optional $sitemapIncluded = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $sitemapPriority = new Optional,
-        #[TypeScriptOptional]
         public readonly SitemapChangeFrequency|Optional|null $sitemapChangeFrequency = new Optional,
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, unknown> | null')]
         public readonly array|Optional|null $metadata = new Optional,
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, Nvl.Seo.Data.Mutations.SeoTranslationPayload>')]
         public readonly array|Optional $translations = new Optional,
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('number | null')]
         public readonly int|Optional|null $expectedRevision = new Optional,
     ) {}
 

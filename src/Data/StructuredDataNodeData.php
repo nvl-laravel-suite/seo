@@ -8,15 +8,12 @@ use InvalidArgumentException;
 use Nvl\Seo\Enums\StructuredDataType;
 use Nvl\Seo\Support\HttpUrl;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Describes one context-free schema.org node returned by a resource provider.
  *
  * @api
  */
-#[TypeScript]
 final class StructuredDataNodeData extends Data
 {
     /**
@@ -25,7 +22,6 @@ final class StructuredDataNodeData extends Data
     public function __construct(
         public readonly string $type,
         public readonly ?string $id = null,
-        #[LiteralTypeScriptType('Record<string, unknown>')]
         public readonly array $properties = [],
     ) {
         if (preg_match('/^[A-Za-z0-9][A-Za-z0-9]*$/', $this->type) !== 1) {

@@ -14,16 +14,12 @@ use Spatie\LaravelData\Attributes\MapOutputName;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Mappers\CamelCaseMapper;
 use Spatie\LaravelData\Optional;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\Optional as TypeScriptOptional;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Patch contract for SEO metadata in one locale.
  */
 #[MapInputName(CamelCaseMapper::class)]
 #[MapOutputName(CamelCaseMapper::class)]
-#[TypeScript]
 final class SeoTranslationPayload extends Data
 {
     use DataTransform;
@@ -58,35 +54,19 @@ final class SeoTranslationPayload extends Data
      * @param  array<string, mixed>|Optional|null  $metadata
      */
     public function __construct(
-        #[TypeScriptOptional]
         public readonly string|Optional|null $path = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $title = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $description = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $canonicalUrl = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $imageUrl = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $imageReference = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $imageAlt = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $openGraphTitle = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $openGraphDescription = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $twitterTitle = new Optional,
-        #[TypeScriptOptional]
         public readonly string|Optional|null $twitterDescription = new Optional,
-        #[TypeScriptOptional]
         public readonly TwitterCard|Optional|null $twitterCard = new Optional,
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, unknown> | Array<Record<string, unknown>> | null')]
         public readonly array|Optional|null $structuredData = new Optional,
-        #[TypeScriptOptional]
-        #[LiteralTypeScriptType('Record<string, unknown> | null')]
         public readonly array|Optional|null $metadata = new Optional,
     ) {}
 

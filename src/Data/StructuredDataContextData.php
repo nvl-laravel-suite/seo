@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Nvl\Seo\Data;
 
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Supplies resolved page and resource facts to structured-data providers.
  *
  * @api
  */
-#[TypeScript]
 final class StructuredDataContextData extends Data
 {
     /**

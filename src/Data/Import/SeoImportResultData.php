@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Nvl\Seo\Data\Import;
 
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Reports one completed, bounded SEO import page.
  *
  * @api
  */
-#[TypeScript]
 final class SeoImportResultData extends Data
 {
     /**

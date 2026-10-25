@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Data;
 
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
-
 /** Validated optional scope for management status. */
-#[TypeScript]
 final class SeoScopeQueryData extends SeoManagementInputData
 {
     public function __construct(public readonly ?string $scope = null) {}

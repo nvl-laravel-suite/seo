@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Nvl\Seo\Data;
 
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Runtime redirect decision after chain flattening and expiry checks.
  *
  * @api
  */
-#[TypeScript]
 final class ResolvedRedirectData extends Data
 {
     public function __construct(

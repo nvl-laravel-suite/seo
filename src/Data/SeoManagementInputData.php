@@ -8,10 +8,8 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Validator;
 use Nvl\Data\Traits\DataTransform;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\Hidden;
 
 /** Strict management input boundary shared by SEO command Data objects. */
-#[Hidden]
 abstract class SeoManagementInputData extends Data
 {
     use DataTransform;

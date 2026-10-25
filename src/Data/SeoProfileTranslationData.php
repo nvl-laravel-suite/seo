@@ -7,15 +7,12 @@ namespace Nvl\Seo\Data;
 use Nvl\Seo\Enums\TwitterCard;
 use Nvl\Seo\Models\SeoProfileTranslation;
 use Spatie\LaravelData\Data;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /**
  * Privileged management representation of one localized SEO profile row.
  *
  * @api
  */
-#[TypeScript]
 final class SeoProfileTranslationData extends Data
 {
     /**
@@ -36,9 +33,7 @@ final class SeoProfileTranslationData extends Data
         public readonly ?string $twitterTitle,
         public readonly ?string $twitterDescription,
         public readonly ?TwitterCard $twitterCard,
-        #[LiteralTypeScriptType('unknown[] | Record<string, unknown> | null')]
         public readonly ?array $structuredData,
-        #[LiteralTypeScriptType('Record<string, unknown> | null')]
         public readonly ?array $metadata,
         public readonly string $createdAt,
         public readonly string $updatedAt,

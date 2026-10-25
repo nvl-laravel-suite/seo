@@ -6,10 +6,8 @@ namespace Nvl\Seo\Data;
 
 use Nvl\Seo\Rules\OwnerIdentifier;
 use Nvl\Seo\Support\SeoModelIdentifier;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /** Validated profile duplication target. */
-#[TypeScript]
 final class SeoDuplicateProfileData extends SeoManagementInputData
 {
     public function __construct(

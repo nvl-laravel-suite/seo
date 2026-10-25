@@ -8,18 +8,14 @@ use Illuminate\Validation\Rule;
 use Nvl\Seo\Data\Mutations\SeoProfilePayload;
 use Nvl\Seo\Rules\OwnerIdentifier;
 use Nvl\Seo\Support\SeoModelIdentifier;
-use Spatie\TypeScriptTransformer\Attributes\LiteralTypeScriptType;
-use Spatie\TypeScriptTransformer\Attributes\TypeScript;
 
 /** Validated new SEO profile and registered owner identity. */
-#[TypeScript]
 final class SeoStoreProfileData extends SeoManagementInputData
 {
     /** @param array<string, mixed> $profile */
     public function __construct(
         public readonly string $ownerAlias,
         public readonly string|int $ownerId,
-        #[LiteralTypeScriptType('Nvl.Seo.Data.Mutations.SeoProfilePayload')]
         public readonly array $profile,
         public readonly ?string $scope = null,
     ) {}
