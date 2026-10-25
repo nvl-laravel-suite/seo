@@ -163,7 +163,7 @@ final class SeoProfile extends Model implements Ownable, TranslatableModel
                 'structured_data',
                 'metadata',
             ],
-            mutationPolicy: TranslationMutationPolicy::DomainActionOnly,
+            mutationPolicy: TranslationMutationPolicy::OwningServiceOnly,
             ownershipResource: self::TENANT_RESOURCE,
         );
     }
