@@ -8,14 +8,12 @@ use Illuminate\Container\Container;
 use Illuminate\Contracts\Cache\Repository;
 use LogicException;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
-use Nvl\Seo\Data\SitemapCacheIdentity;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoScope;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Ownership\Services\OwnerSiteContext;
-use Nvl\Support\Tenancy\ValueObjects\TenantSiteContext;
 use Throwable;
 
 /**
@@ -36,7 +34,7 @@ final readonly class SitemapCache
      */
     public function key(string $scope): string
     {
-        return $this->capture($scope)->key;
+        return $this->capture($scope)['key'];
     }
 
     /**
@@ -44,11 +42,12 @@ final readonly class SitemapCache
      */
     public function namespace(string $scope): string
     {
-        return $this->capture($scope)->namespace;
+        return $this->capture($scope)['namespace'];
     }
 
     /** Capture tenant/site/origin/version facts for safe deferred work. */
-    public function capture(string $scope): SitemapCacheIdentity
+    /** @return array{connection:string,tenantId:string,site:string,origin:string,scope:string,version:int,key:string,namespace:string} */
+    public function capture(string $scope): array
     {
         $scope = SeoScope::normalize($scope);
         $facts = $this->facts($scope);
@@ -56,16 +55,16 @@ final readonly class SitemapCache
         $version = $this->version($this->versionKey($facts));
         $key = $base.':v'.$version;
 
-        return new SitemapCacheIdentity(
-            connection: $facts['connection'],
-            tenantId: $facts['tenant'],
-            site: $facts['site'],
-            origin: $facts['origin'],
-            scope: $scope,
-            version: $version,
-            key: $key,
-            namespace: hash('sha256', $key),
-        );
+        return [
+            'connection' => $facts['connection'],
+            'tenantId' => $facts['tenant'],
+            'site' => $facts['site'],
+            'origin' => $facts['origin'],
+            'scope' => $scope,
+            'version' => $version,
+            'key' => $key,
+            'namespace' => hash('sha256', $key),
+        ];
     }
 
     /**
@@ -80,18 +79,19 @@ final readonly class SitemapCache
     }
 
     /** Invalidate exactly the identity captured with the committed mutation. */
-    public function forgetCaptured(SitemapCacheIdentity $identity): bool
+    /** @param array{connection:string,tenantId:string,site:string,origin:string,scope:string,version:int,key:string,namespace:string} $identity */
+    public function forgetCaptured(array $identity): bool
     {
         try {
             $base = $this->baseKey([
-                'connection' => $identity->connection,
-                'tenant' => $identity->tenantId,
-                'site' => $identity->site,
-                'origin' => $identity->origin,
-                'scope' => $identity->scope,
+                'connection' => $identity['connection'],
+                'tenant' => $identity['tenantId'],
+                'site' => $identity['site'],
+                'origin' => $identity['origin'],
+                'scope' => $identity['scope'],
             ]);
             $versionKey = $this->versionKey([
-                'connection' => $identity->connection, 'tenant' => $identity->tenantId, 'site' => $identity->site, 'origin' => $identity->origin, 'scope' => $identity->scope,
+                'connection' => $identity['connection'], 'tenant' => $identity['tenantId'], 'site' => $identity['site'], 'origin' => $identity['origin'], 'scope' => $identity['scope'],
             ]);
             $this->cache->add($versionKey, 1);
             $version = $this->cache->increment($versionKey);
@@ -108,7 +108,7 @@ final readonly class SitemapCache
         }
 
         try {
-            $this->artifacts->deleteNamespace($identity->namespace);
+            $this->artifacts->deleteNamespace($identity['namespace']);
         } catch (Throwable $exception) {
             report($exception);
         }
@@ -149,17 +149,6 @@ final readonly class SitemapCache
                 'tenant' => $container->make(OwnershipBoundary::class)->key('seo.profiles', 'sitemap'),
                 'site' => $site->site ?? $scope,
                 'origin' => $site->canonicalOrigin ?? '*',
-                'scope' => $scope,
-            ];
-        }
-        if ($container->bound('config') && $container->make('config')->get('nvl-tenancy.enabled') === true) {
-            $site = $container->make(TenantSiteContext::class);
-
-            return [
-                'connection' => $connection,
-                'tenant' => $site->tenantId->value,
-                'site' => $site->site,
-                'origin' => rtrim($site->canonicalOrigin, '/'),
                 'scope' => $scope,
             ];
         }

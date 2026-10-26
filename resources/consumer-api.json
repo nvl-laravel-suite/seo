@@ -6,235 +6,6 @@
         "Nvl\\Seo\\Database\\Factories\\": "database/factories"
     },
     "symbols": {
-        "Nvl\\Seo\\Actions\\ArchiveSeoProfileAction": {
-            "kind": "class",
-            "file": "src/Actions/ArchiveSeoProfileAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\DeleteSeoProfileAction": {
-            "kind": "class",
-            "file": "src/Actions/DeleteSeoProfileAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\DuplicateSeoProfileAction": {
-            "kind": "class",
-            "file": "src/Actions/DuplicateSeoProfileAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\FindSeoRedirectAction": {
-            "kind": "class",
-            "file": "src/Actions/FindSeoRedirectAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\GetOwnerSeoProfileAction": {
-            "kind": "class",
-            "file": "src/Actions/GetOwnerSeoProfileAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\GetOwnerSeoRevisionAction": {
-            "kind": "class",
-            "file": "src/Actions/GetOwnerSeoRevisionAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\GetSeoProfileAction": {
-            "kind": "class",
-            "file": "src/Actions/GetSeoProfileAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\ImportSeoProfilesAction": {
-            "kind": "class",
-            "file": "src/Actions/ImportSeoProfilesAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\ListOwnerSeoProfilesAction": {
-            "kind": "class",
-            "file": "src/Actions/ListOwnerSeoProfilesAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\ListSeoProfilesAction": {
-            "kind": "class",
-            "file": "src/Actions/ListSeoProfilesAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\PreviewSeoProfileAction": {
-            "kind": "class",
-            "file": "src/Actions/PreviewSeoProfileAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\SeoProfileStatusAction": {
-            "kind": "class",
-            "file": "src/Actions/SeoProfileStatusAction.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\SyncSeoProfileAction": {
-            "kind": "class",
-            "file": "src/Actions/SyncSeoProfileAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Actions\\SyncSeoRedirectAction": {
-            "kind": "class",
-            "file": "src/Actions/SyncSeoRedirectAction.php",
-            "methods": [
-                "__construct",
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\ArchiveSeoProfileContract": {
-            "kind": "interface",
-            "file": "src/Contracts/ArchiveSeoProfileContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\DeleteSeoProfileContract": {
-            "kind": "interface",
-            "file": "src/Contracts/DeleteSeoProfileContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\DuplicateSeoProfileContract": {
-            "kind": "interface",
-            "file": "src/Contracts/DuplicateSeoProfileContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\FindSeoRedirectContract": {
-            "kind": "interface",
-            "file": "src/Contracts/FindSeoRedirectContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\GetOwnerSeoProfileContract": {
-            "kind": "interface",
-            "file": "src/Contracts/GetOwnerSeoProfileContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\GetOwnerSeoRevisionContract": {
-            "kind": "interface",
-            "file": "src/Contracts/GetOwnerSeoRevisionContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\GetSeoProfileContract": {
-            "kind": "interface",
-            "file": "src/Contracts/GetSeoProfileContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\ImportSeoProfilesContract": {
-            "kind": "interface",
-            "file": "src/Contracts/ImportSeoProfilesContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\ListOwnerSeoProfilesContract": {
-            "kind": "interface",
-            "file": "src/Contracts/ListOwnerSeoProfilesContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\ListSeoProfilesContract": {
-            "kind": "interface",
-            "file": "src/Contracts/ListSeoProfilesContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
         "Nvl\\Seo\\Contracts\\OwnershipSafeSeoImageResolver": {
             "kind": "interface",
             "file": "src/Contracts/OwnershipSafeSeoImageResolver.php",
@@ -251,15 +22,6 @@
             "methods": [
                 "entries",
                 "ownershipResources"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\PreviewSeoProfileContract": {
-            "kind": "interface",
-            "file": "src/Contracts/PreviewSeoProfileContract.php",
-            "methods": [
-                "execute"
             ],
             "properties": [],
             "constants": []
@@ -291,15 +53,6 @@
             "properties": [],
             "constants": []
         },
-        "Nvl\\Seo\\Contracts\\SeoProfileStatusContract": {
-            "kind": "interface",
-            "file": "src/Contracts/SeoProfileStatusContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
         "Nvl\\Seo\\Contracts\\SitemapArtifactStore": {
             "kind": "interface",
             "file": "src/Contracts/SitemapArtifactStore.php",
@@ -327,388 +80,6 @@
                 "provide"
             ],
             "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\SyncSeoProfileContract": {
-            "kind": "interface",
-            "file": "src/Contracts/SyncSeoProfileContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\SyncSeoRedirectContract": {
-            "kind": "interface",
-            "file": "src/Contracts/SyncSeoRedirectContract.php",
-            "methods": [
-                "execute"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\TenantSafeSeoImageResolver": {
-            "kind": "interface",
-            "file": "src/Contracts/TenantSafeSeoImageResolver.php",
-            "methods": [
-                "assertTenantSafe",
-                "resolve"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Contracts\\TenantSafeSitemapSource": {
-            "kind": "interface",
-            "file": "src/Contracts/TenantSafeSitemapSource.php",
-            "methods": [
-                "entries",
-                "tenantResources"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\Import\\SeoImportPageData": {
-            "kind": "class",
-            "file": "src/Data/Import/SeoImportPageData.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "items",
-                "nextCursor"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\Import\\SeoImportRecordData": {
-            "kind": "class",
-            "file": "src/Data/Import/SeoImportRecordData.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "ownerAlias",
-                "ownerId",
-                "profile",
-                "scope"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\Import\\SeoImportResultData": {
-            "kind": "class",
-            "file": "src/Data/Import/SeoImportResultData.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "nextCursor",
-                "processed"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\Mutations\\SeoProfilePayload": {
-            "kind": "class",
-            "file": "src/Data/Mutations/SeoProfilePayload.php",
-            "methods": [
-                "__construct",
-                "fields",
-                "rules",
-                "scopedRules",
-                "toArray",
-                "toModel",
-                "toModelFiltered",
-                "toModelPatch",
-                "translatedAttributes",
-                "translatedMessages",
-                "validateForUpdate",
-                "withValidator"
-            ],
-            "properties": [
-                "expectedRevision",
-                "isFollowable",
-                "isIndexable",
-                "maxImagePreview",
-                "maxSnippet",
-                "maxVideoPreview",
-                "metadata",
-                "sitemapChangeFrequency",
-                "sitemapIncluded",
-                "sitemapPriority",
-                "translations"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\Mutations\\SeoRedirectPayload": {
-            "kind": "class",
-            "file": "src/Data/Mutations/SeoRedirectPayload.php",
-            "methods": [
-                "__construct",
-                "rules",
-                "scopedRules",
-                "toArray",
-                "toModel",
-                "toModelFiltered",
-                "toModelPatch",
-                "translatedAttributes",
-                "translatedMessages"
-            ],
-            "properties": [
-                "expectedRevision",
-                "expiresAt",
-                "isActive",
-                "locale",
-                "metadata",
-                "sourcePath",
-                "statusCode",
-                "target"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\ResolvedRedirectData": {
-            "kind": "class",
-            "file": "src/Data/ResolvedRedirectData.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "id",
-                "source",
-                "statusCode",
-                "target"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\ResolvedSeoData": {
-            "kind": "class",
-            "file": "src/Data/ResolvedSeoData.php",
-            "methods": [
-                "__construct",
-                "scopedRules",
-                "toArray",
-                "toModel",
-                "toModelFiltered",
-                "toModelPatch",
-                "translatedAttributes",
-                "translatedMessages"
-            ],
-            "properties": [
-                "alternates",
-                "canonicalUrl",
-                "description",
-                "locale",
-                "openGraph",
-                "openGraphLocales",
-                "robots",
-                "structuredData",
-                "title",
-                "twitter"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\SeoImage": {
-            "kind": "class",
-            "file": "src/Data/SeoImage.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "alt",
-                "height",
-                "mimeType",
-                "url",
-                "width"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\SeoOwnerRevisionData": {
-            "kind": "class",
-            "file": "src/Data/SeoOwnerRevisionData.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "ownerAlias",
-                "ownerId",
-                "profileId",
-                "revision",
-                "scope"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\SeoProfileData": {
-            "kind": "class",
-            "file": "src/Data/SeoProfileData.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "archivedAt",
-                "createdAt",
-                "id",
-                "isFollowable",
-                "isIndexable",
-                "maxImagePreview",
-                "maxSnippet",
-                "maxVideoPreview",
-                "metadata",
-                "ownerAlias",
-                "ownerId",
-                "ownerMorphType",
-                "revision",
-                "scope",
-                "sitemapChangeFrequency",
-                "sitemapIncluded",
-                "sitemapPriority",
-                "status",
-                "translations",
-                "updatedAt"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\SeoProfileQuery": {
-            "kind": "class",
-            "file": "src/Data/SeoProfileQuery.php",
-            "methods": [
-                "__construct",
-                "rules",
-                "withValidator"
-            ],
-            "properties": [
-                "ownerAlias",
-                "ownerId",
-                "page",
-                "perPage",
-                "scope",
-                "status"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\SeoProfileStatusData": {
-            "kind": "class",
-            "file": "src/Data/SeoProfileStatusData.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "active",
-                "archived",
-                "total"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\SeoProfileTranslationData": {
-            "kind": "class",
-            "file": "src/Data/SeoProfileTranslationData.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "canonicalUrl",
-                "createdAt",
-                "description",
-                "imageAlt",
-                "imageReference",
-                "imageUrl",
-                "locale",
-                "metadata",
-                "openGraphDescription",
-                "openGraphTitle",
-                "path",
-                "structuredData",
-                "title",
-                "twitterCard",
-                "twitterDescription",
-                "twitterTitle",
-                "updatedAt"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\SeoRedirectData": {
-            "kind": "class",
-            "file": "src/Data/SeoRedirectData.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "expiresAt",
-                "id",
-                "isActive",
-                "locale",
-                "metadata",
-                "revision",
-                "scope",
-                "source",
-                "statusCode",
-                "target"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\SitemapCacheIdentity": {
-            "kind": "class",
-            "file": "src/Data/SitemapCacheIdentity.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "connection",
-                "key",
-                "namespace",
-                "origin",
-                "scope",
-                "site",
-                "tenantId",
-                "version"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\SitemapEntry": {
-            "kind": "class",
-            "file": "src/Data/SitemapEntry.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "alternates",
-                "changeFrequency",
-                "lastModified",
-                "priority",
-                "url"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\StructuredDataContextData": {
-            "kind": "class",
-            "file": "src/Data/StructuredDataContextData.php",
-            "methods": [
-                "__construct"
-            ],
-            "properties": [
-                "canonicalUrl",
-                "description",
-                "imageUrl",
-                "locale",
-                "profileId",
-                "resourceId",
-                "resourceType",
-                "scope",
-                "siteName",
-                "siteUrl",
-                "title"
-            ],
-            "constants": []
-        },
-        "Nvl\\Seo\\Data\\StructuredDataNodeData": {
-            "kind": "class",
-            "file": "src/Data/StructuredDataNodeData.php",
-            "methods": [
-                "__construct",
-                "make",
-                "toJsonLd"
-            ],
-            "properties": [
-                "id",
-                "properties",
-                "type"
-            ],
             "constants": []
         },
         "Nvl\\Seo\\Database\\Factories\\SeoProfileFactory": {
@@ -761,6 +132,7 @@
                 "List",
                 "ManageRedirects",
                 "Preview",
+                "Resolve",
                 "Update",
                 "View"
             ]
@@ -978,49 +350,155 @@
             "kind": "class",
             "file": "src/Models/SeoProfile.php",
             "methods": [
-                "getKey",
-                "getKeyName",
-                "getMorphClass",
-                "getRouteKey",
-                "getRouteKeyName",
-                "is",
-                "isNot",
-                "relationLoaded"
+                "bootHasOwnership",
+                "delete",
+                "forOwner",
+                "fresh",
+                "getAllTranslations",
+                "getAvailableLocales",
+                "getConnectionName",
+                "getCurrentLocale",
+                "getRelationValue",
+                "getTable",
+                "getTranslatedAttributes",
+                "getTranslation",
+                "hasTranslation",
+                "isTranslatableAttribute",
+                "newQueryForRestoration",
+                "orderByTranslated",
+                "ownershipDefinition",
+                "refresh",
+                "refreshForUpdate",
+                "resolveTranslation",
+                "save",
+                "scopeActive",
+                "scopeForOwner",
+                "scopeOrderByTranslated",
+                "scopeWhereTranslated",
+                "scopeWhereTranslationNotNull",
+                "scopeWhereTranslationNull",
+                "scopeWithAllTranslations",
+                "scopeWithResolvedTranslations",
+                "seoable",
+                "setLocale",
+                "translated",
+                "translation",
+                "translationDefinition",
+                "translationOptions",
+                "translationResourceKey",
+                "translations",
+                "whereTranslated",
+                "whereTranslationNotNull",
+                "whereTranslationNull",
+                "withAllTranslations",
+                "withResolvedTranslations"
             ],
-            "properties": [],
-            "constants": []
+            "properties": [
+                "archived_at",
+                "created_at",
+                "id",
+                "is_followable",
+                "is_indexable",
+                "max_image_preview",
+                "max_snippet",
+                "max_video_preview",
+                "metadata",
+                "revision",
+                "scope",
+                "seoable",
+                "seoable_id",
+                "seoable_type",
+                "sitemap_change_frequency",
+                "sitemap_included",
+                "sitemap_priority",
+                "status",
+                "translations",
+                "updated_at"
+            ],
+            "constants": [
+                "TENANT_RESOURCE"
+            ]
         },
         "Nvl\\Seo\\Models\\SeoProfileTranslation": {
             "kind": "class",
             "file": "src/Models/SeoProfileTranslation.php",
             "methods": [
-                "getKey",
-                "getKeyName",
-                "getMorphClass",
-                "getRouteKey",
-                "getRouteKeyName",
-                "is",
-                "isNot",
-                "relationLoaded"
+                "bootHasOwnership",
+                "delete",
+                "fresh",
+                "getConnectionName",
+                "getTable",
+                "newQueryForRestoration",
+                "ownershipDefinition",
+                "profile",
+                "refresh",
+                "refreshForUpdate",
+                "save"
             ],
-            "properties": [],
-            "constants": []
+            "properties": [
+                "canonical_url",
+                "created_at",
+                "description",
+                "id",
+                "image_alt",
+                "image_reference",
+                "image_url",
+                "locale",
+                "metadata",
+                "open_graph_description",
+                "open_graph_title",
+                "path",
+                "path_hash",
+                "profile",
+                "scope",
+                "seo_profile_id",
+                "structured_data",
+                "title",
+                "twitter_card",
+                "twitter_description",
+                "twitter_title",
+                "updated_at"
+            ],
+            "constants": [
+                "TENANT_RESOURCE"
+            ]
         },
         "Nvl\\Seo\\Models\\SeoRedirect": {
             "kind": "class",
             "file": "src/Models/SeoRedirect.php",
             "methods": [
-                "getKey",
-                "getKeyName",
-                "getMorphClass",
-                "getRouteKey",
-                "getRouteKeyName",
-                "is",
-                "isNot",
-                "relationLoaded"
+                "bootHasOwnership",
+                "delete",
+                "fresh",
+                "getConnectionName",
+                "getTable",
+                "newQueryForRestoration",
+                "ownershipDefinition",
+                "refresh",
+                "refreshForUpdate",
+                "save",
+                "sourceHash",
+                "sourceHashForPartition"
             ],
-            "properties": [],
-            "constants": []
+            "properties": [
+                "deleted_at",
+                "expires_at",
+                "hit_count",
+                "id",
+                "is_active",
+                "last_hit_at",
+                "locale",
+                "metadata",
+                "revision",
+                "scope",
+                "source_hash",
+                "source_path",
+                "status_code",
+                "target"
+            ],
+            "constants": [
+                "TENANT_RESOURCE"
+            ]
         },
         "Nvl\\Seo\\Rules\\UniqueSeoPath": {
             "kind": "class",
@@ -1036,17 +514,9 @@
             "kind": "class",
             "file": "src/Services/SeoHeadRenderer.php",
             "methods": [
-                "render"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Services\\SeoMetadataResolver": {
-            "kind": "class",
-            "file": "src/Services/SeoMetadataResolver.php",
-            "methods": [
                 "__construct",
-                "resolve"
+                "render",
+                "renderResolved"
             ],
             "properties": [],
             "constants": []
@@ -1067,6 +537,36 @@
             "properties": [],
             "constants": []
         },
+        "Nvl\\Seo\\Services\\SeoProfiles": {
+            "kind": "class",
+            "file": "src/Services/SeoProfiles.php",
+            "methods": [
+                "__construct",
+                "archive",
+                "delete",
+                "duplicate",
+                "import",
+                "status",
+                "sync"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Services\\SeoReader": {
+            "kind": "class",
+            "file": "src/Services/SeoReader.php",
+            "methods": [
+                "__construct",
+                "forOwner",
+                "forOwners",
+                "get",
+                "paginate",
+                "resolve",
+                "revisions"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Seo\\Services\\SeoRedirectChain": {
             "kind": "class",
             "file": "src/Services/SeoRedirectChain.php",
@@ -1074,16 +574,6 @@
                 "__construct",
                 "assertAcyclic",
                 "flatten"
-            ],
-            "properties": [],
-            "constants": []
-        },
-        "Nvl\\Seo\\Services\\SeoRedirectResolver": {
-            "kind": "class",
-            "file": "src/Services/SeoRedirectResolver.php",
-            "methods": [
-                "__construct",
-                "resolve"
             ],
             "properties": [],
             "constants": []
@@ -1154,6 +644,7 @@
             ],
             "properties": [
                 "ability",
+                "actor",
                 "owner",
                 "ownerAlias",
                 "profile",
@@ -1197,62 +688,51 @@
             "methods": [],
             "properties": [],
             "constants": []
-        }
-    },
-    "models": {
-        "Nvl\\Seo\\Models\\SeoProfile": {
-            "read": [],
-            "identity_methods": [
-                "getKey",
-                "getKeyName",
-                "getMorphClass",
-                "getRouteKey",
-                "getRouteKeyName",
-                "is",
-                "isNot",
-                "relationLoaded"
-            ],
-            "capability_relations": []
         },
-        "Nvl\\Seo\\Models\\SeoProfileTranslation": {
-            "read": [],
-            "identity_methods": [
-                "getKey",
-                "getKeyName",
-                "getMorphClass",
-                "getRouteKey",
-                "getRouteKeyName",
-                "is",
-                "isNot",
-                "relationLoaded"
+        "Nvl\\Seo\\ValueObjects\\SeoImage": {
+            "kind": "class",
+            "file": "src/ValueObjects/SeoImage.php",
+            "methods": [
+                "__construct"
             ],
-            "capability_relations": []
+            "properties": [
+                "alt",
+                "height",
+                "mimeType",
+                "url",
+                "width"
+            ],
+            "constants": []
         },
-        "Nvl\\Seo\\Models\\SeoRedirect": {
-            "read": [],
-            "identity_methods": [
-                "getKey",
-                "getKeyName",
-                "getMorphClass",
-                "getRouteKey",
-                "getRouteKeyName",
-                "is",
-                "isNot",
-                "relationLoaded"
+        "Nvl\\Seo\\ValueObjects\\SitemapEntry": {
+            "kind": "class",
+            "file": "src/ValueObjects/SitemapEntry.php",
+            "methods": [
+                "__construct"
             ],
-            "capability_relations": []
+            "properties": [
+                "alternates",
+                "changeFrequency",
+                "lastModified",
+                "priority",
+                "url"
+            ],
+            "constants": []
+        },
+        "Nvl\\Seo\\ValueObjects\\StructuredDataNode": {
+            "kind": "class",
+            "file": "src/ValueObjects/StructuredDataNode.php",
+            "methods": [
+                "__construct",
+                "make",
+                "toJsonLd"
+            ],
+            "properties": [
+                "id",
+                "properties",
+                "type"
+            ],
+            "constants": []
         }
-    },
-    "capability_relations": {
-        "Nvl\\Seo\\Traits\\HasSeo": [
-            "seoProfiles"
-        ]
-    },
-    "tables": {
-        "i18n": "nvl_seo_i18n",
-        "owner_redirect_locks": "nvl_seo_owner_redirect_locks",
-        "profiles": "nvl_seo_profiles",
-        "redirect_locks": "nvl_seo_redirect_locks",
-        "redirects": "nvl_seo_redirects"
     }
 }

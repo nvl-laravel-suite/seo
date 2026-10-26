@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Contracts;
 
-use Nvl\Seo\Data\SitemapEntry;
+use Nvl\Seo\ValueObjects\SitemapEntry;
 
 /**
  * Streams canonical URLs owned by one application capability.

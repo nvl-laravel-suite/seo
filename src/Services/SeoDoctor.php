@@ -14,10 +14,8 @@ use InvalidArgumentException;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImageResolver;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
-use Nvl\Seo\Data\SeoDoctorCheckData;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Support\HttpUrl;
-use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Seo\Support\SeoScope;
 use Throwable;
 
@@ -41,7 +39,7 @@ final readonly class SeoDoctor
     /**
      * Return every SEO readiness check.
      *
-     * @return list<SeoDoctorCheckData>
+     * @return list<array{key:string,severity:string,passed:bool,message:string}>
      */
     public function inspect(): array
     {
@@ -55,15 +53,13 @@ final readonly class SeoDoctor
             $this->structuredDataCheck(),
             $this->sitemapConfigurationCheck(),
             $this->robotsConfigurationCheck(),
-            $this->publicRouteCheck(),
-            $this->managementRouteCheck(),
         ];
     }
 
     /**
      * Inspect required tables, columns, identifier types, and indexes.
      *
-     * @return list<SeoDoctorCheckData>
+     * @return list<array{key:string,severity:string,passed:bool,message:string}>
      */
     private function schemaChecks(): array
     {
@@ -113,48 +109,29 @@ final readonly class SeoDoctor
                 'indexes' => [],
             ],
         ];
-        if (config('nvl-tenancy.enabled') === true) {
-            $tables[SeoTables::get(SeoTables::Profiles)]['columns'][] = 'tenant_id';
-            $tables[SeoTables::get(SeoTables::Profiles)]['indexes'] = [
-                'seo_profiles_tenant_scope_owner_unique' => true,
-                'seo_profiles_owner_index' => false,
-                'seo_profiles_tenant_sitemap_scan_idx' => false,
-            ];
-            $tables[SeoTables::get(SeoTables::I18n)]['columns'][] = 'tenant_id';
-            $tables[SeoTables::get(SeoTables::I18n)]['indexes'] = [
-                'seo_profiles_i18n_owner_locale_unique' => true,
-                'seo_i18n_tenant_route_unique' => true,
-                'seo_i18n_tenant_profile_idx' => false,
-            ];
-            $tables[SeoTables::get(SeoTables::Redirects)]['columns'][] = 'tenant_id';
-            $tables[SeoTables::get(SeoTables::Redirects)]['indexes'] = [
-                'seo_redirects_tenant_source_hash_unique' => true,
-                'seo_redirects_tenant_lookup_idx' => false,
-            ];
-            $tables[SeoTables::get(SeoTables::RedirectLocks)]['columns'][] = 'tenant_id';
-        }
+
         $checks = [];
 
         foreach ($tables as $table => $requirements) {
             try {
                 $exists = Schema::hasTable($table);
             } catch (Throwable $exception) {
-                $checks[] = new SeoDoctorCheckData(
-                    key: "schema.table.{$table}",
-                    severity: 'error',
-                    passed: false,
-                    message: 'The SEO database is unavailable: '.$exception->getMessage(),
-                );
+                $checks[] = [
+                    'key' => "schema.table.{$table}",
+                    'severity' => 'error',
+                    'passed' => false,
+                    'message' => 'The SEO database is unavailable: '.$exception->getMessage(),
+                ];
 
                 continue;
             }
 
-            $checks[] = new SeoDoctorCheckData(
-                key: "schema.table.{$table}",
-                severity: 'error',
-                passed: $exists,
-                message: $exists ? "Table [{$table}] exists." : "Table [{$table}] is missing.",
-            );
+            $checks[] = [
+                'key' => "schema.table.{$table}",
+                'severity' => 'error',
+                'passed' => $exists,
+                'message' => $exists ? "Table [{$table}] exists." : "Table [{$table}] is missing.",
+            ];
 
             if (! $exists) {
                 continue;
@@ -164,26 +141,26 @@ final readonly class SeoDoctor
                 $requirements['columns'],
                 static fn (string $column): bool => ! Schema::hasColumn($table, $column),
             ));
-            $checks[] = new SeoDoctorCheckData(
-                key: "schema.columns.{$table}",
-                severity: 'error',
-                passed: $missing === [],
-                message: $missing === []
+            $checks[] = [
+                'key' => "schema.columns.{$table}",
+                'severity' => 'error',
+                'passed' => $missing === [],
+                'message' => $missing === []
                     ? "Required columns exist on [{$table}]."
                     : 'Missing columns: '.implode(', ', $missing).'.',
-            );
+            ];
 
             if (! Schema::hasColumn($table, 'id')) {
                 continue;
             }
 
             $idType = Schema::getColumnType($table, 'id');
-            $checks[] = new SeoDoctorCheckData(
-                key: "schema.id-type.{$table}",
-                severity: 'error',
-                passed: in_array($idType, ['uuid', 'guid', 'char', 'varchar', 'string'], true),
-                message: "Identifier column on [{$table}] uses [{$idType}].",
-            );
+            $checks[] = [
+                'key' => "schema.id-type.{$table}",
+                'severity' => 'error',
+                'passed' => in_array($idType, ['uuid', 'guid', 'char', 'varchar', 'string'], true),
+                'message' => "Identifier column on [{$table}] uses [{$idType}].",
+            ];
             $indexes = collect(Schema::getIndexes($table));
 
             foreach ($requirements['indexes'] ?? [] as $name => $unique) {
@@ -196,15 +173,15 @@ final readonly class SeoDoctor
                         break;
                     }
                 }
-                $checks[] = new SeoDoctorCheckData(
-                    key: "schema.index.{$name}",
-                    severity: 'error',
-                    passed: is_array($index)
+                $checks[] = [
+                    'key' => "schema.index.{$name}",
+                    'severity' => 'error',
+                    'passed' => is_array($index)
                         && (! $unique || ($index['unique'] ?? false) === true),
-                    message: is_array($index)
+                    'message' => is_array($index)
                         ? "Index [{$name}] exists."
                         : "Index [{$name}] is missing.",
-                );
+                ];
             }
 
             if ($table === SeoTables::get(SeoTables::Redirects)) {
@@ -212,14 +189,14 @@ final readonly class SeoDoctor
                     static fn (array $index): bool => ($index['name'] ?? null)
                         === 'seo_redirects_target_index',
                 );
-                $checks[] = new SeoDoctorCheckData(
-                    key: 'schema.index.redirect-target-text',
-                    severity: 'error',
-                    passed: ! $targetIndexExists,
-                    message: $targetIndexExists
+                $checks[] = [
+                    'key' => 'schema.index.redirect-target-text',
+                    'severity' => 'error',
+                    'passed' => ! $targetIndexExists,
+                    'message' => $targetIndexExists
                         ? 'The non-portable redirect target TEXT index still exists.'
                         : 'No non-portable redirect target TEXT index exists.',
-                );
+                ];
 
                 if (Schema::hasColumn($table, 'source_hash')) {
                     $invalidHashesExist = DB::table($table)
@@ -227,28 +204,28 @@ final readonly class SeoDoctor
                         ->orWhere('source_hash', '')
                         ->orWhereRaw('LENGTH(source_hash) <> 64')
                         ->exists();
-                    $checks[] = new SeoDoctorCheckData(
-                        key: 'schema.redirect-source-hashes',
-                        severity: 'error',
-                        passed: ! $invalidHashesExist,
-                        message: $invalidHashesExist
+                    $checks[] = [
+                        'key' => 'schema.redirect-source-hashes',
+                        'severity' => 'error',
+                        'passed' => ! $invalidHashesExist,
+                        'message' => $invalidHashesExist
                             ? 'Redirect source hashes contain null, empty, or invalid-width values.'
                             : 'Redirect source hashes use the required fixed-width identity.',
-                    );
+                    ];
                     $duplicatesExist = DB::table($table)
                         ->select('source_hash')
                         ->whereNotNull('source_hash')
                         ->groupBy('source_hash')
                         ->havingRaw('COUNT(*) > 1')
                         ->exists();
-                    $checks[] = new SeoDoctorCheckData(
-                        key: 'schema.redirect-duplicate-identities',
-                        severity: 'error',
-                        passed: ! $duplicatesExist,
-                        message: $duplicatesExist
+                    $checks[] = [
+                        'key' => 'schema.redirect-duplicate-identities',
+                        'severity' => 'error',
+                        'passed' => ! $duplicatesExist,
+                        'message' => $duplicatesExist
                             ? 'Duplicate redirect source hashes must be resolved.'
                             : 'No duplicate redirect source hashes exist.',
-                    );
+                    ];
                 }
             }
 
@@ -259,14 +236,14 @@ final readonly class SeoDoctor
                     ->where('revision', '<', 1)
                     ->orWhereNotIn('status', ['active', 'archived'])
                     ->exists();
-                $checks[] = new SeoDoctorCheckData(
-                    key: 'schema.profile-row-integrity',
-                    severity: 'error',
-                    passed: ! $invalidProfilesExist,
-                    message: $invalidProfilesExist
+                $checks[] = [
+                    'key' => 'schema.profile-row-integrity',
+                    'severity' => 'error',
+                    'passed' => ! $invalidProfilesExist,
+                    'message' => $invalidProfilesExist
                         ? 'SEO profiles contain invalid revisions or lifecycle statuses.'
                         : 'SEO profile revisions and lifecycle statuses are valid.',
-                );
+                ];
             }
         }
 
@@ -278,61 +255,61 @@ final readonly class SeoDoctor
      *
      * @param  class-string  $contract
      */
-    private function bindingCheck(string $contract, string $key): SeoDoctorCheckData
+    private function bindingCheck(string $contract, string $key): array
     {
         if (! $this->container->bound($contract)) {
-            return new SeoDoctorCheckData(
-                key: $key,
-                severity: 'error',
-                passed: false,
-                message: "Contract [{$contract}] is missing.",
-            );
+            return [
+                'key' => $key,
+                'severity' => 'error',
+                'passed' => false,
+                'message' => "Contract [{$contract}] is missing.",
+            ];
         }
 
         try {
             $resolved = $this->container->make($contract);
             $healthy = $resolved instanceof $contract;
 
-            return new SeoDoctorCheckData(
-                key: $key,
-                severity: 'error',
-                passed: $healthy,
-                message: $healthy
+            return [
+                'key' => $key,
+                'severity' => 'error',
+                'passed' => $healthy,
+                'message' => $healthy
                     ? "Contract [{$contract}] resolves to a compatible implementation."
                     : "Contract [{$contract}] resolves to an incompatible implementation.",
-            );
+            ];
         } catch (Throwable $exception) {
-            return new SeoDoctorCheckData(
-                key: $key,
-                severity: 'error',
-                passed: false,
-                message: "Contract [{$contract}] cannot be resolved: {$exception->getMessage()}",
-            );
+            return [
+                'key' => $key,
+                'severity' => 'error',
+                'passed' => false,
+                'message' => "Contract [{$contract}] cannot be resolved: {$exception->getMessage()}",
+            ];
         }
     }
 
     /**
      * Validate the configured site URL.
      */
-    private function siteConfigurationCheck(): SeoDoctorCheckData
+    private function siteConfigurationCheck(): array
     {
         $baseUrl = config('nvl-seo.site.base_url');
         $healthy = is_string($baseUrl) && HttpUrl::isBase($baseUrl);
 
-        return new SeoDoctorCheckData(
-            key: 'configuration.site',
-            severity: 'error',
-            passed: $healthy,
-            message: $healthy
+        return [
+            'key' => 'configuration.site',
+            'severity' => 'error',
+            'passed' => $healthy,
+            'message' => $healthy
                 ? 'The SEO base URL is an absolute HTTP(S) URL without query or fragment.'
                 : 'seo.site.base_url must be an absolute HTTP(S) URL without query or fragment.',
-        );
+        ];
     }
 
     /**
      * Validate every owner alias registration.
      */
-    private function ownerRegistryCheck(): SeoDoctorCheckData
+    private function ownerRegistryCheck(): array
     {
         try {
             $owners = $this->owners->configured();
@@ -353,39 +330,39 @@ final readonly class SeoDoctor
                 : [];
             $missing = array_values(array_diff($storedMorphTypes, $registeredMorphTypes));
 
-            return new SeoDoctorCheckData(
-                key: 'configuration.owners',
-                severity: $missing === []
+            return [
+                'key' => 'configuration.owners',
+                'severity' => $missing === []
                     || ! (bool) config('nvl-seo.management.enabled', false)
                     ? 'warning'
                     : 'error',
-                passed: $missing === [],
-                message: $missing === []
+                'passed' => $missing === [],
+                'message' => $missing === []
                     ? count($owners).' unique management owner aliases are registered.'
                     : 'Stored owner morph types have no management alias: '
                         .implode(', ', $missing).'.',
-            );
+            ];
         } catch (InvalidArgumentException $exception) {
-            return new SeoDoctorCheckData(
-                key: 'configuration.owners',
-                severity: 'error',
-                passed: false,
-                message: $exception->getMessage(),
-            );
+            return [
+                'key' => 'configuration.owners',
+                'severity' => 'error',
+                'passed' => false,
+                'message' => $exception->getMessage(),
+            ];
         } catch (Throwable $exception) {
-            return new SeoDoctorCheckData(
-                key: 'configuration.owners',
-                severity: 'error',
-                passed: false,
-                message: 'Owner aliases could not be inspected: '.$exception->getMessage(),
-            );
+            return [
+                'key' => 'configuration.owners',
+                'severity' => 'error',
+                'passed' => false,
+                'message' => 'Owner aliases could not be inspected: '.$exception->getMessage(),
+            ];
         }
     }
 
     /**
      * Validate structured-data mode and report registered providers.
      */
-    private function structuredDataCheck(): SeoDoctorCheckData
+    private function structuredDataCheck(): array
     {
         $mode = config('nvl-seo.structured_data.mode', 'merge');
         $limits = [
@@ -399,21 +376,21 @@ final readonly class SeoDoctor
                 static fn (mixed $limit): bool => is_int($limit) && $limit > 0,
             );
 
-        return new SeoDoctorCheckData(
-            key: 'configuration.structured-data',
-            severity: 'error',
-            passed: $healthy,
-            message: $healthy
+        return [
+            'key' => 'configuration.structured-data',
+            'severity' => 'error',
+            'passed' => $healthy,
+            'message' => $healthy
                 ? count($this->structuredData->keys())
                     ." resource-aware providers are registered in [{$mode}] mode."
                 : 'Structured-data mode and limits must be valid positive values.',
-        );
+        ];
     }
 
     /**
      * Validate portable sitemap limits and atomic build locking.
      */
-    private function sitemapConfigurationCheck(): SeoDoctorCheckData
+    private function sitemapConfigurationCheck(): array
     {
         $maximumUrls = config('nvl-seo.sitemap.max_urls');
         $maximumBytes = config('nvl-seo.sitemap.max_bytes');
@@ -444,20 +421,20 @@ final readonly class SeoDoctor
             && (! $needsLock || $this->cache->getStore() instanceof LockProvider)
             && $publicScopesAreValid;
 
-        return new SeoDoctorCheckData(
-            key: 'configuration.sitemap',
-            severity: 'error',
-            passed: $healthy,
-            message: $healthy
+        return [
+            'key' => 'configuration.sitemap',
+            'severity' => 'error',
+            'passed' => $healthy,
+            'message' => $healthy
                 ? 'Sitemap URL, byte, artifact-store, cache, and atomic-lock settings are valid.'
                 : 'Sitemap limits, artifact storage, or atomic cache locking are invalid.',
-        );
+        ];
     }
 
     /**
      * Validate robots output, cache duration, and protocol byte limit.
      */
-    private function robotsConfigurationCheck(): SeoDoctorCheckData
+    private function robotsConfigurationCheck(): array
     {
         $cacheSeconds = config('nvl-seo.robots.cache_seconds');
         $maximumBytes = config('nvl-seo.robots.maximum_bytes');
@@ -479,103 +456,19 @@ final readonly class SeoDoctor
             $message = 'Robots cache duration and byte limit must use valid integer bounds.';
         }
 
-        return new SeoDoctorCheckData(
-            key: 'configuration.robots',
-            severity: 'error',
-            passed: $healthy,
-            message: $message,
-        );
+        return [
+            'key' => 'configuration.robots',
+            'severity' => 'error',
+            'passed' => $healthy,
+            'message' => $message,
+        ];
     }
 
     /**
      * Validate opt-in public crawler routes and route names.
      */
-    private function publicRouteCheck(): SeoDoctorCheckData
-    {
-        try {
-            $name = SeoRouteConfiguration::publicName();
-            SeoRouteConfiguration::sitemapPath();
-            SeoRouteConfiguration::sitemapChunkPath();
-            SeoRouteConfiguration::robotsPath();
-        } catch (InvalidArgumentException $exception) {
-            return new SeoDoctorCheckData(
-                key: 'routes.public',
-                severity: 'error',
-                passed: false,
-                message: $exception->getMessage(),
-            );
-        }
-
-        if (! (bool) config('nvl-seo.routes.enabled', false)) {
-            return new SeoDoctorCheckData(
-                key: 'routes.public',
-                severity: 'warning',
-                passed: true,
-                message: 'Public crawler routes are disabled.',
-            );
-        }
-
-        $healthy = Route::has($name.'sitemap')
-            && Route::has($name.'sitemap.chunk')
-            && Route::has($name.'robots');
-
-        return new SeoDoctorCheckData(
-            key: 'routes.public',
-            severity: 'error',
-            passed: $healthy,
-            message: $healthy
-                ? 'Public crawler routes are registered with configured names.'
-                : 'One or more enabled public crawler routes are missing.',
-        );
-    }
 
     /**
      * Validate opt-in management routing, middleware, and authorization.
      */
-    private function managementRouteCheck(): SeoDoctorCheckData
-    {
-        try {
-            $name = SeoRouteConfiguration::managementName();
-            SeoRouteConfiguration::managementPath();
-        } catch (InvalidArgumentException $exception) {
-            return new SeoDoctorCheckData(
-                key: 'routes.management',
-                severity: 'error',
-                passed: false,
-                message: $exception->getMessage(),
-            );
-        }
-
-        if (! (bool) config('nvl-seo.management.enabled', false)) {
-            return new SeoDoctorCheckData(
-                key: 'routes.management',
-                severity: 'warning',
-                passed: true,
-                message: 'Management routes are disabled.',
-            );
-        }
-
-        $middleware = array_values(array_filter(
-            (array) config('nvl-seo.management.middleware', []),
-            static fn (mixed $value): bool => is_string($value) && $value !== '',
-        ));
-        $ability = config('nvl-seo.authorization.ability');
-        $authorizationConfigured = ! $this->authorization instanceof ConfiguredSeoAuthorization
-            || (is_string($ability) && $ability !== '');
-        $healthy = $middleware !== []
-            && $authorizationConfigured
-            && Route::has($name.'profiles.index');
-
-        return new SeoDoctorCheckData(
-            key: 'routes.management',
-            severity: 'error',
-            passed: $healthy,
-            message: match (true) {
-                $middleware === [] => 'Management routes require middleware.',
-                ! $authorizationConfigured => 'Management routes require consumer authorization.',
-                ! Route::has($name.'profiles.index') => 'Management routes are enabled but missing.',
-                default => 'Management routes are enabled and secured.',
-            },
-        );
-    }
 }

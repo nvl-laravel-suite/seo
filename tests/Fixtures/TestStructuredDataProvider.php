@@ -6,8 +6,7 @@ namespace Nvl\Seo\Tests\Fixtures;
 
 use Illuminate\Database\Eloquent\Model;
 use Nvl\Seo\Contracts\StructuredDataProvider;
-use Nvl\Seo\Data\StructuredDataContextData;
-use Nvl\Seo\Data\StructuredDataNodeData;
+use Nvl\Seo\ValueObjects\StructuredDataNode;
 
 /**
  * Exercises configured resource-provider registration in package tests.
@@ -17,20 +16,21 @@ final class TestStructuredDataProvider implements StructuredDataProvider
     /**
      * Return one generic resource node linked to the resolved page.
      *
-     * @return iterable<StructuredDataNodeData>
+     * @param  array{resourceType:string,resourceId:string,profileId:string,locale:string,scope:string,canonicalUrl:string|null,title:string|null,description:string|null,imageUrl:string|null,siteName:string,siteUrl:string}  $context
+     * @return iterable<StructuredDataNode>
      */
     public function provide(
         Model $resource,
-        StructuredDataContextData $context,
+        array $context,
     ): iterable {
-        yield StructuredDataNodeData::make(
+        yield StructuredDataNode::make(
             type: 'Thing',
-            id: $context->canonicalUrl.'#resource',
+            id: $context['canonicalUrl'].'#resource',
             properties: [
                 'name' => $resource->getAttribute('name'),
-                'url' => $context->canonicalUrl,
+                'url' => $context['canonicalUrl'],
                 'mainEntityOfPage' => [
-                    '@id' => $context->canonicalUrl.'#webpage',
+                    '@id' => $context['canonicalUrl'].'#webpage',
                 ],
             ],
         );

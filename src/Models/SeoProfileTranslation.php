@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Nvl\Seo\Database\Factories\SeoProfileTranslationFactory;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\TwitterCard;
-use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Seo\Models\Concerns\GuardsSeoOwnership;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Support\Config\PackageStorage;
 use Nvl\Support\Ownership\Contracts\Ownable;
@@ -21,7 +21,6 @@ use Nvl\Support\Ownership\Contracts\Ownable;
  * Locale-specific SEO metadata for one profile.
  *
  * @property string $id
- * @property string|null $tenant_id
  * @property string $seo_profile_id
  * @property string $scope
  * @property string $locale
@@ -48,7 +47,7 @@ use Nvl\Support\Ownership\Contracts\Ownable;
  */
 final class SeoProfileTranslation extends Model implements Ownable
 {
-    use GuardsTenantOwnership;
+    use GuardsSeoOwnership;
 
     /** @use HasFactory<SeoProfileTranslationFactory> */
     use HasFactory;

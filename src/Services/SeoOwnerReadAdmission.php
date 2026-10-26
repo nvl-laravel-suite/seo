@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Services;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use InvalidArgumentException;
@@ -12,9 +13,9 @@ use Nvl\Seo\Enums\SeoAbility;
 use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoAuthorizationContext;
 use Nvl\Seo\Support\SeoModelIdentifier;
+use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
-use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Admits current scoped owners before exposing owner-centric SEO projections.
@@ -27,7 +28,6 @@ final readonly class SeoOwnerReadAdmission
     public function __construct(
         private OwnershipBoundary $boundary,
         private OwnershipResourceRegistry $ownershipResources,
-        private TenantResourceRegistry $tenantResources,
     ) {}
 
     /**
@@ -36,7 +36,7 @@ final readonly class SeoOwnerReadAdmission
      * @param  iterable<array-key, Model>  $owners
      * @return list<array{owner: Model, alias: string, type: string, id: string}>
      */
-    public function admit(iterable $owners, string $scope, SeoOwnerRegistry $registry, SeoAuthorization $authorization): array
+    public function admit(iterable $owners, string $scope, SeoOwnerRegistry $registry, SeoAuthorization $authorization, Authenticatable|SystemActor $actor): array
     {
         $identities = [];
         foreach ($owners as $owner) {
@@ -54,7 +54,7 @@ final readonly class SeoOwnerReadAdmission
             ];
         }
         foreach ($identities as $identity) {
-            $this->authorize($authorization, $identity['owner'], $identity['alias'], $scope);
+            $this->authorize($actor, $authorization, $identity['owner'], $identity['alias'], $scope);
         }
 
         /** @var array<class-string<Model>, array<string, list<string>>> $groups */
@@ -83,7 +83,7 @@ final readonly class SeoOwnerReadAdmission
                 ?? throw (new ModelNotFoundException)->setModel($owner::class, [$identity['id']]);
 
             if (SeoOwnership::active()) {
-                $resource = (SeoOwnership::declared() ? $this->ownershipResources : $this->tenantResources)->forModel($canonical);
+                $resource = $this->ownershipResources->forModel($canonical);
                 $this->boundary->assertRecord($canonical, $resource->key);
             }
             $originalAttributes = $owner->getAttributes();
@@ -91,7 +91,7 @@ final readonly class SeoOwnerReadAdmission
             ksort($originalAttributes);
             ksort($canonicalAttributes);
             if ($originalAttributes !== $canonicalAttributes || $owner->getRelations() !== []) {
-                $this->authorize($authorization, $canonical, $identity['alias'], $scope);
+                $this->authorize($actor, $authorization, $canonical, $identity['alias'], $scope);
             }
             $identities[$index]['owner'] = $canonical;
             $identities[$index]['type'] = $canonical->getMorphClass();
@@ -101,9 +101,9 @@ final readonly class SeoOwnerReadAdmission
     }
 
     /** Authorize the exact owner model supplied at this admission stage. */
-    private function authorize(SeoAuthorization $authorization, Model $owner, string $alias, string $scope): void
+    private function authorize(Authenticatable|SystemActor $actor, SeoAuthorization $authorization, Model $owner, string $alias, string $scope): void
     {
-        $authorization->authorize(new SeoAuthorizationContext(
+        $authorization->authorize(new SeoAuthorizationContext(actor: $actor,
             ability: SeoAbility::View,
             owner: $owner,
             ownerAlias: $alias,

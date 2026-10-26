@@ -9,6 +9,7 @@ use Nvl\Ownership\Services\OwnershipRunner;
 use Nvl\Ownership\ValueObjects\OwnershipOperation;
 use Nvl\Seo\Providers\SeoServiceProvider;
 use Nvl\Seo\Tests\CompositionOwnershipTestCase as ContentOwnershipTestCase;
+use Nvl\Seo\Tests\Fixtures\ConsumerSeoProvider;
 use Nvl\Seo\Tests\Fixtures\OwnershipActor;
 use Nvl\Seo\Tests\Fixtures\OwnershipCompany;
 use Nvl\Seo\Tests\Fixtures\OwnershipContentOwner;
@@ -18,7 +19,7 @@ abstract class OwnershipTestCase extends ContentOwnershipTestCase
 {
     protected function getPackageProviders($app): array
     {
-        return [...parent::getPackageProviders($app), SeoServiceProvider::class];
+        return [...parent::getPackageProviders($app), SeoServiceProvider::class, ConsumerSeoProvider::class];
     }
 
     protected function defineEnvironment($app): void

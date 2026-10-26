@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Nvl\Seo\Actions\PruneSeoRedirectsAction;
 use Nvl\Seo\Models\SeoRedirect;
 use Nvl\Seo\Services\SeoOwnerRegistry;
+use Nvl\Seo\Services\SeoRedirects;
 use Nvl\Seo\Tests\Fixtures\OwnershipContentOwner;
+use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Exceptions\OwnershipConfigurationInvalid;
 
 it('rejects a late native host registration into ordinary unscoped SEO', function (): void {
@@ -27,7 +28,7 @@ it('prunes the configured SEO source while the application default database diff
     });
     $foreign->table($table)->insert(['id' => 'foreign-host-row', 'deleted_at' => now()->subDays(40)]);
     config(['database.default' => 'foreign_prune_default']);
-    expect(app(PruneSeoRedirectsAction::class)->execute())->toBe(1);
+    expect(app(SeoRedirects::class)->prune(SystemActor::Background))->toBe(1);
     expect($source->table($table)->where('id', $redirect->id)->exists())->toBeFalse()
         ->and($foreign->table($table)->where('id', 'foreign-host-row')->exists())->toBeTrue();
 });

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Services;
 
-use Illuminate\Support\HtmlString;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use JsonException;
-use Nvl\Seo\Data\ResolvedSeoData;
+use Nvl\Support\Enums\PublicActor;
+use Nvl\Support\Enums\SystemActor;
 
 /**
  * Renders escaped, deterministic head markup from resolved metadata.
@@ -15,44 +17,53 @@ use Nvl\Seo\Data\ResolvedSeoData;
  */
 final class SeoHeadRenderer
 {
+    public function __construct(private readonly SeoReader $reader) {}
+
+    /** Render only after native public or private resolution admission. */
+    public function render(Model $owner, Authenticatable|SystemActor|PublicActor $actor, ?string $locale = null, ?string $scope = null): string
+    {
+        return $this->renderResolved($this->reader->resolve($actor, $owner, $locale, $scope));
+    }
+
     /**
      * @throws JsonException
      */
-    public function render(ResolvedSeoData $seo): HtmlString
+    /** @param array{locale:string,title:string|null,description:string|null,canonicalUrl:string|null,robots:string,alternates:array<string,string>,openGraph:array<string,string>,openGraphLocales:list<string>,twitter:array<string,string>,structuredData:list<array<string,mixed>>} $seo */
+    public function renderResolved(array $seo): string
     {
         $tags = [];
 
-        if ($seo->title !== null) {
-            $tags[] = '<title>'.$this->escape($seo->title).'</title>';
+        if ($seo['title'] !== null) {
+            $tags[] = '<title>'.$this->escape($seo['title']).'</title>';
         }
 
-        if ($seo->description !== null) {
-            $tags[] = $this->meta('name', 'description', $seo->description);
+        if ($seo['description'] !== null) {
+            $tags[] = $this->meta('name', 'description', $seo['description']);
         }
 
-        $tags[] = $this->meta('name', 'robots', $seo->robots);
+        $tags[] = $this->meta('name', 'robots', $seo['robots']);
 
-        if ($seo->canonicalUrl !== null) {
-            $tags[] = $this->link('canonical', $seo->canonicalUrl);
+        if ($seo['canonicalUrl'] !== null) {
+            $tags[] = $this->link('canonical', $seo['canonicalUrl']);
         }
 
-        foreach ($seo->alternates as $locale => $url) {
+        foreach ($seo['alternates'] as $locale => $url) {
             $tags[] = '<link rel="alternate" hreflang="'.$this->escape($locale).'" href="'.$this->escape($url).'">';
         }
 
-        foreach ($seo->openGraph as $property => $content) {
+        foreach ($seo['openGraph'] as $property => $content) {
             $tags[] = $this->meta('property', $property, $content);
         }
 
-        foreach ($seo->openGraphLocales as $locale) {
+        foreach ($seo['openGraphLocales'] as $locale) {
             $tags[] = $this->meta('property', 'og:locale:alternate', $locale);
         }
 
-        foreach ($seo->twitter as $name => $content) {
+        foreach ($seo['twitter'] as $name => $content) {
             $tags[] = $this->meta('name', $name, $content);
         }
 
-        foreach ($seo->structuredData as $structuredData) {
+        foreach ($seo['structuredData'] as $structuredData) {
             $tags[] = '<script type="application/ld+json">'
                 .json_encode(
                     $structuredData,
@@ -62,7 +73,7 @@ final class SeoHeadRenderer
                 .'</script>';
         }
 
-        return new HtmlString(implode("\n", $tags));
+        return implode("\n", $tags);
     }
 
     private function meta(string $attribute, string $key, string $content): string

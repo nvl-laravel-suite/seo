@@ -6,7 +6,6 @@ namespace Nvl\Seo\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Container\Container;
-use Illuminate\Http\Request;
 use Nvl\Ownership\Services\PublicOwnerSiteRunner;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Ownership\SeoOwnership;
@@ -33,7 +32,7 @@ final class WarmSeoSitemapCommand extends Command
         $origin = $this->option('origin');
         if (is_string($origin) && $origin !== '') {
             return $container->make(PublicOwnerSiteRunner::class)->run(
-                Request::create($origin), fn (): int => $this->warm($sitemaps),
+                $origin, fn (): int => $this->warm($sitemaps),
             );
         }
         if (SeoOwnership::declared()) {

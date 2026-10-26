@@ -6,10 +6,9 @@ namespace Nvl\Seo\Services;
 
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
-use Nvl\Seo\Data\StructuredDataContextData;
-use Nvl\Seo\Data\StructuredDataNodeData;
 use Nvl\Seo\Enums\StructuredDataType;
 use Nvl\Seo\Support\StructuredDataLimits;
+use Nvl\Seo\ValueObjects\StructuredDataNode;
 
 /**
  * Composes baseline, provider-generated, and persisted JSON-LD into one graph.
@@ -32,7 +31,7 @@ final readonly class StructuredDataResolver
      */
     public function resolve(
         Model $resource,
-        StructuredDataContextData $context,
+        array $context,
         ?array $persisted,
     ): array {
         $mode = config('nvl-seo.structured_data.mode', 'merge');
@@ -66,40 +65,40 @@ final readonly class StructuredDataResolver
      */
     private function generatedNodes(
         Model $resource,
-        StructuredDataContextData $context,
+        array $context,
     ): array {
         $nodes = [];
 
         if ((bool) config('nvl-seo.structured_data.automatic_web_site', true)) {
-            $nodes[] = StructuredDataNodeData::make(
+            $nodes[] = StructuredDataNode::make(
                 type: StructuredDataType::WebSite,
-                id: rtrim($context->siteUrl, '/').'#website',
+                id: rtrim($context['siteUrl'], '/').'#website',
                 properties: array_filter([
-                    'url' => $context->siteUrl,
-                    'name' => $context->siteName,
-                    'inLanguage' => $context->locale,
+                    'url' => $context['siteUrl'],
+                    'name' => $context['siteName'],
+                    'inLanguage' => $context['locale'],
                 ], static fn (string $value): bool => $value !== ''),
             )->toJsonLd();
         }
 
         if ((bool) config('nvl-seo.structured_data.automatic_web_page', true)
-            && $context->canonicalUrl !== null) {
-            $siteId = rtrim($context->siteUrl, '/').'#website';
-            $nodes[] = StructuredDataNodeData::make(
+            && $context['canonicalUrl'] !== null) {
+            $siteId = rtrim($context['siteUrl'], '/').'#website';
+            $nodes[] = StructuredDataNode::make(
                 type: StructuredDataType::WebPage,
-                id: $context->canonicalUrl.'#webpage',
+                id: $context['canonicalUrl'].'#webpage',
                 properties: array_filter([
-                    'url' => $context->canonicalUrl,
-                    'name' => $context->title,
-                    'description' => $context->description,
-                    'inLanguage' => $context->locale,
+                    'url' => $context['canonicalUrl'],
+                    'name' => $context['title'],
+                    'description' => $context['description'],
+                    'inLanguage' => $context['locale'],
                     'isPartOf' => $this->builder->reference($siteId),
-                    'primaryImageOfPage' => $context->imageUrl === null
+                    'primaryImageOfPage' => $context['imageUrl'] === null
                         ? null
-                        : StructuredDataNodeData::make(
+                        : StructuredDataNode::make(
                             StructuredDataType::ImageObject,
-                            ['contentUrl' => $context->imageUrl],
-                            $context->canonicalUrl.'#primaryimage',
+                            ['contentUrl' => $context['imageUrl']],
+                            $context['canonicalUrl'].'#primaryimage',
                         )->toJsonLd(),
                 ], static fn (mixed $value): bool => $value !== null && $value !== ''),
             )->toJsonLd();

@@ -7,15 +7,17 @@ namespace Nvl\Seo\Tests;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
-use Nvl\Data\Providers\DataServiceProvider;
 use Nvl\Seo\Providers\SeoServiceProvider;
+use Nvl\Seo\Tests\Fixtures\ConsumerSeoProvider;
 use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestStringSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestStructuredDataProvider;
 use Nvl\Support\Providers\LocaleServiceProvider;
+use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Spatie\LaravelData\LaravelDataServiceProvider;
 
 /**
  * Boots SEO and its explicit runtime dependencies in isolation.
@@ -31,9 +33,11 @@ abstract class TestCase extends Orchestra
     {
         return [
             LocaleServiceProvider::class,
-            DataServiceProvider::class,
+            SupportServiceProvider::class,
+            LaravelDataServiceProvider::class,
             TranslatableServiceProvider::class,
             SeoServiceProvider::class,
+            ConsumerSeoProvider::class,
         ];
     }
 

@@ -13,29 +13,9 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
-use Nvl\Data\Services\TypeScriptSourceRegistry;
-use Nvl\Seo\Actions\ArchiveSeoProfileAction;
-use Nvl\Seo\Actions\DeleteSeoProfileAction;
-use Nvl\Seo\Actions\DuplicateSeoProfileAction;
-use Nvl\Seo\Actions\ListSeoProfilesAction;
-use Nvl\Seo\Actions\PreviewSeoProfileAction;
-use Nvl\Seo\Actions\SeoProfileStatusAction;
-use Nvl\Seo\Actions\SyncSeoProfileAction;
-use Nvl\Seo\Actions\SyncSeoRedirectAction;
-use Nvl\Seo\Contracts\FindSeoRedirectContract;
-use Nvl\Seo\Contracts\GetOwnerSeoProfileContract;
-use Nvl\Seo\Contracts\GetOwnerSeoRevisionContract;
-use Nvl\Seo\Contracts\ListOwnerSeoProfilesContract;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SitemapSource;
 use Nvl\Seo\Contracts\StructuredDataProvider;
-use Nvl\Seo\Data\Mutations\SeoProfilePayload;
-use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
-use Nvl\Seo\Data\SeoImage;
-use Nvl\Seo\Data\SeoProfileQuery;
-use Nvl\Seo\Data\SitemapEntry;
-use Nvl\Seo\Data\StructuredDataContextData;
-use Nvl\Seo\Data\StructuredDataNodeData;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\SeoAbility;
 use Nvl\Seo\Enums\StructuredDataType;
@@ -48,9 +28,10 @@ use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Rules\ValidStructuredData;
 use Nvl\Seo\Services\AbsoluteUrl;
 use Nvl\Seo\Services\SeoDoctor;
-use Nvl\Seo\Services\SeoManager;
-use Nvl\Seo\Services\SeoMetadataResolver;
-use Nvl\Seo\Services\SeoRedirectResolver;
+use Nvl\Seo\Services\SeoHeadRenderer;
+use Nvl\Seo\Services\SeoProfiles;
+use Nvl\Seo\Services\SeoReader;
+use Nvl\Seo\Services\SeoRedirects;
 use Nvl\Seo\Services\SeoRouteResolver;
 use Nvl\Seo\Services\SitemapCache;
 use Nvl\Seo\Services\SitemapGenerator;
@@ -58,25 +39,31 @@ use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Seo\Services\StructuredDataBuilder;
 use Nvl\Seo\Services\StructuredDataRegistry;
 use Nvl\Seo\Support\SeoAuthorizationContext;
+use Nvl\Seo\Tests\Fixtures\Data\SeoProfileQuery;
 use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestStringSeoOwner;
-use Nvl\Translatable\Actions\SyncTranslationResourceAction;
-use Nvl\Translatable\Data\TranslationActorData;
-use Nvl\Translatable\Data\TranslationMutationData;
+use Nvl\Seo\ValueObjects\SeoImage;
+use Nvl\Seo\ValueObjects\SitemapEntry;
+use Nvl\Seo\ValueObjects\StructuredDataNode;
+use Nvl\Support\Enums\SystemActor;
+use Nvl\Translatable\Contracts\TranslationResourceAuthorizer;
+use Nvl\Translatable\Enums\TranslationResourceAbility;
 use Nvl\Translatable\Enums\TranslationSyncMode;
 use Nvl\Translatable\Exceptions\TranslationResourceException;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 use Nvl\Translatable\Services\TranslationResourceVersioner;
+use Nvl\Translatable\Services\TranslationWriter;
+use Nvl\Translatable\TranslationResourceDefinition;
 
 function seoOwner(string $name = 'Article'): TestSeoOwner
 {
     return TestSeoOwner::query()->create(['name' => $name]);
 }
 
-function seoPayload(array $overrides = []): SeoProfilePayload
+function seoPayload(array $overrides = []): array
 {
-    return SeoProfilePayload::from(array_replace_recursive([
+    return array_replace_recursive([
         'isIndexable' => true,
         'isFollowable' => true,
         'sitemapIncluded' => true,
@@ -101,23 +88,20 @@ function seoPayload(array $overrides = []): SeoProfilePayload
                 'description' => 'Червена рокля.',
             ],
         ],
-    ], $overrides));
+    ], $overrides);
 }
 
 it('registers migrations, type sources, and centralized translation management', function (): void {
     expect(Schema::hasTable(SeoTables::Profiles))->toBeTrue()
         ->and(Schema::hasTable(SeoTables::I18n))->toBeTrue()
         ->and(app(TranslationResourceRegistry::class)->has('seo.profiles'))->toBeTrue()
-        ->and(collect(app(TypeScriptSourceRegistry::class)->all())
-            ->contains(fn (string $path): bool => realpath($path) === realpath(dirname(__DIR__, 2).'/src')))
-        ->toBeTrue()
         ->and(app(StructuredDataRegistry::class)->keys())
         ->toContain('test.configured-resource');
 });
 
 it('atomically attaches localized SEO to any persisted model', function (): void {
     $owner = seoOwner();
-    $profile = app(SyncSeoProfileAction::class)->execute($owner, seoPayload());
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload());
 
     expect($profile)->toBeInstanceOf(SeoProfile::class)
         ->and($profile->seoable_type)->toBe($owner->getMorphClass())
@@ -129,7 +113,7 @@ it('atomically attaches localized SEO to any persisted model', function (): void
 
 it('normalizes scopes and locales consistently across writes and route reads', function (): void {
     $owner = seoOwner();
-    $profile = app(SyncSeoProfileAction::class)->execute(
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background,
         owner: $owner,
         data: seoPayload(),
         scope: ' Store.Front ',
@@ -142,7 +126,7 @@ it('normalizes scopes and locales consistently across writes and route reads', f
             'EN',
             'STORE.FRONT',
         )?->is($profile))->toBeTrue()
-        ->and(fn () => app(SyncSeoProfileAction::class)->execute(
+        ->and(fn () => app(SeoProfiles::class)->sync(SystemActor::Background,
             seoOwner('Invalid scope'),
             seoPayload(),
             'invalid scope',
@@ -151,27 +135,27 @@ it('normalizes scopes and locales consistently across writes and route reads', f
 
 it('supports explicit patch and replace translation semantics', function (): void {
     $owner = seoOwner();
-    $action = app(SyncSeoProfileAction::class);
-    $profile = $action->execute($owner, seoPayload());
+    $action = app(SeoProfiles::class);
+    $profile = $action->sync(SystemActor::Background, $owner, seoPayload());
 
-    $action->execute($owner, SeoProfilePayload::from([
+    $action->sync(SystemActor::Background, $owner, [
         'translations' => [
             'en' => ['title' => 'Updated title'],
         ],
-    ]));
+    ]);
     $profile->refresh()->load('translations');
 
     expect($profile->translations)->toHaveCount(2)
         ->and($profile->getTranslation('en')?->getAttribute('title'))->toBe('Updated title')
         ->and($profile->getTranslation('en')?->getAttribute('description'))->toBe('A red dress.');
 
-    $action->execute(
+    $action->sync(SystemActor::Background,
         $owner,
-        SeoProfilePayload::from([
+        [
             'translations' => [
                 'en' => ['title' => 'Only English'],
             ],
-        ]),
+        ],
         translationMode: TranslationSyncMode::Replace,
     );
     $profile->refresh()->load('translations');
@@ -181,10 +165,10 @@ it('supports explicit patch and replace translation semantics', function (): voi
 });
 
 it('enforces unique normalized paths per scope and locale in the database', function (): void {
-    $action = app(SyncSeoProfileAction::class);
-    $action->execute(seoOwner('One'), seoPayload());
+    $action = app(SeoProfiles::class);
+    $action->sync(SystemActor::Background, seoOwner('One'), seoPayload());
 
-    expect(fn () => $action->execute(
+    expect(fn () => $action->sync(SystemActor::Background,
         seoOwner('Two'),
         seoPayload([
             'translations' => [
@@ -203,25 +187,25 @@ it('enforces unique normalized paths per scope and locale in the database', func
 
 it('resolves canonical hreflang social robots and structured metadata', function (): void {
     $owner = seoOwner();
-    app(SyncSeoProfileAction::class)->execute($owner, seoPayload([
+    app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload([
         'isIndexable' => false,
         'maxSnippet' => 120,
     ]));
 
-    $seo = app(SeoMetadataResolver::class)->resolve($owner, 'bg');
+    $seo = app(SeoReader::class)->resolve(SystemActor::Background, $owner, 'bg');
 
-    expect($seo->title)->toBe('Червена рокля | Example')
-        ->and($seo->canonicalUrl)->toBe('https://example.test/bg/produkti/chervena-roklya')
-        ->and($seo->robots)->toContain('noindex', 'max-snippet:120')
-        ->and($seo->alternates)->toHaveKeys(['en', 'bg', 'x-default'])
-        ->and($seo->openGraph['og:title'])->toBe('Червена рокля')
-        ->and($seo->openGraphLocales)->toBe(['en'])
-        ->and($seo->twitter['twitter:card'])->toBe('summary_large_image');
+    expect($seo['title'])->toBe('Червена рокля | Example')
+        ->and($seo['canonicalUrl'])->toBe('https://example.test/bg/produkti/chervena-roklya')
+        ->and($seo['robots'])->toContain('noindex', 'max-snippet:120')
+        ->and($seo['alternates'])->toHaveKeys(['en', 'bg', 'x-default'])
+        ->and($seo['openGraph']['og:title'])->toBe('Червена рокля')
+        ->and($seo['openGraphLocales'])->toBe(['en'])
+        ->and($seo['twitter']['twitter:card'])->toBe('summary_large_image');
 });
 
 it('falls back each localized field while preserving intentional empty values', function (): void {
     $owner = seoOwner();
-    app(SyncSeoProfileAction::class)->execute($owner, seoPayload([
+    app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload([
         'translations' => [
             'bg' => [
                 'title' => null,
@@ -233,13 +217,13 @@ it('falls back each localized field while preserving intentional empty values', 
         ],
     ]));
 
-    $seo = app(SeoMetadataResolver::class)->resolve($owner, 'bg');
+    $seo = app(SeoReader::class)->resolve(SystemActor::Background, $owner, 'bg');
 
-    expect($seo->title)->toBe('Red Dress | Example')
-        ->and($seo->description)->toBeNull()
-        ->and($seo->openGraph['og:image'])->toBe('https://cdn.example.test/red.jpg')
-        ->and($seo->openGraph['og:image:alt'])->toBe('Red dress')
-        ->and($seo->structuredData)->toHaveCount(1);
+    expect($seo['title'])->toBe('Red Dress | Example')
+        ->and($seo['description'])->toBeNull()
+        ->and($seo['openGraph']['og:image'])->toBe('https://cdn.example.test/red.jpg')
+        ->and($seo['openGraph']['og:image:alt'])->toBe('Red dress')
+        ->and($seo['structuredData'])->toHaveCount(1);
 });
 
 it('rejects non-http absolute urls and renders every configured default robots directive', function (): void {
@@ -248,11 +232,11 @@ it('rejects non-http absolute urls and renders every configured default robots d
         'nvl-seo.defaults.robots.max_video_preview' => 30,
     ]);
 
-    $seo = app(SeoMetadataResolver::class)->resolve(seoOwner(), 'en');
+    $seo = app(SeoReader::class)->resolve(SystemActor::Background, seoOwner(), 'en');
 
     expect(app(AbsoluteUrl::class)->resolve('ftp://files.example.test/catalog.xml'))->toBeNull()
         ->and(app(AbsoluteUrl::class)->resolve('/catalog'))->toBe('https://example.test/catalog')
-        ->and($seo->robots)->toContain(
+        ->and($seo['robots'])->toContain(
             'max-snippet:160',
             'max-image-preview:large',
             'max-video-preview:30',
@@ -285,15 +269,15 @@ it('composes resource-aware providers and editor overrides into one linked graph
         {
             public function provide(
                 Model $resource,
-                StructuredDataContextData $context,
+                array $context,
             ): iterable {
-                yield StructuredDataNodeData::make(
+                yield StructuredDataNode::make(
                     type: StructuredDataType::Product,
-                    id: $context->canonicalUrl.'#product',
+                    id: $context['canonicalUrl'].'#product',
                     properties: [
                         'name' => $resource->getAttribute('name'),
-                        'url' => $context->canonicalUrl,
-                        'mainEntityOfPage' => ['@id' => $context->canonicalUrl.'#webpage'],
+                        'url' => $context['canonicalUrl'],
+                        'mainEntityOfPage' => ['@id' => $context['canonicalUrl'].'#webpage'],
                         'brand' => [
                             '@type' => 'Organization',
                             'name' => 'Generated brand',
@@ -305,7 +289,7 @@ it('composes resource-aware providers and editor overrides into one linked graph
         priority: 100,
     );
     $owner = seoOwner('Generated product name');
-    app(SyncSeoProfileAction::class)->execute($owner, seoPayload([
+    app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload([
         'translations' => [
             'en' => [
                 'structuredData' => [
@@ -319,12 +303,12 @@ it('composes resource-aware providers and editor overrides into one linked graph
         ],
     ]));
 
-    $resolved = app(SeoMetadataResolver::class)->resolve($owner, 'en');
-    $graph = $resolved->structuredData[0]['@graph'];
+    $resolved = app(SeoReader::class)->resolve(SystemActor::Background, $owner, 'en');
+    $graph = $resolved['structuredData'][0]['@graph'];
     $nodes = collect($graph)->keyBy('@id');
 
-    expect($resolved->structuredData)->toHaveCount(1)
-        ->and($resolved->structuredData[0]['@context'])->toBe('https://schema.org')
+    expect($resolved['structuredData'])->toHaveCount(1)
+        ->and($resolved['structuredData'][0]['@context'])->toBe('https://schema.org')
         ->and($nodes)->toHaveKeys([
             'https://example.test#website',
             'https://example.test/products/red-dress#webpage',
@@ -356,9 +340,9 @@ it('validates JSON-LD graph grammar without restricting future schema types', fu
             {
                 public function provide(
                     Model $resource,
-                    StructuredDataContextData $context,
+                    array $context,
                 ): iterable {
-                    yield StructuredDataNodeData::make('FutureSchemaType');
+                    yield StructuredDataNode::make('FutureSchemaType');
                 }
             },
         ))->not->toThrow(InvalidArgumentException::class)
@@ -368,7 +352,7 @@ it('validates JSON-LD graph grammar without restricting future schema types', fu
 
 it('renders escaped head tags and script-safe json ld', function (): void {
     $owner = seoOwner();
-    app(SyncSeoProfileAction::class)->execute($owner, seoPayload([
+    app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload([
         'translations' => [
             'en' => [
                 'title' => '<script>alert(1)</script>',
@@ -382,7 +366,7 @@ it('renders escaped head tags and script-safe json ld', function (): void {
         ],
     ]));
 
-    $html = app(SeoManager::class)->for($owner, 'en')->toHtml();
+    $html = app(SeoHeadRenderer::class)->render($owner, SystemActor::Background, 'en');
 
     expect($html)->toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
         ->and($html)->toContain('&quot;quoted&quot;')
@@ -393,7 +377,7 @@ it('renders escaped head tags and script-safe json ld', function (): void {
 
 it('resolves routes, generates localized sitemap XML, and serves public files', function (): void {
     $owner = seoOwner();
-    $profile = app(SyncSeoProfileAction::class)->execute($owner, seoPayload());
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload());
 
     expect(app(SeoRouteResolver::class)->resolve(
         'products/red-dress/',
@@ -418,30 +402,30 @@ it('resolves routes, generates localized sitemap XML, and serves public files', 
 
 it('deletes profiles and cascades localized rows', function (): void {
     $owner = seoOwner();
-    $profile = app(SyncSeoProfileAction::class)->execute($owner, seoPayload());
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload());
 
-    expect(app(DeleteSeoProfileAction::class)->execute($profile))->toBeTrue()
+    expect(app(SeoProfiles::class)->delete(SystemActor::Background, $profile))->toBeTrue()
         ->and(SeoProfile::query()->count())->toBe(0)
         ->and(DB::table(SeoTables::I18n)->count())->toBe(0);
 });
 
 it('rejects stale profile writes and excludes archived profiles from runtime resolution', function (): void {
     $owner = seoOwner();
-    $action = app(SyncSeoProfileAction::class);
-    $profile = $action->execute($owner, seoPayload());
+    $action = app(SeoProfiles::class);
+    $profile = $action->sync(SystemActor::Background, $owner, seoPayload());
     $revision = $profile->revision;
 
-    $updated = $action->execute($owner, seoPayload([
+    $updated = $action->sync(SystemActor::Background, $owner, seoPayload([
         'expectedRevision' => $revision,
         'translations' => ['en' => ['title' => 'Fresh']],
     ]));
 
-    expect(fn () => $action->execute($owner, seoPayload([
+    expect(fn () => $action->sync(SystemActor::Background, $owner, seoPayload([
         'expectedRevision' => $revision,
         'translations' => ['en' => ['title' => 'Stale']],
     ])))->toThrow(StaleSeoProfileException::class);
 
-    app(ArchiveSeoProfileAction::class)->execute($updated, true, $updated->revision);
+    app(SeoProfiles::class)->archive(SystemActor::Background, $updated, true, $updated->revision);
 
     expect(app(SeoRouteResolver::class)->resolve('/products/red-dress', 'en'))->toBeNull();
 });
@@ -452,18 +436,18 @@ it('provides typed management actions while management routes stay disabled', fu
         public function authorize(SeoAuthorizationContext $context): void {}
     });
     $owner = seoOwner();
-    $profile = app(SyncSeoProfileAction::class)->execute($owner, seoPayload());
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload());
     $target = seoOwner('Duplicate target');
-    $duplicate = app(DuplicateSeoProfileAction::class)->execute($profile, $target, 'secondary');
-    $page = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(perPage: 10));
-    $preview = app(PreviewSeoProfileAction::class)->execute($profile, 'en');
-    $status = app(SeoProfileStatusAction::class)->execute();
+    $duplicate = app(SeoProfiles::class)->duplicate(SystemActor::Background, $profile, $target, 'secondary');
+    $page = app(SeoReader::class)->paginate(SystemActor::Background, ['perPage' => 10]);
+    $preview = app(SeoReader::class)->resolve(SystemActor::Background, $profile, 'en');
+    $status = app(SeoProfiles::class)->status(SystemActor::Background);
 
     expect($duplicate->seoable_id)->toBe($target->getKey())
         ->and($page->total())->toBe(2)
-        ->and($preview->title)->toBe('Red Dress | Example')
-        ->and($status->toArray())->toBe(['active' => 2, 'archived' => 0, 'total' => 2])
-        ->and(fn () => app(DuplicateSeoProfileAction::class)->execute(
+        ->and($preview['title'])->toBe('Red Dress | Example')
+        ->and($status)->toBe(['active' => 2, 'archived' => 0, 'total' => 2])
+        ->and(fn () => app(SeoProfiles::class)->duplicate(SystemActor::Background,
             $profile,
             $target,
             'secondary',
@@ -473,77 +457,77 @@ it('provides typed management actions while management routes stay disabled', fu
 });
 
 it('normalizes redirect identity and rejects unsupported locales and stale creates', function (): void {
-    $action = app(SyncSeoRedirectAction::class);
-    $redirect = $action->execute(null, SeoRedirectPayload::from([
+    $action = app(SeoRedirects::class);
+    $redirect = $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/localized',
         'target' => '/destination',
         'locale' => 'EN',
         'expectedRevision' => 0,
-    ]));
+    ]);
 
     expect($redirect->locale)->toBe('en')
-        ->and(fn () => $action->execute(null, SeoRedirectPayload::from([
+        ->and(fn () => $action->sync(SystemActor::Background, null, [
             'sourcePath' => '/localized',
             'target' => '/replacement',
             'locale' => 'en',
             'expectedRevision' => 0,
-        ])))->toThrow(StaleSeoRedirectException::class)
-        ->and(fn () => $action->execute(null, SeoRedirectPayload::from([
+        ]))->toThrow(StaleSeoRedirectException::class)
+        ->and(fn () => $action->sync(SystemActor::Background, null, [
             'sourcePath' => '/unsupported',
             'target' => '/destination',
             'locale' => 'fr',
-        ])))->toThrow(InvalidSeoMutationException::class);
+        ]))->toThrow(InvalidSeoMutationException::class);
 });
 
 it('ignores expired redirects while flattening a new chain', function (): void {
-    $action = app(SyncSeoRedirectAction::class);
-    $action->execute(null, SeoRedirectPayload::from([
+    $action = app(SeoRedirects::class);
+    $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/expired',
         'target' => '/old-target',
         'expiresAt' => now()->subMinute()->toAtomString(),
-    ]));
-    $redirect = $action->execute(null, SeoRedirectPayload::from([
+    ]);
+    $redirect = $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/source',
         'target' => '/expired',
-    ]));
+    ]);
 
     expect($redirect->target)->toBe('/expired');
 });
 
 it('preserves safe query strings and fragments on internal redirect targets', function (): void {
-    $action = app(SyncSeoRedirectAction::class);
-    $redirect = $action->execute(
+    $action = app(SeoRedirects::class);
+    $redirect = $action->sync(SystemActor::Background,
         null,
-        SeoRedirectPayload::from([
+        [
             'sourcePath' => '/campaign',
             'target' => '/landing/?utm_source=legacy#offer',
             'metadata' => ['source' => 'legacy-import'],
-        ]),
+        ],
     );
-    $updated = $action->execute(
+    $updated = $action->sync(SystemActor::Background,
         $redirect,
-        SeoRedirectPayload::from([
+        [
             'sourcePath' => '/campaign',
             'target' => '/landing/?utm_source=current#offer',
             'expectedRevision' => $redirect->revision,
-        ]),
+        ],
     );
 
     expect($updated->target)->toBe('/landing?utm_source=current#offer')
         ->and($updated->metadata)->toBe(['source' => 'legacy-import'])
-        ->and(fn () => $action->execute(
+        ->and(fn () => $action->sync(SystemActor::Background,
             null,
-            SeoRedirectPayload::from([
+            [
                 'sourcePath' => '/self-query',
                 'target' => '/self-query?campaign=legacy',
-            ]),
+            ],
         ))->toThrow(SeoRedirectLoopException::class)
-        ->and(fn () => app(SyncSeoRedirectAction::class)->execute(
+        ->and(fn () => app(SeoRedirects::class)->sync(SystemActor::Background,
             null,
-            SeoRedirectPayload::from([
+            [
                 'sourcePath' => '/network-path',
                 'target' => '//malicious.example.test/path',
-            ]),
+            ],
         ))->toThrow(InvalidSeoMutationException::class);
 });
 
@@ -562,7 +546,7 @@ it('exposes an authorized alias-based management API with mandatory revisions', 
             SeoAuthorizationContext $context,
         ): bool => $context->owner?->getAttribute('name') !== 'Denied owner',
     );
-    require __DIR__.'/../../routes/management.php';
+    require __DIR__.'/../Fixtures/management.php';
     app('router')->getRoutes()->refreshNameLookups();
     $owner = seoOwner('Managed owner');
 
@@ -677,25 +661,29 @@ it('accepts valid schema types that begin with digits', function (): void {
     });
 
     expect($failures)->toBeEmpty()
-        ->and(StructuredDataNodeData::make('3DModel')->type)->toBe('3DModel');
+        ->and(StructuredDataNode::make('3DModel')->type)->toBe('3DModel');
 });
 
 it('requires SEO domain actions for centralized translation mutations', function (): void {
-    $profile = app(SyncSeoProfileAction::class)->execute(seoOwner(), seoPayload());
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background, seoOwner(), seoPayload());
     $revision = $profile->revision;
     $cache = app(SitemapCache::class);
     $key = $cache->key($profile->scope);
     $version = app(TranslationResourceVersioner::class)->version($profile);
+    app()->instance(TranslationResourceAuthorizer::class, new class implements TranslationResourceAuthorizer
+    {
+        public function allows(Authenticatable|SystemActor $actor, TranslationResourceAbility $ability, TranslationResourceDefinition $resource, ?Model $record = null): bool
+        {
+            return true;
+        }
+    });
 
-    expect(fn () => app(SyncTranslationResourceAction::class)->execute(
-        resourceKey: 'seo.profiles',
-        id: $profile->id,
-        mutation: new TranslationMutationData(
-            translations: ['en' => ['title' => 'Central write']],
-            expectedVersion: $version,
-        ),
-        actor: TranslationActorData::system(),
-    ))->toThrow(TranslationResourceException::class, 'package domain action')
+    expect(fn () => app(TranslationWriter::class)->sync(
+        $profile,
+        ['en' => ['title' => 'Central write']],
+        SystemActor::Background,
+        expectedVersion: $version,
+    ))->toThrow(TranslationResourceException::class, 'owning package service')
         ->and($profile->fresh()?->revision)->toBe($revision)
         ->and($cache->key($profile->scope))->toBe($key);
 });
@@ -736,48 +724,48 @@ it('enforces the configured uncompressed sitemap byte limit', function (): void 
         'nvl-seo.sitemap.cache_seconds' => 0,
         'nvl-seo.sitemap.max_bytes' => 100,
     ]);
-    app(SyncSeoProfileAction::class)->execute(seoOwner(), seoPayload());
+    app(SeoProfiles::class)->sync(SystemActor::Background, seoOwner(), seoPayload());
 
     expect(fn () => app(SitemapGenerator::class)->generate())
         ->toThrow(LogicException::class, 'byte artifact limit');
 });
 
 it('flattens redirect chains, rejects loops and stale revisions, and records hits', function (): void {
-    $action = app(SyncSeoRedirectAction::class);
-    $first = $action->execute(null, SeoRedirectPayload::from([
+    $action = app(SeoRedirects::class);
+    $first = $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/old',
         'target' => '/new',
-    ]));
-    $second = $action->execute(null, SeoRedirectPayload::from([
+    ]);
+    $second = $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/older',
         'target' => '/old',
-    ]));
+    ]);
 
     expect($second->target)->toBe('/new')
-        ->and(app(SeoRedirectResolver::class)->resolve('/older')?->target)->toBe('/new')
+        ->and(app(SeoRedirects::class)->resolve(SystemActor::Background, '/older')['target'])->toBe('/new')
         ->and($second->fresh()?->hit_count)->toBe(1)
-        ->and(fn () => $action->execute($first, SeoRedirectPayload::from([
+        ->and(fn () => $action->sync(SystemActor::Background, $first, [
             'sourcePath' => '/old',
             'target' => '/newer',
             'expectedRevision' => $first->revision - 1,
-        ])))->toThrow(StaleSeoRedirectException::class)
-        ->and(fn () => $action->execute(null, SeoRedirectPayload::from([
+        ]))->toThrow(StaleSeoRedirectException::class)
+        ->and(fn () => $action->sync(SystemActor::Background, null, [
             'sourcePath' => '/new',
             'target' => '/older',
-        ])))->toThrow(SeoRedirectLoopException::class)
-        ->and(fn () => $action->execute(null, SeoRedirectPayload::from([
+        ]))->toThrow(SeoRedirectLoopException::class)
+        ->and(fn () => $action->sync(SystemActor::Background, null, [
             'sourcePath' => '/unsafe',
             'target' => 'javascript:alert(1)',
-        ])))->toThrow(InvalidSeoMutationException::class);
+        ]))->toThrow(InvalidSeoMutationException::class);
 
-    $action->execute(null, SeoRedirectPayload::from([
+    $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/absolute-hop',
         'target' => 'https://example.test/final?campaign=legacy#offer',
-    ]));
-    $preserved = $action->execute(null, SeoRedirectPayload::from([
+    ]);
+    $preserved = $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/before-absolute-hop',
         'target' => '/absolute-hop',
-    ]));
+    ]);
 
     expect($preserved->target)
         ->toBe('https://example.test/final?campaign=legacy#offer');
@@ -786,10 +774,10 @@ it('flattens redirect chains, rejects loops and stale revisions, and records hit
 it('lists every scope for one authorized owner without including other owners', function (): void {
     $owner = seoOwner();
     $other = seoOwner('Other article');
-    $writer = app(SyncSeoProfileAction::class);
-    $writer->execute($owner, seoPayload());
-    $writer->execute($owner, seoPayload(), 'second-site');
-    $writer->execute($other, seoPayload(['translations' => [
+    $writer = app(SeoProfiles::class);
+    $writer->sync(SystemActor::Background, $owner, seoPayload());
+    $writer->sync(SystemActor::Background, $owner, seoPayload(), 'second-site');
+    $writer->sync(SystemActor::Background, $other, seoPayload(['translations' => [
         'en' => ['path' => '/other'], 'bg' => ['path' => '/bg/other'],
     ]]));
     $contexts = new ArrayObject;
@@ -803,9 +791,7 @@ it('lists every scope for one authorized owner without including other owners', 
         }
     });
 
-    $page = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
-        ownerAlias: 'article', perPage: 1, ownerId: $owner->id,
-    ));
+    $page = app(SeoReader::class)->paginate(SystemActor::Background, ['ownerAlias' => 'article', 'perPage' => 1, 'ownerId' => $owner->id]);
 
     expect($page->total())->toBe(2)
         ->and($page->count())->toBe(1)
@@ -816,20 +802,18 @@ it('lists every scope for one authorized owner without including other owners', 
 it('requires an owner alias when filtering profile management by owner identity', function (): void {
     expect(fn () => SeoProfileQuery::validateAndCreate(['ownerId' => 'owner-1']))
         ->toThrow(ValidationException::class);
-    expect(fn () => app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(ownerId: 'owner-1')))
+    expect(fn () => app(SeoReader::class)->paginate(SystemActor::Background, ['ownerId' => 'owner-1']))
         ->toThrow(InvalidArgumentException::class);
 });
 
 it('uses the resolved canonical integer key for owner profile filtering', function (): void {
     $owner = TestIntegerSeoOwner::query()->create(['name' => 'Native integer']);
-    app(SyncSeoProfileAction::class)->execute($owner, seoPayload());
+    app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload());
     app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
     {
         public function authorize(SeoAuthorizationContext $context): void {}
     });
-    $page = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
-        ownerAlias: 'integer-article', ownerId: '00'.$owner->getKey(),
-    ));
+    $page = app(SeoReader::class)->paginate(SystemActor::Background, ['ownerAlias' => 'integer-article', 'ownerId' => '00'.$owner->getKey()]);
 
     expect($page->total())->toBe(1);
 });
@@ -845,8 +829,8 @@ it('keeps case-distinct and padded owner identities isolated under native packag
     $owner->forceFill(['id' => 'Owner-A', 'name' => 'Upper'])->save();
     $foreign = new TestStringSeoOwner;
     $foreign->forceFill(['id' => 'owner-a', 'name' => 'Lower'])->save();
-    $profile = app(SyncSeoProfileAction::class)->execute($owner, seoPayload(), 'one');
-    app(SyncSeoProfileAction::class)->execute($foreign, seoPayload(), 'two');
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload(), 'one');
+    app(SeoProfiles::class)->sync(SystemActor::Background, $foreign, seoPayload(), 'two');
     $padded = $profile->replicate();
     $padded->forceFill(['scope' => 'three', 'seoable_id' => 'Owner-A '])->save();
     app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
@@ -854,11 +838,9 @@ it('keeps case-distinct and padded owner identities isolated under native packag
         public function authorize(SeoAuthorizationContext $context): void {}
     });
 
-    $page = app(ListSeoProfilesAction::class)->execute(new SeoProfileQuery(
-        ownerAlias: 'string-article', ownerId: $owner->getKey(),
-    ));
+    $page = app(SeoReader::class)->paginate(SystemActor::Background, ['ownerAlias' => 'string-article', 'ownerId' => $owner->getKey()]);
     expect($page->total())->toBe(1)
-        ->and($page->items()[0]->ownerId)->toBe('Owner-A');
+        ->and($page->items()[0]->seoable_id)->toBe('Owner-A');
 });
 
 it('keeps owner reads and mutations separate from collating or trimmed identities', function (
@@ -876,28 +858,28 @@ it('keeps owner reads and mutations separate from collating or trimmed identitie
     $owner->forceFill(['id' => $ownerId, 'name' => 'Requested owner'])->save();
     $foreign = new TestStringSeoOwner;
     $foreign->forceFill(['id' => $foreignId, 'name' => 'Foreign owner'])->save();
-    $profile = app(SyncSeoProfileAction::class)->execute($foreign, seoPayload(), 'audit');
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background, $foreign, seoPayload(), 'audit');
     app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
     {
         public function authorize(SeoAuthorizationContext $context): void {}
     });
 
     if ($operation === 'profile') {
-        expect(app(GetOwnerSeoProfileContract::class)->execute($owner, 'audit'))->toBeNull();
+        expect(app(SeoReader::class)->forOwner(SystemActor::Background, $owner, 'audit'))->toBeNull();
     } elseif ($operation === 'revision') {
-        $revision = app(GetOwnerSeoRevisionContract::class)->execute($owner, 'audit');
-        expect($revision->profileId)->toBeNull()
-            ->and($revision->revision)->toBe(0)
-            ->and($revision->ownerId)->toBe($ownerId);
+        $revision = app(SeoReader::class)->revisions(SystemActor::Background, $owner, 'audit');
+        expect($revision['profileId'])->toBeNull()
+            ->and($revision['revision'])->toBe(0)
+            ->and($revision['ownerId'])->toBe($ownerId);
     } elseif ($operation === 'relation') {
         expect($owner->seoProfiles()->count())->toBe(0);
     } elseif ($operation === 'existence') {
         expect(TestStringSeoOwner::query()->whereKey($ownerId)->whereHas('seoProfiles')->exists())->toBeFalse();
     } else {
         try {
-            $created = app(SyncSeoProfileAction::class)->execute($owner, SeoProfilePayload::from([
+            $created = app(SeoProfiles::class)->sync(SystemActor::Background, $owner, [
                 'sitemapPriority' => '0.2',
-            ]), 'audit');
+            ], 'audit');
             expect($created->seoable_id)->toBe($ownerId);
         } catch (StaleSeoProfileException) {
             // A collating native unique index may reject the second identity, but must never mutate the first.
@@ -912,7 +894,7 @@ it('keeps owner reads and mutations separate from collating or trimmed identitie
 
 it('admits current persisted owners before exposing single or batched SEO profiles', function (string $state, string $operation): void {
     $owner = seoOwner('Allowed owner');
-    app(SyncSeoProfileAction::class)->execute($owner, seoPayload(), 'audit');
+    app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload(), 'audit');
     $originalScopes = TestSeoOwner::getAllGlobalScopes();
 
     try {
@@ -941,9 +923,9 @@ it('admits current persisted owners before exposing single or batched SEO profil
             }
         });
         $read = match ($operation) {
-            'profile' => fn () => app(GetOwnerSeoProfileContract::class)->execute($owner, 'audit'),
-            'revision' => fn () => app(GetOwnerSeoRevisionContract::class)->execute($owner, 'audit'),
-            'batch' => fn () => app(ListOwnerSeoProfilesContract::class)->execute([$owner], 'audit'),
+            'profile' => fn () => app(SeoReader::class)->forOwner(SystemActor::Background, $owner, 'audit'),
+            'revision' => fn () => app(SeoReader::class)->revisions(SystemActor::Background, $owner, 'audit'),
+            'batch' => fn () => app(SeoReader::class)->forOwners(SystemActor::Background, [$owner], 'audit'),
         };
         DB::flushQueryLog();
         DB::enableQueryLog();
@@ -967,34 +949,34 @@ it('reads exact management redirects with their revisions without recording hits
                 ->and($context->scope)->toBe('catalogue');
         }
     });
-    $writer = app(SyncSeoRedirectAction::class);
-    $neutral = $writer->execute(null, SeoRedirectPayload::from([
+    $writer = app(SeoRedirects::class);
+    $neutral = $writer->sync(SystemActor::Background, null, [
         'sourcePath' => '/old', 'target' => '/neutral',
-    ]), 'catalogue');
-    $localized = $writer->execute(null, SeoRedirectPayload::from([
+    ], 'catalogue');
+    $localized = $writer->sync(SystemActor::Background, null, [
         'sourcePath' => '/old', 'target' => '/localized', 'locale' => 'en',
         'isActive' => false, 'expiresAt' => now()->subDay()->toIso8601String(),
-    ]), 'catalogue');
-    $reader = app(FindSeoRedirectContract::class);
-    $snapshot = $reader->execute('/old', 'catalogue', 'en');
+    ], 'catalogue');
+    $reader = app(SeoRedirects::class);
+    $snapshot = $reader->find(SystemActor::Background, '/old', 'catalogue', 'en');
 
     expect($snapshot?->id)->toBe($localized->id)
         ->and($snapshot?->revision)->toBe(1)
         ->and($snapshot?->target)->toBe('/localized')
-        ->and($snapshot?->isActive)->toBeFalse()
-        ->and($reader->execute('/old', 'catalogue')?->id)->toBe($neutral->id)
-        ->and($reader->execute('/old', 'catalogue', 'bg'))->toBeNull()
+        ->and($snapshot?->is_active)->toBeFalse()
+        ->and($reader->find(SystemActor::Background, '/old', 'catalogue')?->id)->toBe($neutral->id)
+        ->and($reader->find(SystemActor::Background, '/old', 'catalogue', 'bg'))->toBeNull()
         ->and($localized->fresh()?->hit_count)->toBe(0)
         ->and($localized->fresh()?->last_hit_at)->toBeNull();
 
-    $writer->execute($localized, SeoRedirectPayload::from([
+    $writer->sync(SystemActor::Background, $localized, [
         'sourcePath' => '/old', 'target' => '/edited', 'locale' => 'en', 'expectedRevision' => 1,
-    ]), 'catalogue');
-    expect($reader->execute('/old', 'catalogue', 'en')?->revision)->toBe(2)
-        ->and(fn () => $writer->execute($localized, SeoRedirectPayload::from([
+    ], 'catalogue');
+    expect($reader->find(SystemActor::Background, '/old', 'catalogue', 'en')?->revision)->toBe(2)
+        ->and(fn () => $writer->sync(SystemActor::Background, $localized, [
             'sourcePath' => '/old', 'target' => '/stale', 'locale' => 'en',
             'expectedRevision' => $snapshot?->revision,
-        ]), 'catalogue'))->toThrow(StaleSeoRedirectException::class);
+        ], 'catalogue'))->toThrow(StaleSeoRedirectException::class);
 });
 
 it('authorizes redirect management reads before exposing a stored or absent identity', function (): void {
@@ -1006,13 +988,13 @@ it('authorizes redirect management reads before exposing a stored or absent iden
         }
     });
 
-    expect(fn () => app(FindSeoRedirectContract::class)->execute('/absent'))
+    expect(fn () => app(SeoRedirects::class)->find(SystemActor::Background, '/absent'))
         ->toThrow(AuthorizationException::class);
 });
 
 it('generates bounded sitemap indexes and reports package health', function (): void {
     config()->set('nvl-seo.sitemap.max_urls', 1);
-    app(SyncSeoProfileAction::class)->execute(seoOwner(), seoPayload());
+    app(SeoProfiles::class)->sync(SystemActor::Background, seoOwner(), seoPayload());
     $generator = app(SitemapGenerator::class);
 
     expect($generator->generate())->toContain('<sitemapindex')
@@ -1020,7 +1002,7 @@ it('generates bounded sitemap indexes and reports package health', function (): 
         ->and($generator->generateChunk(1))->toContain('<urlset')
         ->and(fn () => $generator->generateChunk(3))->toThrow(OutOfBoundsException::class)
         ->and(collect(app(SeoDoctor::class)->inspect())->every(
-            static fn ($check): bool => $check->passed,
+            static fn ($check): bool => $check['passed'],
         ))->toBeTrue();
 
     config()->set('nvl-seo.sitemap.cache_seconds', 0);

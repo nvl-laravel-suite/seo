@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Nvl\Seo\Console;
 
 use Illuminate\Console\Command;
-use Nvl\Seo\Actions\PruneSeoRedirectsAction;
+use Nvl\Seo\Services\SeoRedirects;
+use Nvl\Support\Enums\SystemActor;
 
 /**
  * Prunes soft-deleted redirects outside the configured retention window.
@@ -20,7 +21,7 @@ final class PruneSeoRedirectsCommand extends Command
     /**
      * Prune retained redirect tombstones.
      */
-    public function handle(PruneSeoRedirectsAction $action): int
+    public function handle(SeoRedirects $action): int
     {
         $days = $this->option('days');
 
@@ -31,7 +32,7 @@ final class PruneSeoRedirectsCommand extends Command
             return self::INVALID;
         }
 
-        $pruned = $action->execute((int) $days);
+        $pruned = $action->prune(SystemActor::Background, (int) $days);
         $this->components->info("Pruned {$pruned} soft-deleted SEO redirect(s).");
 
         return self::SUCCESS;

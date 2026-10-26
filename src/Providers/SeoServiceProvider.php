@@ -5,57 +5,19 @@ declare(strict_types=1);
 namespace Nvl\Seo\Providers;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Routing\Router;
-use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
-use Nvl\Data\Services\TypeScriptSourceRegistry;
-use Nvl\Ownership\Http\Middleware\ResolvePublicOwnerSite;
 use Nvl\Ownership\Services\OwnershipAdoptionRegistry;
-use Nvl\Seo\Actions\ArchiveSeoProfileAction;
-use Nvl\Seo\Actions\DeleteSeoProfileAction;
-use Nvl\Seo\Actions\DuplicateSeoProfileAction;
-use Nvl\Seo\Actions\FindSeoRedirectAction;
-use Nvl\Seo\Actions\GetOwnerSeoProfileAction;
-use Nvl\Seo\Actions\GetOwnerSeoRevisionAction;
-use Nvl\Seo\Actions\GetSeoProfileAction;
-use Nvl\Seo\Actions\ImportSeoProfilesAction;
-use Nvl\Seo\Actions\ListOwnerSeoProfilesAction;
-use Nvl\Seo\Actions\ListSeoProfilesAction;
-use Nvl\Seo\Actions\PreviewSeoProfileAction;
-use Nvl\Seo\Actions\SeoProfileStatusAction;
-use Nvl\Seo\Actions\SyncSeoProfileAction;
-use Nvl\Seo\Actions\SyncSeoRedirectAction;
 use Nvl\Seo\Console\ClearSeoSitemapCommand;
 use Nvl\Seo\Console\PruneSeoRedirectsCommand;
 use Nvl\Seo\Console\SeoDoctorCommand;
 use Nvl\Seo\Console\WarmSeoSitemapCommand;
-use Nvl\Seo\Contracts\ArchiveSeoProfileContract;
-use Nvl\Seo\Contracts\DeleteSeoProfileContract;
-use Nvl\Seo\Contracts\DuplicateSeoProfileContract;
-use Nvl\Seo\Contracts\FindSeoRedirectContract;
-use Nvl\Seo\Contracts\GetOwnerSeoProfileContract;
-use Nvl\Seo\Contracts\GetOwnerSeoRevisionContract;
-use Nvl\Seo\Contracts\GetSeoProfileContract;
-use Nvl\Seo\Contracts\ImportSeoProfilesContract;
-use Nvl\Seo\Contracts\ListOwnerSeoProfilesContract;
-use Nvl\Seo\Contracts\ListSeoProfilesContract;
-use Nvl\Seo\Contracts\PreviewSeoProfileContract;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImageResolver;
-use Nvl\Seo\Contracts\SeoProfileStatusContract;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Contracts\StructuredDataProvider;
-use Nvl\Seo\Contracts\SyncSeoProfileContract;
-use Nvl\Seo\Contracts\SyncSeoRedirectContract;
-use Nvl\Seo\Contracts\TenantSafeSeoImageResolver;
-use Nvl\Seo\Http\Controllers\RobotsController;
-use Nvl\Seo\Http\Controllers\SitemapChunkController;
-use Nvl\Seo\Http\Controllers\SitemapController;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Ownership\SeoAdoptionAdapter;
-use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Ownership\SeoResourceRegistrar as OwnershipSeoResourceRegistrar;
 use Nvl\Seo\Services\ConfiguredSeoAuthorization;
 use Nvl\Seo\Services\DirectSeoImageResolver;
@@ -65,20 +27,13 @@ use Nvl\Seo\Services\SeoDoctor;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Seo\Services\StructuredDataRegistry;
-use Nvl\Seo\Support\SeoRouteConfiguration;
-use Nvl\Seo\Tenancy\SeoResourceRegistrar;
 use Nvl\Support\Doctor\PackageDoctorContributor;
 use Nvl\Support\Globals\GlobalNames;
 use Nvl\Support\Ownership\Contracts\OwnershipIntegratedProvider;
 use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
 use Nvl\Support\Providers\SupportServiceProvider;
-use Nvl\Support\Providers\TenantServiceProvider;
-use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
-use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 use Nvl\Support\Traits\MergesPackageConfiguration;
 use Nvl\Support\Traits\RegistersNamespacedResources;
-use Nvl\Tenancy\Http\Middleware\ResolvePublicTenant;
-use Nvl\Tenancy\Services\TenantAdoptionRegistry;
 use Nvl\Translatable\Services\TranslationResourceRegistry;
 
 /**
@@ -94,33 +49,11 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
      */
     public function register(): void
     {
-        $this->app->bindIf(ArchiveSeoProfileContract::class, ArchiveSeoProfileAction::class);
-        $this->app->bindIf(DeleteSeoProfileContract::class, DeleteSeoProfileAction::class);
-        $this->app->bindIf(DuplicateSeoProfileContract::class, DuplicateSeoProfileAction::class);
-        $this->app->bindIf(GetOwnerSeoProfileContract::class, GetOwnerSeoProfileAction::class);
-        $this->app->bindIf(GetOwnerSeoRevisionContract::class, GetOwnerSeoRevisionAction::class);
-        $this->app->bindIf(GetSeoProfileContract::class, GetSeoProfileAction::class);
-        $this->app->bindIf(FindSeoRedirectContract::class, FindSeoRedirectAction::class);
-        $this->app->bindIf(ImportSeoProfilesContract::class, ImportSeoProfilesAction::class);
-        $this->app->bindIf(ListOwnerSeoProfilesContract::class, ListOwnerSeoProfilesAction::class);
-        $this->app->bindIf(ListSeoProfilesContract::class, ListSeoProfilesAction::class);
-        $this->app->bindIf(PreviewSeoProfileContract::class, PreviewSeoProfileAction::class);
-        $this->app->bindIf(SeoProfileStatusContract::class, SeoProfileStatusAction::class);
-        $this->app->bindIf(SyncSeoProfileContract::class, SyncSeoProfileAction::class);
-        $this->app->bindIf(SyncSeoRedirectContract::class, SyncSeoRedirectAction::class);
 
         $this->app->register(SupportServiceProvider::class);
         PackageDoctorContributor::register($this->app, 'nvl/seo', fn (): array => $this->app->make(SeoDoctor::class)->inspect());
 
-        $this->app->register(TenantServiceProvider::class);
         $this->mergePackageConfiguration(__DIR__.'/../../config/nvl-seo.php', 'seo');
-        (new SeoResourceRegistrar)->register($this->app->make(TenantResourceRegistry::class));
-        $this->app->booted(function (): void {
-            if ($this->app->bound(TenantAdoptionRegistry::class)) {
-                (new SeoResourceRegistrar)->register($this->app->make(TenantResourceRegistry::class), $this->app->make(TenantAdoptionRegistry::class));
-            }
-        });
-
         $imageResolver = config('nvl-seo.image_resolver', DirectSeoImageResolver::class);
 
         if (! is_string($imageResolver)) {
@@ -128,12 +61,9 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
                 'seo.image_resolver must implement SeoImageResolver.',
             );
         }
-        $imageResolver = $this->app->make(TenantExtensionGuard::class)->assertCompatible(
-            extension: $imageResolver,
-            baseContract: SeoImageResolver::class,
-            tenantContract: TenantSafeSeoImageResolver::class,
-            label: 'seo.image_resolver',
-        );
+        if (! is_a($imageResolver, SeoImageResolver::class, true)) {
+            throw new InvalidArgumentException('seo.image_resolver must implement SeoImageResolver.');
+        }
 
         $this->app->bindIf(SeoImageResolver::class, $imageResolver);
         $artifactStore = config(
@@ -159,7 +89,6 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
      * Load package resources and register integrations.
      */
     public function boot(
-        TypeScriptSourceRegistry $typeScriptSources,
         TranslationResourceRegistry $translationResources,
         SitemapRegistry $sitemaps,
         StructuredDataRegistry $structuredData,
@@ -169,11 +98,13 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
             $this->app->make(OwnershipAdoptionRegistry::class)->register('seo', SeoAdoptionAdapter::class);
         }
 
+        $this->publishes([
+            __DIR__.'/../../resources/boost/skills' => base_path('.agents/skills'),
+        ], 'nvl-seo-skills');
         $this->app->make(GlobalNames::class)->translations('seo', __DIR__.'/../../lang', $this->app->make('translation.loader'));
         $this->publishes([
             __DIR__.'/../../lang' => lang_path('vendor/nvl-seo'),
         ], 'nvl-seo-translations');
-        $typeScriptSources->register(__DIR__.'/..', 'nvl/seo');
 
         if ((bool) config('nvl-seo.migrations.enabled', true)) {
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');
@@ -190,15 +121,6 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
         $sitemaps->registerType(EloquentSeoSitemapSource::class, 'nvl/seo');
         $this->registerConfiguredSitemapSources($sitemaps);
         $this->registerConfiguredStructuredDataProviders($structuredData);
-        $names = $this->app->make(GlobalNames::class);
-        $directive = static fn (string $expression): string => "<?php echo app(\\Nvl\\Seo\\Services\\SeoManager::class)->for({$expression})->toHtml(); ?>";
-        $exists = static fn (string $name): bool => array_key_exists($name, Blade::getCustomDirectives());
-        $install = static fn (string $name) => Blade::directive($name, $directive);
-        $names->reserve('seo', 'blade', 'nvlSeo', $exists, $install);
-        $names->register('seo', 'blade', 'seo', 'nvlSeo', $exists, $install);
-        $this->registerRoutes();
-        $this->registerManagementRoutes();
-
         if ($this->app->runningInConsole()) {
             $this->commands([
                 ClearSeoSitemapCommand::class,
@@ -214,9 +136,7 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
         $this->publishesMigrations([
             __DIR__.'/../../database/migrations' => database_path('migrations'),
         ], 'seo-migrations');
-        $this->publishes([
-            __DIR__.'/../../resources/boost/skills' => base_path('.agents/skills'),
-        ], 'seo-skills');
+
     }
 
     /**
@@ -291,57 +211,5 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
             /** @var class-string<Model> $resourceClass */
             $structuredData->register($key, $resourceClass, $provider, $priority);
         }
-    }
-
-    /**
-     * Register opt-in sitemap and robots endpoints.
-     */
-    private function registerRoutes(): void
-    {
-        if ($this->app->routesAreCached() || ! (bool) config('nvl-seo.routes.enabled', false)) {
-            return;
-        }
-
-        $middleware = config('nvl-seo.routes.middleware', ['web']);
-        $middleware = is_array($middleware) ? $middleware : ['web'];
-        $middleware = array_values(array_filter($middleware, is_string(...)));
-        if (config('nvl-tenancy.enabled') === true) {
-            array_unshift($middleware, ResolvePublicTenant::class);
-        }
-        if (SeoOwnership::declared()) {
-            array_unshift($middleware, ResolvePublicOwnerSite::class);
-        }
-        $middleware = array_values(array_unique($middleware));
-
-        $this->app->make(GlobalNames::class)->loadRoutes('seo', $this->app->make(Router::class), function () use ($middleware): void {
-            Route::middleware($middleware)
-                ->name(SeoRouteConfiguration::publicName())
-                ->group(function (): void {
-                    Route::get(
-                        SeoRouteConfiguration::sitemapPath(),
-                        SitemapController::class,
-                    )->name('sitemap');
-                    Route::get(
-                        SeoRouteConfiguration::sitemapChunkPath(),
-                        SitemapChunkController::class,
-                    )->whereNumber('chunk')->name('sitemap.chunk');
-                    Route::get(
-                        SeoRouteConfiguration::robotsPath(),
-                        RobotsController::class,
-                    )->name('robots');
-                });
-        });
-    }
-
-    /**
-     * Register the disabled-by-default authorized management API.
-     */
-    private function registerManagementRoutes(): void
-    {
-        if (! (bool) config('nvl-seo.management.enabled', false)) {
-            return;
-        }
-
-        $this->loadRoutesFrom(__DIR__.'/../../routes/management.php');
     }
 }

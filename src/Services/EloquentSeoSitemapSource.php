@@ -6,17 +6,16 @@ namespace Nvl\Seo\Services;
 
 use LogicException;
 use Nvl\Seo\Contracts\OwnershipSafeSitemapSource;
-use Nvl\Seo\Contracts\TenantSafeSitemapSource;
-use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoRouteConfiguration;
+use Nvl\Seo\ValueObjects\SitemapEntry;
 use Nvl\Support\Contracts\LocaleCatalog;
 
 /**
  * Streams all indexable profile translations from bounded Eloquent chunks.
  */
-final readonly class EloquentSeoSitemapSource implements OwnershipSafeSitemapSource, TenantSafeSitemapSource
+final readonly class EloquentSeoSitemapSource implements OwnershipSafeSitemapSource
 {
     public function __construct(
         private AbsoluteUrl $urls,
@@ -62,10 +61,6 @@ final readonly class EloquentSeoSitemapSource implements OwnershipSafeSitemapSou
     }
 
     /** @return list<string> */
-    public function tenantResources(): array
-    {
-        return ['seo.profiles', 'seo.translations'];
-    }
 
     /**
      * Project canonical URLs and alternates for an eligible profile with loaded translations.

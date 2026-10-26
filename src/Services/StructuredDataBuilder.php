@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Nvl\Seo\Services;
 
 use InvalidArgumentException;
-use Nvl\Seo\Data\StructuredDataNodeData;
 use Nvl\Seo\Enums\StructuredDataType;
 use Nvl\Seo\Support\HttpUrl;
 use Nvl\Seo\Support\StructuredDataLimits;
+use Nvl\Seo\ValueObjects\StructuredDataNode;
 
 /**
  * Builds safe schema.org JSON-LD object shapes without presentation markup.
@@ -26,8 +26,8 @@ final class StructuredDataBuilder
         string|StructuredDataType $type,
         array $properties = [],
         ?string $id = null,
-    ): StructuredDataNodeData {
-        return StructuredDataNodeData::make($type, $properties, $id);
+    ): StructuredDataNode {
+        return StructuredDataNode::make($type, $properties, $id);
     }
 
     /**
@@ -45,7 +45,7 @@ final class StructuredDataBuilder
     /**
      * Build a shared-context JSON-LD graph from schema.org node objects.
      *
-     * @param  list<array<string, mixed>|StructuredDataNodeData>  $nodes
+     * @param  list<array<string, mixed>|StructuredDataNode>  $nodes
      * @return array<string, mixed>
      */
     public function graph(array $nodes): array
@@ -57,7 +57,7 @@ final class StructuredDataBuilder
         $graph = [];
 
         foreach ($nodes as $node) {
-            $value = $node instanceof StructuredDataNodeData
+            $value = $node instanceof StructuredDataNode
                 ? $node->toJsonLd()
                 : $node;
             unset($value['@context']);

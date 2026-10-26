@@ -4,16 +4,9 @@
         "nvl-seo": {
             "common": [
                 "authorization.ability",
-                "management.enabled",
-                "management.middleware",
-                "management.name",
-                "management.path",
                 "migrations.enabled",
                 "owners",
                 "redirects.enabled",
-                "routes.enabled",
-                "routes.middleware",
-                "routes.name",
                 "routes.robots_path",
                 "routes.sitemap_chunk_path",
                 "routes.sitemap_path",

@@ -7,8 +7,7 @@ namespace Nvl\Seo\Services;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Nvl\Seo\Contracts\StructuredDataProvider;
-use Nvl\Seo\Data\StructuredDataContextData;
-use Nvl\Seo\Data\StructuredDataNodeData;
+use Nvl\Seo\ValueObjects\StructuredDataNode;
 
 /**
  * Registers deterministic resource-to-JSON-LD provider extensions.
@@ -59,11 +58,11 @@ final class StructuredDataRegistry
     /**
      * Resolve every applicable provider node in deterministic order.
      *
-     * @return list<StructuredDataNodeData>
+     * @return list<StructuredDataNode>
      */
     public function resolve(
         Model $resource,
-        StructuredDataContextData $context,
+        array $context,
     ): array {
         $providers = array_filter(
             $this->providers,
@@ -107,12 +106,12 @@ final class StructuredDataRegistry
      * Enforce provider output types at the runtime extension boundary.
      *
      * @param  iterable<mixed>  $nodes
-     * @return iterable<StructuredDataNodeData>
+     * @return iterable<StructuredDataNode>
      */
     private function validatedNodes(iterable $nodes, string $key): iterable
     {
         foreach ($nodes as $node) {
-            if (! $node instanceof StructuredDataNodeData) {
+            if (! $node instanceof StructuredDataNode) {
                 throw new InvalidArgumentException(
                     "Structured-data provider [{$key}] returned an invalid node.",
                 );

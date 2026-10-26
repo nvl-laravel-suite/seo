@@ -9,12 +9,11 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
 use LogicException;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
-use Nvl\Seo\Data\SitemapCacheIdentity;
-use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoRouteConfiguration;
 use Nvl\Seo\Support\SeoScope;
+use Nvl\Seo\ValueObjects\SitemapEntry;
 use OutOfBoundsException;
 use XMLWriter;
 
@@ -128,7 +127,7 @@ final readonly class SitemapGenerator
     /**
      * Ensure a complete artifact set is visible under the current cache version.
      *
-     * @return array{chunks:int,namespace:string,identity:SitemapCacheIdentity}
+     * @return array{chunks:int,namespace:string,identity:array{connection:string,tenantId:string,site:string,origin:string,scope:string,version:int,key:string,namespace:string}}
      */
     private function ensureCachedArtifacts(string $scope): array
     {
@@ -136,8 +135,8 @@ final readonly class SitemapGenerator
             $this->sources->all();
         }
         $identity = $this->cacheKeys->capture($scope);
-        $key = $identity->key;
-        $namespace = $identity->namespace;
+        $key = $identity['key'];
+        $namespace = $identity['namespace'];
         $manifest = $this->cachedManifest($key);
 
         if ($manifest !== null) {

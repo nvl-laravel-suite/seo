@@ -11,6 +11,8 @@ namespace Nvl\Seo\Enums;
  */
 enum SeoAbility: string
 {
+    case Resolve = 'resolve';
+
     case List = 'list';
     case View = 'view';
     case Create = 'create';

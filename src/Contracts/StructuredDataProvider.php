@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Seo\Contracts;
 
 use Illuminate\Database\Eloquent\Model;
-use Nvl\Seo\Data\StructuredDataContextData;
-use Nvl\Seo\Data\StructuredDataNodeData;
+use Nvl\Seo\ValueObjects\StructuredDataNode;
 
 /**
  * Builds schema.org nodes for one registered Eloquent resource family.
@@ -18,10 +17,11 @@ interface StructuredDataProvider
     /**
      * Return structured-data nodes that accurately describe the visible resource.
      *
-     * @return iterable<StructuredDataNodeData>
+     * @param  array{resourceType:string,resourceId:string,profileId:string,locale:string,scope:string,canonicalUrl:string|null,title:string|null,description:string|null,imageUrl:string|null,siteName:string,siteUrl:string}  $context
+     * @return iterable<StructuredDataNode>
      */
     public function provide(
         Model $resource,
-        StructuredDataContextData $context,
+        array $context,
     ): iterable;
 }

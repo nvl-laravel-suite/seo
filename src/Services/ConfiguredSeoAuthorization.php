@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Nvl\Seo\Services;
 
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Gate;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Support\SeoAuthorizationContext;
@@ -27,6 +28,9 @@ final class ConfiguredSeoAuthorization implements SeoAuthorization
             );
         }
 
-        Gate::authorize($configuredAbility, [$context]);
+        if (! $context->actor instanceof Authenticatable) {
+            throw new AuthorizationException('Public and system SEO operations require an explicit host authorization binding.');
+        }
+        Gate::forUser($context->actor)->authorize($configuredAbility, [$context]);
     }
 }

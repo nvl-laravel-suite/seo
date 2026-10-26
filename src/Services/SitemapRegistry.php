@@ -10,11 +10,8 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
 use Nvl\Seo\Contracts\OwnershipSafeSitemapSource;
 use Nvl\Seo\Contracts\SitemapSource;
-use Nvl\Seo\Contracts\TenantSafeSitemapSource;
 use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
-use Nvl\Support\Tenancy\Services\TenantExtensionGuard;
-use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Collects sitemap sources from the package and host application.
@@ -33,8 +30,6 @@ final class SitemapRegistry
 
     public function __construct(
         private readonly Container $container,
-        private readonly TenantExtensionGuard $extensions,
-        private readonly TenantResourceRegistry $tenantResources,
     ) {}
 
     /**
@@ -99,7 +94,7 @@ final class SitemapRegistry
 
         $resolved = [];
         $owned = SeoOwnership::declared();
-        $enabled = $owned || $this->container->make('config')->get('nvl-tenancy.enabled') === true;
+        $enabled = $owned;
         foreach ($this->sources as $key => $declaration) {
             if ($enabled && $declaration['class'] === null) {
                 throw new InvalidArgumentException(
@@ -120,17 +115,6 @@ final class SitemapRegistry
                 foreach ($source->ownershipResources() as $resource) {
                     $this->container->make(OwnershipBoundary::class)->key($resource, 'sitemap-source');
                 }
-            } elseif ($enabled) {
-                if (! $source instanceof TenantSafeSitemapSource || $source->tenantResources() === []) {
-                    throw new InvalidArgumentException("Tenant sitemap source [{$key}] has no resource capability.");
-                }
-                foreach ($source->tenantResources() as $resource) {
-                    if ($resource === '') {
-                        throw new InvalidArgumentException("Tenant sitemap source [{$key}] has an invalid resource capability.");
-                    }
-
-                    $this->tenantResources->get($resource);
-                }
             }
             $resolved[] = $source;
         }
@@ -145,12 +129,12 @@ final class SitemapRegistry
      */
     private function compatibleClass(SitemapSource|string $source): string
     {
-        return $this->extensions->assertCompatible(
-            extension: $source,
-            baseContract: SitemapSource::class,
-            tenantContract: TenantSafeSitemapSource::class,
-            label: 'Sitemap source',
-        );
+        $class = is_string($source) ? $source : $source::class;
+        if (! is_a($class, SitemapSource::class, true)) {
+            throw new InvalidArgumentException('Sitemap sources must implement SitemapSource.');
+        }
+
+        return $class;
     }
 
     /** Resolve and reserve one non-empty source key. */

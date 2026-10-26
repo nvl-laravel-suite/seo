@@ -7,22 +7,15 @@ use Illuminate\Cache\ApcWrapper;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Console\Command;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use Nvl\Seo\Actions\ImportSeoProfilesAction;
-use Nvl\Seo\Actions\SyncSeoProfileAction;
-use Nvl\Seo\Actions\SyncSeoRedirectAction;
 use Nvl\Seo\Contracts\SeoImportSource;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Contracts\SitemapSource;
-use Nvl\Seo\Data\Import\SeoImportPageData;
-use Nvl\Seo\Data\Import\SeoImportRecordData;
-use Nvl\Seo\Data\Mutations\SeoProfilePayload;
-use Nvl\Seo\Data\Mutations\SeoRedirectPayload;
-use Nvl\Seo\Data\SitemapEntry;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Events\SeoProfileChanged;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
@@ -32,41 +25,43 @@ use Nvl\Seo\Models\SeoRedirect;
 use Nvl\Seo\Services\AbsoluteUrl;
 use Nvl\Seo\Services\RobotsGenerator;
 use Nvl\Seo\Services\SeoDoctor;
-use Nvl\Seo\Services\SeoRedirectResolver;
+use Nvl\Seo\Services\SeoProfiles;
+use Nvl\Seo\Services\SeoRedirects;
 use Nvl\Seo\Services\SitemapCache;
 use Nvl\Seo\Services\SitemapGenerator;
 use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
-use Spatie\LaravelData\DataCollection;
+use Nvl\Seo\ValueObjects\SitemapEntry;
+use Nvl\Support\Enums\SystemActor;
 
 it('enforces mutation invariants for programmatic action callers', function (): void {
     $owner = TestSeoOwner::query()->create(['name' => 'Invalid profile owner']);
 
-    expect(fn () => app(SyncSeoProfileAction::class)->execute(
+    expect(fn () => app(SeoProfiles::class)->sync(SystemActor::Background,
         $owner,
-        SeoProfilePayload::from([
+        [
             'translations' => [
                 'en' => [
                     'path' => '/unsafe/%252fsegment',
                     'canonicalUrl' => 'https://example.test/article#fragment',
                 ],
             ],
-        ]),
+        ],
     ))->toThrow(InvalidSeoMutationException::class)
-        ->and(fn () => app(SyncSeoRedirectAction::class)->execute(
+        ->and(fn () => app(SeoRedirects::class)->sync(SystemActor::Background,
             null,
-            SeoRedirectPayload::from([
+            [
                 'sourcePath' => '/legacy',
                 'target' => '/current',
                 'statusCode' => 305,
-            ]),
+            ],
         ))->toThrow(InvalidSeoMutationException::class)
-        ->and(fn () => app(SyncSeoRedirectAction::class)->execute(
+        ->and(fn () => app(SeoRedirects::class)->sync(SystemActor::Background,
             null,
-            SeoRedirectPayload::from([
+            [
                 'sourcePath' => '/legacy-absolute',
                 'target' => 'https://example.test/unsafe/%2fsegment',
-            ]),
+            ],
         ))->toThrow(InvalidSeoMutationException::class)
         ->and(SeoProfile::query()->count())->toBe(0)
         ->and(SeoRedirect::query()->count())->toBe(0);
@@ -74,24 +69,24 @@ it('enforces mutation invariants for programmatic action callers', function (): 
 
 it('canonicalizes unreserved path encoding and rejects malformed encoding', function (): void {
     $owner = TestSeoOwner::query()->create(['name' => 'Encoded path owner']);
-    $profile = app(SyncSeoProfileAction::class)->execute(
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background,
         $owner,
-        SeoProfilePayload::from([
+        [
             'translations' => [
                 'en' => ['path' => '/articles/%41udit%7epass'],
             ],
-        ]),
+        ],
     );
 
     expect($profile->getTranslation('en')?->getAttribute('path'))
         ->toBe('/articles/Audit~pass')
-        ->and(fn () => app(SyncSeoProfileAction::class)->execute(
+        ->and(fn () => app(SeoProfiles::class)->sync(SystemActor::Background,
             TestSeoOwner::query()->create(['name' => 'Malformed encoded path']),
-            SeoProfilePayload::from([
+            [
                 'translations' => [
                     'en' => ['path' => '/articles/%invalid'],
                 ],
-            ]),
+            ],
         ))
         ->toThrow(InvalidSeoMutationException::class);
 });
@@ -99,16 +94,16 @@ it('canonicalizes unreserved path encoding and rejects malformed encoding', func
 it('rejects unknown programmatic translation fields without persisting a profile', function (): void {
     $owner = TestSeoOwner::query()->create(['name' => 'Unknown field owner']);
 
-    expect(fn () => app(SyncSeoProfileAction::class)->execute(
+    expect(fn () => app(SeoProfiles::class)->sync(SystemActor::Background,
         $owner,
-        SeoProfilePayload::from([
+        [
             'translations' => [
                 'en' => [
                     'path' => '/unknown-field',
                     'titel' => 'Misspelled title',
                 ],
             ],
-        ]),
+        ],
     ))
         ->toThrow(InvalidSeoMutationException::class)
         ->and(SeoProfile::query()->count())->toBe(0);
@@ -243,16 +238,16 @@ it('keeps committed profile writes successful when sitemap invalidation fails', 
     Exceptions::fake();
     Event::fake([SeoProfileChanged::class]);
 
-    $profile = app(SyncSeoProfileAction::class)->execute(
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background,
         $owner,
-        SeoProfilePayload::from([
+        [
             'translations' => [
                 'en' => [
                     'path' => '/cache-failure',
                     'title' => 'Cache failure',
                 ],
             ],
-        ]),
+        ],
     );
 
     expect($profile->exists)->toBeTrue()
@@ -269,15 +264,15 @@ it('namespaces default sitemap cache identities and preserves host-selected pref
     $repository = new CacheRepository($store);
     $cache = new SitemapCache($repository, app(SitemapArtifactStore::class));
     $identity = $cache->capture('default');
-    $foreignKey = str_replace('nvl:seo:sitemap:', 'nvl-seo:sitemap:', $identity->key);
+    $foreignKey = str_replace('nvl:seo:sitemap:', 'nvl-seo:sitemap:', $identity['key']);
     $repository->forever($foreignKey, 'host-value');
 
-    expect($identity->key)->toStartWith('nvl:seo:sitemap:');
+    expect($identity['key'])->toStartWith('nvl:seo:sitemap:');
     $cache->forgetCaptured($identity);
     expect($repository->get($foreignKey))->toBe('host-value');
 
     config()->set('nvl-seo.sitemap.cache_key', 'host-selected-sitemaps');
-    expect($cache->capture('default')->key)->toStartWith('host-selected-sitemaps:');
+    expect($cache->capture('default')['key'])->toStartWith('host-selected-sitemaps:');
 });
 
 it('accepts string-encoded integer versions from string-backed cache stores like redis', function (): void {
@@ -286,21 +281,21 @@ it('accepts string-encoded integer versions from string-backed cache stores like
     $cache = new SitemapCache($cacheRepository, app(SitemapArtifactStore::class));
 
     $identity = $cache->capture('default');
-    expect($identity->version)->toBe(1);
+    expect($identity['version'])->toBe(1);
 
     $baseKey = config('nvl-seo.sitemap.cache_key', 'nvl:seo:sitemap');
     $facts = [
-        'connection' => $identity->connection,
-        'tenant' => $identity->tenantId,
-        'site' => $identity->site,
-        'origin' => $identity->origin,
-        'scope' => $identity->scope,
+        'connection' => $identity['connection'],
+        'tenant' => $identity['tenantId'],
+        'site' => $identity['site'],
+        'origin' => $identity['origin'],
+        'scope' => $identity['scope'],
     ];
     $versionKey = $baseKey.':'.hash('sha256', json_encode($facts, JSON_THROW_ON_ERROR)).':version';
     $cacheRepository->forever($versionKey, '3');
 
     $updated = $cache->capture('default');
-    expect($updated->version)->toBe(3);
+    expect($updated['version'])->toBe(3);
 
     expect($cache->forgetCaptured($updated))->toBeTrue();
 });
@@ -311,9 +306,9 @@ it('keeps non-default sitemap index and chunk requests in the requested scope', 
         'nvl-seo.sitemap.max_urls' => 1,
     ]);
     $owner = TestSeoOwner::query()->create(['name' => 'Scoped sitemap owner']);
-    app(SyncSeoProfileAction::class)->execute(
+    app(SeoProfiles::class)->sync(SystemActor::Background,
         $owner,
-        SeoProfilePayload::from([
+        [
             'translations' => [
                 'en' => [
                     'path' => '/wholesale/product',
@@ -324,7 +319,7 @@ it('keeps non-default sitemap index and chunk requests in the requested scope', 
                     'title' => 'Продукт на едро',
                 ],
             ],
-        ]),
+        ],
         'wholesale',
     );
 
@@ -345,9 +340,9 @@ it('keeps non-default sitemap index and chunk requests in the requested scope', 
 
 it('omits valid external canonical profiles from the built in sitemap', function (): void {
     $owner = TestSeoOwner::query()->create(['name' => 'External canonical owner']);
-    app(SyncSeoProfileAction::class)->execute(
+    app(SeoProfiles::class)->sync(SystemActor::Background,
         $owner,
-        SeoProfilePayload::from([
+        [
             'translations' => [
                 'en' => [
                     'path' => '/duplicate',
@@ -359,7 +354,7 @@ it('omits valid external canonical profiles from the built in sitemap', function
                     'title' => 'Локално копие',
                 ],
             ],
-        ]),
+        ],
     );
 
     $xml = app(SitemapGenerator::class)->generate();
@@ -376,59 +371,48 @@ it('omits valid external canonical profiles from the built in sitemap', function
 
 it('treats unregistered runtime owner types as advisory until management is enabled', function (): void {
     $owner = TestSeoOwner::query()->create(['name' => 'Unregistered runtime owner']);
-    app(SyncSeoProfileAction::class)->execute(
+    app(SeoProfiles::class)->sync(SystemActor::Background,
         $owner,
-        SeoProfilePayload::from([
+        [
             'translations' => [
                 'en' => ['path' => '/runtime-owner'],
             ],
-        ]),
+        ],
     );
     config()->set('nvl-seo.owners', []);
     $doctor = app(SeoDoctor::class);
     $advisory = collect($doctor->inspect())->firstWhere('key', 'configuration.owners');
 
-    expect($advisory?->passed)->toBeFalse()
-        ->and($advisory?->severity)->toBe('warning');
+    expect($advisory['passed'])->toBeFalse()
+        ->and($advisory['severity'])->toBe('warning');
 
     config()->set('nvl-seo.management.enabled', true);
     $required = collect($doctor->inspect())->firstWhere('key', 'configuration.owners');
 
-    expect($required?->passed)->toBeFalse()
-        ->and($required?->severity)->toBe('error');
+    expect($required['passed'])->toBeFalse()
+        ->and($required['severity'])->toBe('error');
 });
 
 it('rejects import sources that exceed the requested bounded page', function (): void {
     $owner = TestSeoOwner::query()->create(['name' => 'Bounded import owner']);
-    $record = new SeoImportRecordData(
-        ownerAlias: 'article',
-        ownerId: (string) $owner->getKey(),
-        scope: null,
-        profile: SeoProfilePayload::from([
-            'translations' => [
-                'en' => ['path' => '/bounded-import'],
-            ],
-        ]),
-    );
+    $record = ['ownerAlias' => 'article', 'ownerId' => (string) $owner->getKey(), 'scope' => null, 'profile' => [
+        'translations' => [
+            'en' => ['path' => '/bounded-import'],
+        ],
+    ]];
     $source = new class($record) implements SeoImportSource
     {
         public function __construct(
-            private readonly SeoImportRecordData $record,
+            private readonly array $record,
         ) {}
 
-        public function page(?string $cursor, int $limit): SeoImportPageData
+        public function page(?string $cursor, int $limit): array
         {
-            return new SeoImportPageData(
-                items: new DataCollection(
-                    SeoImportRecordData::class,
-                    [$this->record, $this->record],
-                ),
-                nextCursor: null,
-            );
+            return ['items' => [$this->record, $this->record], 'nextCursor' => null];
         }
     };
 
-    expect(fn () => app(ImportSeoProfilesAction::class)->execute(
+    expect(fn () => app(SeoProfiles::class)->import(SystemActor::Background,
         $source,
         limit: 1,
     ))
@@ -439,7 +423,7 @@ it('rejects import sources that exceed the requested bounded page', function ():
 it('fails closed for invalid management middleware and doctor output formats', function (): void {
     config()->set('nvl-seo.management.middleware', []);
 
-    expect(fn () => require __DIR__.'/../../routes/management.php')
+    expect(fn () => require __DIR__.'/../Fixtures/management.php')
         ->toThrow(InvalidArgumentException::class, 'non-empty middleware');
 
     $this->artisan('nvl:seo:doctor', ['--format' => 'yaml'])
@@ -474,97 +458,95 @@ it('publishes sitemap xml to immutable filesystem artifacts and clears them atom
 });
 
 it('prefers localized redirects and falls back to locale-neutral redirects', function (): void {
-    $action = app(SyncSeoRedirectAction::class);
-    $action->execute(null, SeoRedirectPayload::from([
+    $action = app(SeoRedirects::class);
+    $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/legacy',
         'target' => '/global-destination',
-    ]));
-    $action->execute(null, SeoRedirectPayload::from([
+    ]);
+    $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/legacy',
         'target' => '/localized-destination',
         'locale' => 'bg',
-    ]));
-    $resolver = app(SeoRedirectResolver::class);
+    ]);
+    $resolver = app(SeoRedirects::class);
 
-    expect($resolver->resolve('/legacy', 'bg')?->target)->toBe('/localized-destination')
-        ->and($resolver->resolve('/legacy', 'en')?->target)->toBe('/global-destination')
-        ->and($resolver->resolve('/legacy')?->target)->toBe('/global-destination');
+    expect($resolver->resolve(SystemActor::Background, '/legacy', 'bg')['target'])->toBe('/localized-destination')
+        ->and($resolver->resolve(SystemActor::Background, '/legacy', 'en')['target'])->toBe('/global-destination')
+        ->and($resolver->resolve(SystemActor::Background, '/legacy')['target'])->toBe('/global-destination');
 });
 
 it('rejects direct and chained loops through same-site absolute urls', function (): void {
-    $action = app(SyncSeoRedirectAction::class);
+    $action = app(SeoRedirects::class);
 
-    expect(fn () => $action->execute(null, SeoRedirectPayload::from([
+    expect(fn () => $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/self',
         'target' => 'https://example.test/self?campaign=legacy',
-    ])))->toThrow(SeoRedirectLoopException::class);
+    ]))->toThrow(SeoRedirectLoopException::class);
 
-    $action->execute(null, SeoRedirectPayload::from([
+    $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/return',
         'target' => '/origin',
-    ]));
+    ]);
 
-    expect(fn () => $action->execute(null, SeoRedirectPayload::from([
+    expect(fn () => $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/origin',
         'target' => 'https://example.test/return',
-    ])))->toThrow(SeoRedirectLoopException::class);
+    ]))->toThrow(SeoRedirectLoopException::class);
 
-    $action->execute(null, SeoRedirectPayload::from([
+    $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/absolute-return',
         'target' => 'https://example.test/absolute-origin',
-    ]));
+    ]);
 
-    expect(fn () => $action->execute(null, SeoRedirectPayload::from([
+    expect(fn () => $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/absolute-origin',
         'target' => '/absolute-return',
-    ])))->toThrow(SeoRedirectLoopException::class);
+    ]))->toThrow(SeoRedirectLoopException::class);
 });
 
 it('rejects neutral redirects that close a localized fallback loop', function (): void {
-    $action = app(SyncSeoRedirectAction::class);
-    $action->execute(null, new SeoRedirectPayload('/a', '/b', locale: 'en'));
+    $action = app(SeoRedirects::class);
+    $action->sync(SystemActor::Background, null, ['sourcePath' => '/a', 'target' => '/b', 'locale' => 'en']);
 
-    expect(fn () => $action->execute(null, new SeoRedirectPayload('/b', '/a')))
+    expect(fn () => $action->sync(SystemActor::Background, null, ['sourcePath' => '/b', 'target' => '/a']))
         ->toThrow(SeoRedirectLoopException::class);
-    expect(app(SeoRedirectResolver::class)->resolve('/b', 'en'))->toBeNull();
+    expect(app(SeoRedirects::class)->resolve(SystemActor::Background, '/b', 'en'))->toBeNull();
 });
 
 it('rejects updates that expose a loop through neutral fallback', function (): void {
-    $action = app(SyncSeoRedirectAction::class);
-    $shadow = $action->execute(null, new SeoRedirectPayload('/a', '/safe', locale: 'en'));
-    $action->execute(null, new SeoRedirectPayload('/b', '/a?from=legacy', locale: 'en'));
-    $action->execute(null, new SeoRedirectPayload('/a', '/b'));
+    $action = app(SeoRedirects::class);
+    $shadow = $action->sync(SystemActor::Background, null, ['sourcePath' => '/a', 'target' => '/safe', 'locale' => 'en']);
+    $action->sync(SystemActor::Background, null, ['sourcePath' => '/b', 'target' => '/a?from=legacy', 'locale' => 'en']);
+    $action->sync(SystemActor::Background, null, ['sourcePath' => '/a', 'target' => '/b']);
 
-    expect(fn () => $action->execute($shadow, new SeoRedirectPayload(
-        '/a', '/safe', locale: 'en', isActive: false, expectedRevision: $shadow->revision,
-    )))->toThrow(SeoRedirectLoopException::class);
+    expect(fn () => $action->sync(SystemActor::Background, $shadow, ['sourcePath' => '/a', 'target' => '/safe', 'locale' => 'en', 'isActive' => false, 'expectedRevision' => $shadow->revision]))->toThrow(SeoRedirectLoopException::class);
     expect($shadow->refresh()->is_active)->toBeTrue();
 });
 
 it('allows neutral redirects whose localized source is safely shadowed', function (): void {
-    $action = app(SyncSeoRedirectAction::class);
-    $action->execute(null, new SeoRedirectPayload('/b', '/safe', locale: 'en'));
-    $action->execute(null, new SeoRedirectPayload('/a', '/b', locale: 'en'));
-    $action->execute(null, new SeoRedirectPayload('/b', '/a'));
+    $action = app(SeoRedirects::class);
+    $action->sync(SystemActor::Background, null, ['sourcePath' => '/b', 'target' => '/safe', 'locale' => 'en']);
+    $action->sync(SystemActor::Background, null, ['sourcePath' => '/a', 'target' => '/b', 'locale' => 'en']);
+    $action->sync(SystemActor::Background, null, ['sourcePath' => '/b', 'target' => '/a']);
 
-    expect(app(SeoRedirectResolver::class)->resolve('/b', 'en')?->target)->toBe('/safe')
-        ->and(app(SeoRedirectResolver::class)->resolve('/b')?->target)->toBe('/a');
+    expect(app(SeoRedirects::class)->resolve(SystemActor::Background, '/b', 'en')['target'])->toBe('/safe')
+        ->and(app(SeoRedirects::class)->resolve(SystemActor::Background, '/b')['target'])->toBe('/a');
 });
 
 it('increments a restored redirect revision exactly once', function (): void {
-    $action = app(SyncSeoRedirectAction::class);
-    $redirect = $action->execute(null, SeoRedirectPayload::from([
+    $action = app(SeoRedirects::class);
+    $redirect = $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/restored',
         'target' => '/original-target',
         'metadata' => ['source' => 'legacy-import'],
         'expectedRevision' => 0,
-    ]));
+    ]);
     $redirect->delete();
-    $restored = $action->execute(null, SeoRedirectPayload::from([
+    $restored = $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/restored',
         'target' => '/current-target',
         'expectedRevision' => 0,
-    ]));
+    ]);
 
     expect($restored->revision)->toBe($redirect->revision + 1)
         ->and($restored->target)->toBe('/current-target')
@@ -573,15 +555,15 @@ it('increments a restored redirect revision exactly once', function (): void {
 });
 
 it('prunes only redirect tombstones outside the requested retention window', function (): void {
-    $action = app(SyncSeoRedirectAction::class);
-    $old = $action->execute(null, SeoRedirectPayload::from([
+    $action = app(SeoRedirects::class);
+    $old = $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/old-deleted',
         'target' => '/destination',
-    ]));
-    $recent = $action->execute(null, SeoRedirectPayload::from([
+    ]);
+    $recent = $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/recently-deleted',
         'target' => '/destination',
-    ]));
+    ]);
     $old->delete();
     $recent->delete();
     SeoRedirect::onlyTrashed()->whereKey($old->id)->update([
@@ -609,7 +591,7 @@ it('rejects robots directive injection and oversized output', function (): void 
     expect(fn () => app(RobotsGenerator::class)->generate())
         ->toThrow(LogicException::class, 'exceeds the configured')
         ->and(collect(app(SeoDoctor::class)->inspect())
-            ->firstWhere('key', 'configuration.robots')?->passed)
+            ->firstWhere('key', 'configuration.robots')['passed'])
         ->toBeFalse();
 });
 
@@ -617,7 +599,7 @@ it('reports an unapplied redirect lock migration as an unhealthy schema', functi
     Schema::drop(SeoTables::RedirectLocks);
 
     expect(collect(app(SeoDoctor::class)->inspect())
-        ->firstWhere('key', 'schema.table.'.SeoTables::RedirectLocks)?->passed)->toBeFalse();
+        ->firstWhere('key', 'schema.table.'.SeoTables::RedirectLocks)['passed'])->toBeFalse();
     $this->artisan('nvl:seo:doctor', ['--strict' => true, '--format' => 'json'])->assertFailed();
 });
 
@@ -635,7 +617,7 @@ it('rolls package migrations back cleanly and fails loudly on an occupied table'
     });
 
     expect(fn () => $this->artisan('migrate', ['--force' => true])->run())
-        ->toThrow(LogicException::class, 'cannot create existing table');
+        ->toThrow(QueryException::class, 'already exists');
 
     Schema::drop(SeoTables::Profiles);
 

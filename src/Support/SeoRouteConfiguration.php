@@ -12,30 +12,6 @@ use InvalidArgumentException;
 final class SeoRouteConfiguration
 {
     /**
-     * Return the normalized management URI prefix.
-     */
-    public static function managementPath(): string
-    {
-        return self::path('nvl-seo.management.path', 'nvl/api/v1/seo');
-    }
-
-    /**
-     * Return the normalized management route-name prefix.
-     */
-    public static function managementName(): string
-    {
-        return self::name('nvl-seo.management.name', 'nvl.seo.management.');
-    }
-
-    /**
-     * Return the normalized public route-name prefix.
-     */
-    public static function publicName(): string
-    {
-        return self::name('nvl-seo.routes.name', 'nvl.seo.');
-    }
-
-    /**
      * Return the validated sitemap URI.
      */
     public static function sitemapPath(): string
@@ -98,23 +74,5 @@ final class SeoRouteConfiguration
     /**
      * Validate one route-name prefix.
      */
-    private static function name(string $key, string $default): string
-    {
-        $name = config($key, $default);
-
-        if (! is_string($name)) {
-            throw new InvalidArgumentException("{$key} must be a string.");
-        }
-
-        $name = rtrim(trim($name), '.');
-
-        if ($name === ''
-            || preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]*$/', $name) !== 1) {
-            throw new InvalidArgumentException("{$key} must be a safe route-name prefix.");
-        }
-
-        return $name.'.';
-    }
-
     private function __construct() {}
 }

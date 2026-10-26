@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Support;
 
-use Illuminate\Container\Container;
 use LogicException;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Support\Ownership\Services\OwnerSiteContext;
 use Nvl\Support\Ownership\ValueObjects\VerifiedOwnerSiteContext;
-use Nvl\Support\Tenancy\ValueObjects\TenantSiteContext;
 
 /**
  * Normalizes a stable site/storefront SEO identity.
@@ -25,9 +23,9 @@ final class SeoScope
      */
     public static function publicSitemapScopes(): array
     {
-        $tenantSite = self::tenantSite();
-        if ($tenantSite instanceof TenantSiteContext || $tenantSite instanceof VerifiedOwnerSiteContext) {
-            return [self::normalize($tenantSite->site)];
+        $ownerSite = self::ownerSite();
+        if ($ownerSite instanceof VerifiedOwnerSiteContext) {
+            return [self::normalize($ownerSite->site)];
         }
 
         $configured = config('nvl-seo.routes.sitemap_scopes', []);
@@ -58,12 +56,12 @@ final class SeoScope
 
     public static function normalize(?string $scope = null): string
     {
-        $tenantSite = self::tenantSite();
-        if ($tenantSite instanceof TenantSiteContext || $tenantSite instanceof VerifiedOwnerSiteContext) {
-            if ($scope !== null && mb_strtolower(trim($scope)) !== mb_strtolower(trim($tenantSite->site))) {
-                throw InvalidSeoMutationException::forField('scope', 'The SEO scope differs from the verified tenant site.');
+        $ownerSite = self::ownerSite();
+        if ($ownerSite instanceof VerifiedOwnerSiteContext) {
+            if ($scope !== null && mb_strtolower(trim($scope)) !== mb_strtolower(trim($ownerSite->site))) {
+                throw InvalidSeoMutationException::forField('scope', 'The SEO scope differs from the verified owner site.');
             }
-            $scope = $tenantSite->site;
+            $scope = $ownerSite->site;
         }
 
         $configuredScope = config('nvl-seo.site.scope');
@@ -87,16 +85,8 @@ final class SeoScope
     }
 
     /** Resolve public site identity only in adopted mode. */
-    private static function tenantSite(): TenantSiteContext|VerifiedOwnerSiteContext|null
+    private static function ownerSite(): ?VerifiedOwnerSiteContext
     {
-        if (OwnerSiteContext::current() !== null) {
-            return OwnerSiteContext::require();
-        }
-        $container = Container::getInstance();
-        if (! $container->bound('config') || $container->make('config')->get('nvl-tenancy.enabled') !== true) {
-            return null;
-        }
-
-        return $container->make(TenantSiteContext::class);
+        return OwnerSiteContext::current();
     }
 }

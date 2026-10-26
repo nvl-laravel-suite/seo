@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Services;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -12,10 +13,10 @@ use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoModelIdentifier;
+use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\OwnerRegistry;
-use Nvl\Support\Ownership\Contracts\OwnershipBoundary as TenantBoundary;
+use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
-use Nvl\Support\Tenancy\Services\TenantResourceRegistry;
 
 /**
  * Resolves explicitly registered owner aliases for HTTP and import boundaries.
@@ -40,8 +41,7 @@ final class SeoOwnerRegistry
     /** Create the capability registry against the shared identity and tenancy boundaries. */
     public function __construct(
         private readonly Repository $configuration,
-        private readonly TenantBoundary $tenancy,
-        private readonly TenantResourceRegistry $resources,
+        private readonly OwnershipBoundary $tenancy,
         private readonly OwnerRegistry $identities,
         private readonly OwnershipResourceRegistry $ownershipResources,
     ) {}
@@ -72,7 +72,7 @@ final class SeoOwnerRegistry
         /** @var Model $model */
         $model = $modelClass::query()->findOrFail($id);
         if (SeoOwnership::active()) {
-            $resource = (SeoOwnership::declared() ? $this->ownershipResources : $this->resources)->forModel($model);
+            $resource = $this->ownershipResources->forModel($model);
             $this->tenancy->assertRecord($model, $resource->key);
         }
 
@@ -87,13 +87,12 @@ final class SeoOwnerRegistry
      * @param  iterable<array-key, Model>  $owners
      * @return list<array{owner: Model, alias: string, type: string, id: string}>
      */
-    public function admitForRead(iterable $owners, string $scope, SeoAuthorization $authorization): array
+    public function admitForRead(iterable $owners, string $scope, SeoAuthorization $authorization, Authenticatable|SystemActor $actor): array
     {
         return (new SeoOwnerReadAdmission(
             $this->tenancy,
             $this->ownershipResources,
-            $this->resources,
-        ))->admit($owners, $scope, $this, $authorization);
+        ))->admit($owners, $scope, $this, $authorization, $actor);
     }
 
     /**

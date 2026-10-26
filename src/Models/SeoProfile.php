@@ -15,7 +15,8 @@ use LogicException;
 use Nvl\Seo\Database\Factories\SeoProfileFactory;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\SitemapChangeFrequency;
-use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Seo\Models\Concerns\GuardsSeoOwnership;
+use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\ExactSeoOwnerText;
 use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Seo\Support\SeoScope;
@@ -30,7 +31,6 @@ use Nvl\Translatable\Translatable;
  * SEO settings attached to one model in one site scope.
  *
  * @property string $id
- * @property string|null $tenant_id
  * @property string $scope
  * @property string $seoable_type
  * @property string $seoable_id
@@ -57,7 +57,7 @@ use Nvl\Translatable\Translatable;
  */
 final class SeoProfile extends Model implements Ownable, TranslatableModel
 {
-    use GuardsTenantOwnership;
+    use GuardsSeoOwnership;
 
     /** @use HasFactory<SeoProfileFactory> */
     use HasFactory;
@@ -164,7 +164,7 @@ final class SeoProfile extends Model implements Ownable, TranslatableModel
                 'metadata',
             ],
             mutationPolicy: TranslationMutationPolicy::OwningServiceOnly,
-            ownershipResource: self::TENANT_RESOURCE,
+            ownershipResource: SeoOwnership::declared() ? self::TENANT_RESOURCE : null,
         );
     }
 

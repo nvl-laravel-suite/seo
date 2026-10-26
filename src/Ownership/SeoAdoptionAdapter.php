@@ -150,7 +150,7 @@ final readonly class SeoAdoptionAdapter implements OwnershipAdoptionAdapter
                 if (! is_string($row->scope) || ! is_string($row->source_path) || ($row->locale !== null && ! is_string($row->locale))) {
                     throw new OwnershipConfigurationInvalid('SEO redirects require their canonical scope, locale and source path.');
                 }
-                $attributes['source_hash'] = SeoRedirect::sourceHashForTenant('*', $row->scope, $row->locale, $row->source_path);
+                $attributes['source_hash'] = SeoRedirect::sourceHashForPartition('*', $row->scope, $row->locale, $row->source_path);
             }
 
             return $attributes;

@@ -5,16 +5,14 @@ declare(strict_types=1);
 namespace Nvl\Seo\Services;
 
 use Nvl\Seo\Contracts\OwnershipSafeSeoImageResolver;
-use Nvl\Seo\Contracts\TenantSafeSeoImageResolver;
-use Nvl\Seo\Data\SeoImage;
 use Nvl\Seo\Support\SeoImageContext;
+use Nvl\Seo\ValueObjects\SeoImage;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
-use Nvl\Support\Tenancy\Exceptions\TenantBoundaryViolation;
 
 /**
  * Resolves translation URLs and falls back to the configured site image.
  */
-final readonly class DirectSeoImageResolver implements OwnershipSafeSeoImageResolver, TenantSafeSeoImageResolver
+final readonly class DirectSeoImageResolver implements OwnershipSafeSeoImageResolver
 {
     public function __construct(
         private AbsoluteUrl $urls,
@@ -47,12 +45,4 @@ final readonly class DirectSeoImageResolver implements OwnershipSafeSeoImageReso
     }
 
     /** Direct URLs are safe, but this resolver cannot authorize model-backed references. */
-    public function assertTenantSafe(SeoImageContext $context): void
-    {
-        if (is_string($context->reference) && $context->reference !== '') {
-            throw new TenantBoundaryViolation(
-                'The direct SEO image resolver cannot authorize a tenant Media reference.',
-            );
-        }
-    }
 }

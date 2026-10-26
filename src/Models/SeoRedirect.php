@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Models;
 
-use Illuminate\Container\Container;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,21 +11,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Nvl\Seo\Database\Factories\SeoRedirectFactory;
 use Nvl\Seo\Definitions\Tables\SeoTables;
-use Nvl\Seo\Models\Concerns\GuardsTenantOwnership;
+use Nvl\Seo\Models\Concerns\GuardsSeoOwnership;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoScope;
 use Nvl\Support\Config\PackageStorage;
 use Nvl\Support\Ownership\Contracts\Ownable;
-use Nvl\Support\Tenancy\Contracts\TenantContext;
-use Nvl\Support\Tenancy\Enums\TenantContextMode;
-use Nvl\Support\Tenancy\Exceptions\TenantContextMissing;
 use Nvl\Translatable\Support\LocaleCode;
 
 /**
  * One scoped, optionally localized HTTP redirect.
  *
  * @property string $id
- * @property string|null $tenant_id
  * @property string $scope
  * @property string|null $locale
  * @property string $source_path
@@ -45,7 +40,7 @@ use Nvl\Translatable\Support\LocaleCode;
  */
 final class SeoRedirect extends Model implements Ownable
 {
-    use GuardsTenantOwnership;
+    use GuardsSeoOwnership;
 
     /** @use HasFactory<SeoRedirectFactory> */
     use HasFactory;
@@ -122,20 +117,10 @@ final class SeoRedirect extends Model implements Ownable
 
     public static function sourceHash(string $scope, ?string $locale, string $source): string
     {
-        $tenant = '*';
-        $container = Container::getInstance();
-        if ($container->bound('config') && $container->make('config')->get('nvl-tenancy.enabled') === true) {
-            $snapshot = $container->make(TenantContext::class)->snapshot();
-            if ($snapshot->mode !== TenantContextMode::Tenant || $snapshot->tenantId === null) {
-                throw new TenantContextMissing;
-            }
-            $tenant = $snapshot->tenantId->value;
-        }
-
-        return self::sourceHashForTenant($tenant, $scope, $locale, $source);
+        return self::sourceHashForPartition('*', $scope, $locale, $source);
     }
 
-    public static function sourceHashForTenant(string $tenantId, string $scope, ?string $locale, string $source): string
+    public static function sourceHashForPartition(string $tenantId, string $scope, ?string $locale, string $source): string
     {
         $locale = $locale === null ? '*' : (new LocaleCode($locale))->value;
         $scope = mb_strtolower(trim($scope));

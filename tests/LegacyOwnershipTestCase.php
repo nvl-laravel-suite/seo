@@ -47,7 +47,7 @@ abstract class LegacyOwnershipTestCase extends OwnershipTestCase
         $connection->table((new OwnershipContentOwner)->getTable())->insert(['id' => self::SUBJECT, 'company_id' => 7, 'name' => 'Legacy subject']);
         $connection->table($profiles)->insert(['id' => self::PROFILE, 'tenant_id' => self::TENANT, 'seoable_type' => (new OwnershipContentOwner)->getMorphClass(), 'seoable_id' => self::SUBJECT]);
         $connection->table($copy)->insert(['id' => self::COPY, 'tenant_id' => self::TENANT, 'seo_profile_id' => self::PROFILE, 'scope' => 'default', 'locale' => 'en', 'path' => '/legacy', 'path_hash' => SeoPath::hash('default', 'en', '/legacy'), 'title' => 'Legacy SEO']);
-        $connection->table($redirects)->insert(['id' => self::REDIRECT, 'tenant_id' => self::TENANT, 'source_path' => '/old-legacy', 'source_hash' => SeoRedirect::sourceHashForTenant(self::TENANT, 'default', null, '/old-legacy'), 'target' => '/legacy']);
+        $connection->table($redirects)->insert(['id' => self::REDIRECT, 'tenant_id' => self::TENANT, 'source_path' => '/old-legacy', 'source_hash' => SeoRedirect::sourceHashForPartition(self::TENANT, 'default', null, '/old-legacy'), 'target' => '/legacy']);
         $owner = app(OwnerIdentityResolver::class)->reference(OwnershipCompany::findOrFail(7));
 
         return [
