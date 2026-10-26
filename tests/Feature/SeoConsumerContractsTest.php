@@ -87,7 +87,7 @@ it('returns management profile details and pages as stable DTOs without mapping 
     DB::enableQueryLog();
 
     try {
-        $profiles = app(SeoReader::class)->paginate(SystemActor::Background, ['page' => 1, 'perPage' => 1]);
+        $profiles = app(SeoReader::class)->paginate(SystemActor::Background, ['page' => 1, 'per_page' => 1]);
         $queryCount = count(array_filter(DB::getQueryLog(), static fn (array $query): bool => preg_match('/^select .* from [\"`]?nvl_seo_/i', $query['query']) === 1));
         $item = $profiles->items()[0] ?? null;
         $serialized = $item?->toArray();
@@ -186,8 +186,8 @@ it('denies direct management profile lists through the configured authorization 
 it('bounds directly constructed management profile queries inside the Action', function (): void {
     allowSeoConsumerReads();
 
-    $upper = app(SeoReader::class)->paginate(SystemActor::Background, ['page' => 0, 'perPage' => 999]);
-    $lower = app(SeoReader::class)->paginate(SystemActor::Background, ['page' => -10, 'perPage' => -10]);
+    $upper = app(SeoReader::class)->paginate(SystemActor::Background, ['page' => 0, 'per_page' => 999]);
+    $lower = app(SeoReader::class)->paginate(SystemActor::Background, ['page' => -10, 'per_page' => -10]);
 
     expect($upper->currentPage())->toBe(1)
         ->and($upper->perPage())->toBe(200)
@@ -473,15 +473,15 @@ it('exercises the complete opt-in management API lifecycle', function (): void {
         ->assertJsonValidationErrors('unsupported');
     $this->putJson("/api/consumer/seo/profiles/{$profileId}", ['isIndexable' => false])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors('expectedRevision');
-    $this->putJson("/api/consumer/seo/profiles/{$profileId}", ['expectedRevision' => 0])
+        ->assertJsonValidationErrors('expected_revision');
+    $this->putJson("/api/consumer/seo/profiles/{$profileId}", ['expected_revision' => 0])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors('expectedRevision');
-    $this->putJson("/api/consumer/seo/profiles/{$profileId}", ['expectedRevision' => $revision, 'unsupported' => true])
+        ->assertJsonValidationErrors('expected_revision');
+    $this->putJson("/api/consumer/seo/profiles/{$profileId}", ['expected_revision' => $revision, 'unsupported' => true])
         ->assertUnprocessable()
         ->assertJsonValidationErrors('unsupported');
 
-    $this->getJson('/api/consumer/seo/profiles?ownerAlias=article&perPage=10')
+    $this->getJson('/api/consumer/seo/profiles?ownerAlias=article&per_page=10')
         ->assertOk()
         ->assertJsonPath('data.meta.total', 1)
         ->assertJsonPath('data.items.0.id', $profileId);
@@ -511,17 +511,17 @@ it('exercises the complete opt-in management API lifecycle', function (): void {
 
     $archived = $this->patchJson("/api/consumer/seo/profiles/{$duplicateId}/archive", [
         'archived' => true,
-        'expectedRevision' => $duplicateRevision,
+        'expected_revision' => $duplicateRevision,
     ])->assertOk();
 
     $this->patchJson("/api/consumer/seo/profiles/{$duplicateId}/archive", [
         'archived' => false,
-        'expectedRevision' => $archived->json('data.revision'),
+        'expected_revision' => $archived->json('data.revision'),
     ])
         ->assertOk()
         ->assertJsonPath('data.status', 'active');
     $this->deleteJson("/api/consumer/seo/profiles/{$profileId}", [
-        'expectedRevision' => $revision,
+        'expected_revision' => $revision,
     ])
         ->assertOk()
         ->assertJsonPath('data.deleted', true);
@@ -815,7 +815,7 @@ it('returns stable failures for invalid owners, stale creates, and route conflic
 
     expect(fn () => app(SeoProfiles::class)->sync(SystemActor::Background,
         seoConsumerOwner('Stale create owner'),
-        ['expectedRevision' => 2],
+        ['expected_revision' => 2],
     ))->toThrow(StaleSeoProfileException::class);
 
     $request = Request::create('/consumer', 'GET', server: ['HTTP_ACCEPT' => 'application/json']);

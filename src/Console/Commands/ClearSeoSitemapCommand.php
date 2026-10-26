@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Nvl\Seo\Console;
+namespace Nvl\Seo\Console\Commands;
 
 use Illuminate\Console\Command;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;

@@ -8,7 +8,7 @@ use Throwable;
 
 /**
  * @api
-
+ *
  * Identifies the profile that already owns a route.
  */
 final class SeoPathConflictException extends SeoException

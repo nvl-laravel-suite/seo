@@ -34,7 +34,7 @@ use Nvl\Translatable\Services\RelatedTranslationStore;
  *
  * @api
  *
- * @phpstan-type ProfileMutation array{isIndexable?:bool,isFollowable?:bool,maxSnippet?:int|null,maxImagePreview?:string|null,maxVideoPreview?:int|null,sitemapIncluded?:bool,sitemapPriority?:string|null,sitemapChangeFrequency?:SitemapChangeFrequency|string|null,metadata?:array<string,mixed>|null,translations?:array<string,array<string,mixed>>,expectedRevision?:int|null}
+ * @phpstan-type ProfileMutation array{isIndexable?:bool,isFollowable?:bool,maxSnippet?:int|null,maxImagePreview?:string|null,maxVideoPreview?:int|null,sitemapIncluded?:bool,sitemapPriority?:string|null,sitemapChangeFrequency?:SitemapChangeFrequency|string|null,metadata?:array<string,mixed>|null,translations?:array<string,array<string,mixed>>,expected_revision?:int|null}
  */
 final readonly class SeoProfiles
 {
@@ -68,7 +68,7 @@ final readonly class SeoProfiles
                     ->first();
 
                 if (! $profile instanceof SeoProfile) {
-                    if (is_int($data['expectedRevision'] ?? null) && $data['expectedRevision'] !== 0) {
+                    if (is_int($data['expected_revision'] ?? null) && $data['expected_revision'] !== 0) {
                         throw StaleSeoProfileException::forProfile('new');
                     }
 
@@ -77,13 +77,13 @@ final readonly class SeoProfiles
                         'seoable_type' => $owner->getMorphClass(),
                         'seoable_id' => SeoModelIdentifier::required($owner),
                     ]);
-                } elseif (is_int($data['expectedRevision'] ?? null)
-                    && $profile->revision !== $data['expectedRevision']) {
+                } elseif (is_int($data['expected_revision'] ?? null)
+                    && $profile->revision !== $data['expected_revision']) {
                     throw StaleSeoProfileException::forProfile($profile->id);
                 }
 
                 $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: $profile->exists ? SeoAbility::Update : SeoAbility::Create, profile: $profile, owner: $owner, ownerAlias: $this->owners->aliasFor($owner), scope: $scope));
-                $profile->fill(collect($data)->except(['translations', 'expectedRevision'])->mapWithKeys(static fn (mixed $value, string $field): array => [Str::snake($field) => $value])->all());
+                $profile->fill(collect($data)->except(['translations', 'expected_revision'])->mapWithKeys(static fn (mixed $value, string $field): array => [Str::snake($field) => $value])->all());
 
                 if ($profile->exists) {
                     $profile->revision++;
@@ -220,7 +220,7 @@ final readonly class SeoProfiles
                 'sitemapChangeFrequency' => $source->sitemap_change_frequency,
                 'metadata' => $source->metadata,
                 'translations' => $translations,
-                'expectedRevision' => 0,
+                'expected_revision' => 0,
             ],
             $scope,
             TranslationSyncMode::Replace,

@@ -416,12 +416,12 @@ it('rejects stale profile writes and excludes archived profiles from runtime res
     $revision = $profile->revision;
 
     $updated = $action->sync(SystemActor::Background, $owner, seoPayload([
-        'expectedRevision' => $revision,
+        'expected_revision' => $revision,
         'translations' => ['en' => ['title' => 'Fresh']],
     ]));
 
     expect(fn () => $action->sync(SystemActor::Background, $owner, seoPayload([
-        'expectedRevision' => $revision,
+        'expected_revision' => $revision,
         'translations' => ['en' => ['title' => 'Stale']],
     ])))->toThrow(StaleSeoProfileException::class);
 
@@ -439,7 +439,7 @@ it('provides typed management actions while management routes stay disabled', fu
     $profile = app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload());
     $target = seoOwner('Duplicate target');
     $duplicate = app(SeoProfiles::class)->duplicate(SystemActor::Background, $profile, $target, 'secondary');
-    $page = app(SeoReader::class)->paginate(SystemActor::Background, ['perPage' => 10]);
+    $page = app(SeoReader::class)->paginate(SystemActor::Background, ['per_page' => 10]);
     $preview = app(SeoReader::class)->resolve(SystemActor::Background, $profile, 'en');
     $status = app(SeoProfiles::class)->status(SystemActor::Background);
 
@@ -462,7 +462,7 @@ it('normalizes redirect identity and rejects unsupported locales and stale creat
         'sourcePath' => '/localized',
         'target' => '/destination',
         'locale' => 'EN',
-        'expectedRevision' => 0,
+        'expected_revision' => 0,
     ]);
 
     expect($redirect->locale)->toBe('en')
@@ -470,7 +470,7 @@ it('normalizes redirect identity and rejects unsupported locales and stale creat
             'sourcePath' => '/localized',
             'target' => '/replacement',
             'locale' => 'en',
-            'expectedRevision' => 0,
+            'expected_revision' => 0,
         ]))->toThrow(StaleSeoRedirectException::class)
         ->and(fn () => $action->sync(SystemActor::Background, null, [
             'sourcePath' => '/unsupported',
@@ -509,7 +509,7 @@ it('preserves safe query strings and fragments on internal redirect targets', fu
         [
             'sourcePath' => '/campaign',
             'target' => '/landing/?utm_source=current#offer',
-            'expectedRevision' => $redirect->revision,
+            'expected_revision' => $redirect->revision,
         ],
     );
 
@@ -591,7 +591,7 @@ it('exposes an authorized alias-based management API with mandatory revisions', 
         'ownerAlias' => 'article',
         'ownerId' => $owner->getKey(),
         'profile' => [
-            'expectedRevision' => $revision,
+            'expected_revision' => $revision,
             'translations' => [
                 'en' => ['title' => 'Create endpoint update'],
             ],
@@ -604,18 +604,18 @@ it('exposes an authorized alias-based management API with mandatory revisions', 
 
     expect(SeoProfile::query()->find($profileId))->toBeInstanceOf(SeoProfile::class);
     $this->putJson("/api/internal/seo/profiles/{$profileId}", [
-        'expectedRevision' => $revision,
+        'expected_revision' => $revision,
         'translations' => ['en' => ['title' => 'Updated title']],
         'titel' => 'Unsupported root field',
     ])->assertUnprocessable();
     $this->putJson("/api/internal/seo/profiles/{$profileId}", [
-        'expectedRevision' => $revision,
+        'expected_revision' => $revision,
         'translations' => ['en' => ['title' => 'Updated title']],
     ])
         ->assertOk()
         ->assertJsonPath('data.translations.en.title', 'Updated title');
     $this->putJson("/api/internal/seo/profiles/{$profileId}", [
-        'expectedRevision' => $revision,
+        'expected_revision' => $revision,
         'translations' => ['en' => ['title' => 'Stale title']],
     ])
         ->assertConflict()
@@ -747,7 +747,7 @@ it('flattens redirect chains, rejects loops and stale revisions, and records hit
         ->and(fn () => $action->sync(SystemActor::Background, $first, [
             'sourcePath' => '/old',
             'target' => '/newer',
-            'expectedRevision' => $first->revision - 1,
+            'expected_revision' => $first->revision - 1,
         ]))->toThrow(StaleSeoRedirectException::class)
         ->and(fn () => $action->sync(SystemActor::Background, null, [
             'sourcePath' => '/new',
@@ -791,7 +791,7 @@ it('lists every scope for one authorized owner without including other owners', 
         }
     });
 
-    $page = app(SeoReader::class)->paginate(SystemActor::Background, ['ownerAlias' => 'article', 'perPage' => 1, 'ownerId' => $owner->id]);
+    $page = app(SeoReader::class)->paginate(SystemActor::Background, ['ownerAlias' => 'article', 'per_page' => 1, 'ownerId' => $owner->id]);
 
     expect($page->total())->toBe(2)
         ->and($page->count())->toBe(1)
@@ -970,12 +970,12 @@ it('reads exact management redirects with their revisions without recording hits
         ->and($localized->fresh()?->last_hit_at)->toBeNull();
 
     $writer->sync(SystemActor::Background, $localized, [
-        'sourcePath' => '/old', 'target' => '/edited', 'locale' => 'en', 'expectedRevision' => 1,
+        'sourcePath' => '/old', 'target' => '/edited', 'locale' => 'en', 'expected_revision' => 1,
     ], 'catalogue');
     expect($reader->find(SystemActor::Background, '/old', 'catalogue', 'en')?->revision)->toBe(2)
         ->and(fn () => $writer->sync(SystemActor::Background, $localized, [
             'sourcePath' => '/old', 'target' => '/stale', 'locale' => 'en',
-            'expectedRevision' => $snapshot?->revision,
+            'expected_revision' => $snapshot?->revision,
         ], 'catalogue'))->toThrow(StaleSeoRedirectException::class);
 });
 

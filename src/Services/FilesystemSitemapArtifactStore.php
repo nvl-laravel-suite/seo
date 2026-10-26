@@ -12,6 +12,8 @@ use Nvl\Seo\Contracts\SitemapArtifactStore;
 
 /**
  * Stores sitemap XML artifacts on a configurable Laravel filesystem disk.
+ *
+ * @internal
  */
 final readonly class FilesystemSitemapArtifactStore implements SitemapArtifactStore
 {

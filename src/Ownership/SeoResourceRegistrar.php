@@ -12,7 +12,11 @@ use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
 use Nvl\Support\Ownership\ValueObjects\OwnershipDefinition;
 use Nvl\Support\Ownership\ValueObjects\OwnershipResourceDefinition;
 
-/** Compiles exact host-inherited SEO profiles and captured redirect ownership. @internal */
+/**
+ * Compiles exact host-inherited SEO profiles and captured redirect ownership.
+ *
+ * @internal
+ */
 final class SeoResourceRegistrar
 {
     public function register(OwnershipResourceRegistry $resources): void

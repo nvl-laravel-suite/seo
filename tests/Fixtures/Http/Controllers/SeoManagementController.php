@@ -61,7 +61,7 @@ final class SeoManagementController extends Controller
                 'meta' => [
                     'currentPage' => $profiles->currentPage(),
                     'lastPage' => $profiles->lastPage(),
-                    'perPage' => $profiles->perPage(),
+                    'per_page' => $profiles->perPage(),
                     'total' => $profiles->total(),
                 ],
             ],

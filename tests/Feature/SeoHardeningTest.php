@@ -519,7 +519,7 @@ it('rejects updates that expose a loop through neutral fallback', function (): v
     $action->sync(SystemActor::Background, null, ['sourcePath' => '/b', 'target' => '/a?from=legacy', 'locale' => 'en']);
     $action->sync(SystemActor::Background, null, ['sourcePath' => '/a', 'target' => '/b']);
 
-    expect(fn () => $action->sync(SystemActor::Background, $shadow, ['sourcePath' => '/a', 'target' => '/safe', 'locale' => 'en', 'isActive' => false, 'expectedRevision' => $shadow->revision]))->toThrow(SeoRedirectLoopException::class);
+    expect(fn () => $action->sync(SystemActor::Background, $shadow, ['sourcePath' => '/a', 'target' => '/safe', 'locale' => 'en', 'isActive' => false, 'expected_revision' => $shadow->revision]))->toThrow(SeoRedirectLoopException::class);
     expect($shadow->refresh()->is_active)->toBeTrue();
 });
 
@@ -539,13 +539,13 @@ it('increments a restored redirect revision exactly once', function (): void {
         'sourcePath' => '/restored',
         'target' => '/original-target',
         'metadata' => ['source' => 'legacy-import'],
-        'expectedRevision' => 0,
+        'expected_revision' => 0,
     ]);
     $redirect->delete();
     $restored = $action->sync(SystemActor::Background, null, [
         'sourcePath' => '/restored',
         'target' => '/current-target',
-        'expectedRevision' => 0,
+        'expected_revision' => 0,
     ]);
 
     expect($restored->revision)->toBe($redirect->revision + 1)

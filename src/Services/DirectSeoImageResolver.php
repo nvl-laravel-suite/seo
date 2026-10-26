@@ -11,6 +11,8 @@ use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 
 /**
  * Resolves translation URLs and falls back to the configured site image.
+ *
+ * @internal
  */
 final readonly class DirectSeoImageResolver implements OwnershipSafeSeoImageResolver
 {

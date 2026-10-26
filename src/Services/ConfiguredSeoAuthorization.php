@@ -12,6 +12,8 @@ use Nvl\Seo\Support\SeoAuthorizationContext;
 
 /**
  * Gate-backed default that denies access until explicitly configured.
+ *
+ * @internal
  */
 final class ConfiguredSeoAuthorization implements SeoAuthorization
 {

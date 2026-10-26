@@ -18,6 +18,8 @@ use Throwable;
 
 /**
  * Owns sitemap cache key construction and invalidation.
+ *
+ * @internal
  */
 final readonly class SitemapCache
 {

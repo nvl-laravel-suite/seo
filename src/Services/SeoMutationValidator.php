@@ -22,6 +22,8 @@ use Nvl\Translatable\Rules\SupportedLocaleMapRule;
 
 /**
  * Enforces transport-independent validation for typed SEO mutations.
+ *
+ * @internal
  */
 final readonly class SeoMutationValidator
 {
@@ -63,7 +65,7 @@ final readonly class SeoMutationValidator
     public function redirect(array $payload): void
     {
         $this->validate($payload, self::redirectRules());
-        /** @var array{sourcePath:string,target:string,locale:?string,statusCode?:int,expectedRevision?:int|null} $payload */
+        /** @var array{sourcePath:string,target:string,locale:?string,statusCode?:int,expected_revision?:int|null} $payload */
         if ($payload['locale'] !== null) {
             try {
                 $supported = $this->locales->supports($payload['locale']);
@@ -206,7 +208,7 @@ final readonly class SeoMutationValidator
             'translations.*' => [
                 'array:'.implode(',', array_keys(self::translationRules())),
             ],
-            'expectedRevision' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'expected_revision' => ['sometimes', 'nullable', 'integer', 'min:0'],
             ...array_combine(array_map(static fn (string $field): string => 'translations.*.'.$field, array_keys(self::translationRules())), array_values(self::translationRules())),
         ];
     }
@@ -243,7 +245,7 @@ final readonly class SeoMutationValidator
             'isActive' => ['boolean'],
             'expiresAt' => ['nullable', 'date'],
             'metadata' => ['nullable', 'array'],
-            'expectedRevision' => ['nullable', 'integer', 'min:0'],
+            'expected_revision' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

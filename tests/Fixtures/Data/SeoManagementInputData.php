@@ -29,6 +29,11 @@ abstract class SeoManagementInputData extends Data
     {
         $validator->after(static function (Validator $validator) use ($rules): void {
             $allowed = array_unique(array_map(static fn (string $field): string => Str::before($field, '.'), array_keys($rules)));
+            foreach (['per_page' => 'perPage', 'expected_revision' => 'expectedRevision', 'translation_mode' => 'translationMode'] as $field => $property) {
+                if (in_array($field, $allowed, true)) {
+                    $allowed[] = $property;
+                }
+            }
 
             foreach (array_keys($validator->getData()) as $field) {
                 if (is_string($field) && ! in_array($field, $allowed, true)) {

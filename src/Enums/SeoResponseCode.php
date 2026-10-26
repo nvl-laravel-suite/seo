@@ -6,7 +6,9 @@ namespace Nvl\Seo\Enums;
 
 use Nvl\Support\Contracts\ResponseCode;
 
-/** Stable public response discriminators for Seo.
+/**
+ * Stable public response discriminators for Seo.
+ *
  * @api
  */
 enum SeoResponseCode: string implements ResponseCode

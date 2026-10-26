@@ -8,6 +8,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use Nvl\Seo\Rules\OwnerIdentifier;
 use Spatie\LaravelData\Attributes\MapInputName;
+use Spatie\LaravelData\Attributes\MapOutputName;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Mappers\CamelCaseMapper;
 
@@ -24,7 +25,7 @@ final class SeoProfileQuery extends Data
         public readonly ?string $status = null,
         public readonly ?string $ownerAlias = null,
         public readonly int $page = 1,
-        public readonly int $perPage = 50,
+        #[MapInputName('per_page')] #[MapOutputName('per_page')] public readonly int $perPage = 50,
         public readonly string|int|null $ownerId = null,
     ) {}
 
@@ -39,7 +40,7 @@ final class SeoProfileQuery extends Data
             'ownerAlias' => ['required_with:ownerId', 'nullable', 'string', 'max:120'],
             'ownerId' => ['nullable', new OwnerIdentifier],
             'page' => ['integer', 'min:1'],
-            'perPage' => ['integer', 'min:1', 'max:200'],
+            'per_page' => ['integer', 'min:1', 'max:200'],
         ];
     }
 

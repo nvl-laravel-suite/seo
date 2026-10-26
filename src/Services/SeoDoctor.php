@@ -20,6 +20,8 @@ use Throwable;
 
 /**
  * Inspects SEO schema, configuration, routes, and extension bindings without mutation.
+ *
+ * @internal
  */
 final readonly class SeoDoctor
 {

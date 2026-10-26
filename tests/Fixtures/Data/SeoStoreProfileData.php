@@ -29,7 +29,7 @@ final class SeoStoreProfileData extends SeoManagementInputData
             'scope' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9][A-Za-z0-9._-]*$/'],
             'profile' => ['required', 'array:'.implode(',', SeoProfilePayload::fields())],
             ...SeoProfilePayload::scopedRules('profile.'),
-            'profile.expectedRevision' => ['sometimes', 'nullable', 'integer', Rule::in([0])],
+            'profile.expected_revision' => ['sometimes', 'nullable', 'integer', Rule::in([0])],
         ];
     }
 
@@ -40,6 +40,6 @@ final class SeoStoreProfileData extends SeoManagementInputData
 
     public function payload(): SeoProfilePayload
     {
-        return SeoProfilePayload::from([...$this->profile, 'expectedRevision' => 0]);
+        return SeoProfilePayload::from([...$this->profile, 'expected_revision' => 0]);
     }
 }

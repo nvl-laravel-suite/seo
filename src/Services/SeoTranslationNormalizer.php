@@ -12,6 +12,8 @@ use Nvl\Seo\Support\StructuredDataLimits;
 
 /**
  * Whitelists and normalizes locale-keyed SEO mutation payloads.
+ *
+ * @internal
  */
 final class SeoTranslationNormalizer
 {

@@ -11,6 +11,8 @@ use Nvl\Support\Ownership\Services\OwnerSiteContext;
 
 /**
  * Resolves configured paths to absolute canonical URLs.
+ *
+ * @internal
  */
 final class AbsoluteUrl
 {

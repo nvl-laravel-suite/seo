@@ -14,7 +14,7 @@ use Throwable;
 
 /**
  * @api
-
+ *
  * Base package exception for safe SEO domain failures.
  */
 abstract class SeoException extends RuntimeException implements RespondableException, ShouldntReport

@@ -8,7 +8,7 @@ use Throwable;
 
 /**
  * @api
-
+ *
  * Raised when a redirect mutation targets an outdated revision.
  */
 final class StaleSeoRedirectException extends SeoException

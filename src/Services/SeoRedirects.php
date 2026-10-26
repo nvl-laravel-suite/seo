@@ -28,7 +28,11 @@ use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 use Nvl\Support\Ownership\Services\OwnerSiteContext;
 
-/** Native redirect graph mutations, exact management reads and public resolution. @api */
+/**
+ * Native redirect graph mutations, exact management reads and public resolution.
+ *
+ * @api
+ */
 final readonly class SeoRedirects
 {
     public function __construct(private SeoRedirectChain $chains, private LocaleCatalog $locales, private SeoMutationValidator $validator, private SeoAuthorization $authorization, private SeoRedirectLookup $redirects) {}
@@ -51,7 +55,7 @@ final readonly class SeoRedirects
         $connection->table(SeoTables::get(SeoTables::RedirectLocks))->where('name', 'graph')->lockForUpdate()->first();
     }
 
-    /** @param array{sourcePath:string,target:string,locale?:string|null,statusCode?:int,isActive?:bool,expiresAt?:string|null,metadata?:array<string,mixed>|null,expectedRevision?:int|null} $data */
+    /** @param array{sourcePath:string,target:string,locale?:string|null,statusCode?:int,isActive?:bool,expiresAt?:string|null,metadata?:array<string,mixed>|null,expected_revision?:int|null} $data */
     public function sync(Authenticatable|SystemActor $actor,
         SeoRedirect|string|null $redirect,
         array $data,
@@ -87,11 +91,11 @@ final readonly class SeoRedirects
                 $previousSource = $model?->source_path;
                 $model ??= new SeoRedirect;
 
-                if (is_int($data['expectedRevision'] ?? null)
+                if (is_int($data['expected_revision'] ?? null)
                     && (($model->exists && ! $wasDeleted
-                        && $model->revision !== $data['expectedRevision'])
-                        || (! $model->exists && $data['expectedRevision'] !== 0)
-                        || ($wasDeleted && $data['expectedRevision'] !== 0))) {
+                        && $model->revision !== $data['expected_revision'])
+                        || (! $model->exists && $data['expected_revision'] !== 0)
+                        || ($wasDeleted && $data['expected_revision'] !== 0))) {
                     throw StaleSeoRedirectException::forRedirect(
                         $model->exists ? $model->id : 'new',
                     );

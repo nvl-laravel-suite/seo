@@ -8,7 +8,7 @@ use Throwable;
 
 /**
  * @api
-
+ *
  * Raised when a typed SEO mutation violates a domain invariant.
  */
 final class InvalidSeoMutationException extends SeoException

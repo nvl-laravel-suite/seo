@@ -8,6 +8,8 @@ use Nvl\Seo\Models\SeoRedirect;
 
 /**
  * Resolves active redirects with localized-first global fallback semantics.
+ *
+ * @internal
  */
 final class SeoRedirectLookup
 {

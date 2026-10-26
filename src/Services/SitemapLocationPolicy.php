@@ -10,6 +10,8 @@ use Nvl\Support\Ownership\Services\OwnerSiteContext;
 
 /**
  * Enforces crawler protocol origin and path ownership for sitemap URLs.
+ *
+ * @internal
  */
 final class SitemapLocationPolicy
 {

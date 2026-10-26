@@ -454,16 +454,16 @@ final readonly class SeoReader
     }
 
     /**
-     * @param  array{scope?:string|null,ownerAlias?:string|null,ownerId?:int|string|null,status?:string|null,perPage?:int,page?:int}  $query
+     * @param  array{scope?:string|null,ownerAlias?:string|null,ownerId?:int|string|null,status?:string|null,per_page?:int,page?:int}  $query
      * @return LengthAwarePaginator<int,SeoProfile>
      */
     public function paginate(Authenticatable|SystemActor $actor, array $query = []): LengthAwarePaginator
     {
-        $unknown = array_diff(array_keys($query), ['scope', 'ownerAlias', 'ownerId', 'status', 'perPage', 'page']);
+        $unknown = array_diff(array_keys($query), ['scope', 'ownerAlias', 'ownerId', 'status', 'per_page', 'page']);
         if ($unknown !== []) {
             throw new InvalidArgumentException('Unknown SEO catalog criterion.');
         }
-        $query += ['scope' => null, 'ownerAlias' => null, 'ownerId' => null, 'status' => null, 'perPage' => 50, 'page' => 1];
+        $query += ['scope' => null, 'ownerAlias' => null, 'ownerId' => null, 'status' => null, 'per_page' => 50, 'page' => 1];
         $scope = $query['scope'] === null ? null : SeoScope::normalize($query['scope']);
         if ($query['ownerId'] !== null && $query['ownerAlias'] === null) {
             throw new InvalidArgumentException('An SEO owner identity filter requires its registered owner alias.');
@@ -501,7 +501,7 @@ final readonly class SeoReader
         $page = $profiles->orderByDesc('updated_at')
             ->orderBy('id')
             ->paginate(
-                perPage: min(200, max(1, $query['perPage'])),
+                perPage: min(200, max(1, $query['per_page'])),
                 page: max(1, $query['page']),
             );
 

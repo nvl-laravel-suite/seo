@@ -14,6 +14,8 @@ use Nvl\Seo\ValueObjects\StructuredDataNode;
  * Composes baseline, provider-generated, and persisted JSON-LD into one graph.
  *
  * @phpstan-import-type StructuredContext from \Nvl\Seo\Contracts\StructuredDataProvider
+ *
+ * @api
  */
 final readonly class StructuredDataResolver
 {

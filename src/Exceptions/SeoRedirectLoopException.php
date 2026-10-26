@@ -6,7 +6,7 @@ namespace Nvl\Seo\Exceptions;
 
 /**
  * @api
-
+ *
  * Raised when a redirect points to itself or introduces a chain cycle.
  */
 final class SeoRedirectLoopException extends SeoException

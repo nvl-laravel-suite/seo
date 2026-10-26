@@ -46,7 +46,7 @@ final class SeoProfilePayload extends Data
             'sitemapChangeFrequency',
             'metadata',
             'translations',
-            'expectedRevision',
+            'expected_revision',
         ];
     }
 
@@ -65,7 +65,7 @@ final class SeoProfilePayload extends Data
         public readonly SitemapChangeFrequency|Optional|null $sitemapChangeFrequency = new Optional,
         public readonly array|Optional|null $metadata = new Optional,
         public readonly array|Optional $translations = new Optional,
-        public readonly int|Optional|null $expectedRevision = new Optional,
+        #[MapInputName('expected_revision')] #[MapOutputName('expected_revision')] public readonly int|Optional|null $expectedRevision = new Optional,
     ) {}
 
     /**
@@ -93,7 +93,7 @@ final class SeoProfilePayload extends Data
             'translations.*' => [
                 'array:'.implode(',', SeoTranslationPayload::fields()),
             ],
-            'expectedRevision' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'expected_revision' => ['sometimes', 'nullable', 'integer', 'min:0'],
             ...SeoTranslationPayload::scopedRules('translations.*.'),
         ];
     }
@@ -110,7 +110,7 @@ final class SeoProfilePayload extends Data
      */
     public static function validateForUpdate(array $input): self
     {
-        $rules = array_replace(self::rules(), ['expectedRevision' => ['required', 'integer', 'min:1']]);
+        $rules = array_replace(self::rules(), ['expected_revision' => ['required', 'integer', 'min:1']]);
         $validator = ValidatorFacade::make($input, $rules);
         SeoManagementInputData::rejectUnknownFields($validator, $rules);
 

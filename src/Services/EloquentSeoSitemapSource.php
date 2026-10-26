@@ -14,6 +14,8 @@ use Nvl\Support\Contracts\LocaleCatalog;
 
 /**
  * Streams all indexable profile translations from bounded Eloquent chunks.
+ *
+ * @internal
  */
 final readonly class EloquentSeoSitemapSource implements OwnershipSafeSitemapSource
 {

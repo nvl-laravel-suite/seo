@@ -10,6 +10,8 @@ use Nvl\Seo\Support\SeoPath;
 
 /**
  * Performs deterministic preflight checks before database uniqueness enforcement.
+ *
+ * @internal
  */
 final class SeoPathConflictResolver
 {

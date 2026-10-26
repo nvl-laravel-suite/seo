@@ -350,7 +350,6 @@
             "kind": "class",
             "file": "src/Models/SeoProfile.php",
             "methods": [
-                "bootHasOwnership",
                 "delete",
                 "forOwner",
                 "fresh",
@@ -423,7 +422,6 @@
             "kind": "class",
             "file": "src/Models/SeoProfileTranslation.php",
             "methods": [
-                "bootHasOwnership",
                 "delete",
                 "fresh",
                 "getConnectionName",
@@ -467,7 +465,6 @@
             "kind": "class",
             "file": "src/Models/SeoRedirect.php",
             "methods": [
-                "bootHasOwnership",
                 "delete",
                 "fresh",
                 "getConnectionName",
@@ -506,6 +503,16 @@
             "methods": [
                 "__construct",
                 "validate"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Services\\RobotsGenerator": {
+            "kind": "class",
+            "file": "src/Services/RobotsGenerator.php",
+            "methods": [
+                "__construct",
+                "generate"
             ],
             "properties": [],
             "constants": []
@@ -578,6 +585,19 @@
             "properties": [],
             "constants": []
         },
+        "Nvl\\Seo\\Services\\SeoRedirects": {
+            "kind": "class",
+            "file": "src/Services/SeoRedirects.php",
+            "methods": [
+                "__construct",
+                "find",
+                "prune",
+                "resolve",
+                "sync"
+            ],
+            "properties": [],
+            "constants": []
+        },
         "Nvl\\Seo\\Services\\SeoRouteResolver": {
             "kind": "class",
             "file": "src/Services/SeoRouteResolver.php",
@@ -631,6 +651,16 @@
             "methods": [
                 "keys",
                 "register",
+                "resolve"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Services\\StructuredDataResolver": {
+            "kind": "class",
+            "file": "src/Services/StructuredDataResolver.php",
+            "methods": [
+                "__construct",
                 "resolve"
             ],
             "properties": [],

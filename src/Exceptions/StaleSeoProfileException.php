@@ -8,7 +8,7 @@ use Throwable;
 
 /**
  * @api
-
+ *
  * Raised when a profile mutation targets a stale revision.
  */
 final class StaleSeoProfileException extends SeoException

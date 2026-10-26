@@ -10,6 +10,8 @@ use Nvl\Seo\Support\SeoRouteConfiguration;
 
 /**
  * Renders a configurable robots.txt without conflating crawl and index rules.
+ *
+ * @api
  */
 final readonly class RobotsGenerator
 {
