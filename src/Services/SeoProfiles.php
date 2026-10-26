@@ -29,14 +29,18 @@ use Nvl\Support\Events\DomainEventDispatcher;
 use Nvl\Translatable\Enums\TranslationSyncMode;
 use Nvl\Translatable\Services\RelatedTranslationStore;
 
-/** Complete profile mutations with policy, revisions, translations and cache publication.
+/**
+ * Complete profile mutations with policy, revisions, translations and cache publication.
+ *
  * @api
+ *
+ * @phpstan-type ProfileMutation array{isIndexable?:bool,isFollowable?:bool,maxSnippet?:int|null,maxImagePreview?:string|null,maxVideoPreview?:int|null,sitemapIncluded?:bool,sitemapPriority?:string|null,sitemapChangeFrequency?:SitemapChangeFrequency|string|null,metadata?:array<string,mixed>|null,translations?:array<string,array<string,mixed>>,expectedRevision?:int|null}
  */
 final readonly class SeoProfiles
 {
     public function __construct(private RelatedTranslationStore $translations, private SeoTranslationNormalizer $translationNormalizer, private SeoPathConflictResolver $pathConflicts, private SeoMutationValidator $validator, private SitemapCache $sitemapCache, private SeoOwnerRegistry $owners, private DomainEventDispatcher $domainEvents, private SeoAuthorization $authorization) {}
 
-    /** @param array{isIndexable?:bool,isFollowable?:bool,maxSnippet?:int|null,maxImagePreview?:string|null,maxVideoPreview?:int|null,sitemapIncluded?:bool,sitemapPriority?:string|null,sitemapChangeFrequency?:SitemapChangeFrequency|string|null,metadata?:array<string,mixed>|null,translations?:array<string,array<string,mixed>>,expectedRevision?:int|null} $data */
+    /** @param ProfileMutation $data */
     public function sync(
         Authenticatable|SystemActor $actor,
         Model $owner,

@@ -13,14 +13,16 @@ use Nvl\Seo\ValueObjects\StructuredDataNode;
  * Registers deterministic resource-to-JSON-LD provider extensions.
  *
  * @api
+ *
+ * @phpstan-import-type StructuredContext from \Nvl\Seo\Contracts\StructuredDataProvider
  */
 final class StructuredDataRegistry
 {
     /**
      * @var array<string, array{
-     *     resource: class-string<Model>,
-     *     provider: StructuredDataProvider,
-     *     priority: int
+     * resource: class-string<Model>,
+     * provider: StructuredDataProvider,
+     * priority: int
      * }>
      */
     private array $providers = [];
@@ -58,6 +60,8 @@ final class StructuredDataRegistry
     /**
      * Resolve every applicable provider node in deterministic order.
      *
+     *
+     * @param  StructuredContext  $context
      * @return list<StructuredDataNode>
      */
     public function resolve(

@@ -12,6 +12,8 @@ use Nvl\Seo\ValueObjects\StructuredDataNode;
 
 /**
  * Composes baseline, provider-generated, and persisted JSON-LD into one graph.
+ *
+ * @phpstan-import-type StructuredContext from \Nvl\Seo\Contracts\StructuredDataProvider
  */
 final readonly class StructuredDataResolver
 {
@@ -27,6 +29,7 @@ final readonly class StructuredDataResolver
      * Resolve one bounded JSON-LD graph for a page resource.
      *
      * @param  array<array-key, mixed>|null  $persisted
+     * @param  StructuredContext  $context
      * @return list<array<string, mixed>>
      */
     public function resolve(
@@ -61,6 +64,7 @@ final readonly class StructuredDataResolver
     }
 
     /**
+     * @param  StructuredContext  $context
      * @return list<array<string, mixed>>
      */
     private function generatedNodes(

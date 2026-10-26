@@ -370,8 +370,10 @@ final readonly class SeoReader
             : null;
     }
 
-    /** @param iterable<Model> $owners
-     * @return list<SeoProfile|null> */
+    /**
+     * @param  iterable<array-key,Model>  $owners
+     * @return list<SeoProfile|null>
+     */
     public function forOwners(Authenticatable|SystemActor $actor, iterable $owners, ?string $scope = null): array
     {
         $scope = SeoScope::normalize($scope);
@@ -440,6 +442,10 @@ final readonly class SeoReader
         ];
     }
 
+    /**
+     * @param  Builder<SeoProfile>  $query
+     * @return Builder<SeoProfile>
+     */
     private function exactOwnerText(Builder $query, string $column, string $value): Builder
     {
         $connection = $query->getModel()->getConnection();
@@ -447,8 +453,10 @@ final readonly class SeoReader
         return $query->whereRaw(new ExactSeoOwnerText($column, $connection->getDriverName()), [$value, $value]);
     }
 
-    /** @param array{scope?:string|null,ownerAlias?:string|null,ownerId?:int|string|null,status?:string|null,perPage?:int,page?:int} $query
-     * @return LengthAwarePaginator<int,SeoProfile> */
+    /**
+     * @param  array{scope?:string|null,ownerAlias?:string|null,ownerId?:int|string|null,status?:string|null,perPage?:int,page?:int}  $query
+     * @return LengthAwarePaginator<int,SeoProfile>
+     */
     public function paginate(Authenticatable|SystemActor $actor, array $query = []): LengthAwarePaginator
     {
         $unknown = array_diff(array_keys($query), ['scope', 'ownerAlias', 'ownerId', 'status', 'perPage', 'page']);

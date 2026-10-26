@@ -26,9 +26,10 @@ final class SeoHeadRenderer
     }
 
     /**
+     * @param  array{locale:string,title:string|null,description:string|null,canonicalUrl:string|null,robots:string,alternates:array<string,string>,openGraph:array<string,string>,openGraphLocales:list<string>,twitter:array<string,string>,structuredData:list<array<string,mixed>>}  $seo
+     *
      * @throws JsonException
      */
-    /** @param array{locale:string,title:string|null,description:string|null,canonicalUrl:string|null,robots:string,alternates:array<string,string>,openGraph:array<string,string>,openGraphLocales:list<string>,twitter:array<string,string>,structuredData:list<array<string,mixed>>} $seo */
     public function renderResolved(array $seo): string
     {
         $tags = [];

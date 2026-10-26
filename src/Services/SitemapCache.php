@@ -45,8 +45,11 @@ final readonly class SitemapCache
         return $this->capture($scope)['namespace'];
     }
 
-    /** Capture tenant/site/origin/version facts for safe deferred work. */
-    /** @return array{connection:string,tenantId:string,site:string,origin:string,scope:string,version:int,key:string,namespace:string} */
+    /**
+     * Capture tenant/site/origin/version facts for safe deferred work.
+     *
+     * @return array{connection:string,tenantId:string,site:string,origin:string,scope:string,version:int,key:string,namespace:string}
+     */
     public function capture(string $scope): array
     {
         $scope = SeoScope::normalize($scope);
@@ -78,8 +81,11 @@ final readonly class SitemapCache
         return $this->forgetCaptured($this->capture($scope));
     }
 
-    /** Invalidate exactly the identity captured with the committed mutation. */
-    /** @param array{connection:string,tenantId:string,site:string,origin:string,scope:string,version:int,key:string,namespace:string} $identity */
+    /**
+     * Invalidate exactly the identity captured with the committed mutation.
+     *
+     * @param  array{connection:string,tenantId:string,site:string,origin:string,scope:string,version:int,key:string,namespace:string}  $identity
+     */
     public function forgetCaptured(array $identity): bool
     {
         try {
@@ -123,7 +129,9 @@ final readonly class SitemapCache
             .':'.hash('sha256', json_encode($facts, JSON_THROW_ON_ERROR));
     }
 
-    /** Use one owner/site version across admitted origin aliases and management mutations.
+    /**
+     * Use one owner/site version across admitted origin aliases and management mutations.
+     *
      * @param  array{connection:string,tenant:string,site:string,origin:string,scope:string}  $facts
      */
     private function versionKey(array $facts): string

@@ -8,7 +8,6 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use Nvl\Seo\Contracts\SeoAuthorization;
@@ -32,7 +31,6 @@ final readonly class SeoDoctor
         private StructuredDataRegistry $structuredData,
         private SeoOwnerRegistry $owners,
         private Repository $cache,
-        private SeoAuthorization $authorization,
         private RobotsGenerator $robots,
     ) {}
 
@@ -163,7 +161,7 @@ final readonly class SeoDoctor
             ];
             $indexes = collect(Schema::getIndexes($table));
 
-            foreach ($requirements['indexes'] ?? [] as $name => $unique) {
+            foreach ($requirements['indexes'] as $name => $unique) {
                 $index = null;
 
                 foreach ($indexes as $candidate) {
@@ -254,6 +252,7 @@ final readonly class SeoDoctor
      * Inspect one required container binding.
      *
      * @param  class-string  $contract
+     * @return array{key:string,severity:string,passed:bool,message:string}
      */
     private function bindingCheck(string $contract, string $key): array
     {
@@ -290,6 +289,9 @@ final readonly class SeoDoctor
 
     /**
      * Validate the configured site URL.
+     *
+     *
+     * @return array{key:string,severity:string,passed:bool,message:string}
      */
     private function siteConfigurationCheck(): array
     {
@@ -308,6 +310,9 @@ final readonly class SeoDoctor
 
     /**
      * Validate every owner alias registration.
+     *
+     *
+     * @return array{key:string,severity:string,passed:bool,message:string}
      */
     private function ownerRegistryCheck(): array
     {
@@ -361,6 +366,9 @@ final readonly class SeoDoctor
 
     /**
      * Validate structured-data mode and report registered providers.
+     *
+     *
+     * @return array{key:string,severity:string,passed:bool,message:string}
      */
     private function structuredDataCheck(): array
     {
@@ -389,6 +397,9 @@ final readonly class SeoDoctor
 
     /**
      * Validate portable sitemap limits and atomic build locking.
+     *
+     *
+     * @return array{key:string,severity:string,passed:bool,message:string}
      */
     private function sitemapConfigurationCheck(): array
     {
@@ -433,6 +444,9 @@ final readonly class SeoDoctor
 
     /**
      * Validate robots output, cache duration, and protocol byte limit.
+     *
+     *
+     * @return array{key:string,severity:string,passed:bool,message:string}
      */
     private function robotsConfigurationCheck(): array
     {
@@ -463,12 +477,4 @@ final readonly class SeoDoctor
             'message' => $message,
         ];
     }
-
-    /**
-     * Validate opt-in public crawler routes and route names.
-     */
-
-    /**
-     * Validate opt-in management routing, middleware, and authorization.
-     */
 }

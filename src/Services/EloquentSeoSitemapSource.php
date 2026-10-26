@@ -60,11 +60,10 @@ final readonly class EloquentSeoSitemapSource implements OwnershipSafeSitemapSou
         return ['seo.profiles', 'seo.translations'];
     }
 
-    /** @return list<string> */
-
     /**
-     * Project canonical URLs and alternates for an eligible profile with loaded translations.
+     * @return list<string>
      *
+     * Project canonical URLs and alternates for an eligible profile with loaded translations.
      * @return iterable<SitemapEntry>
      */
     public function entriesForProfile(SeoProfile $profile): iterable

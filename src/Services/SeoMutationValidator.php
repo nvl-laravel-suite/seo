@@ -35,6 +35,9 @@ final readonly class SeoMutationValidator
 
     /**
      * Validate one complete profile mutation before persistence.
+     *
+     *
+     * @param  array<string,mixed>  $payload
      */
     public function profile(array $payload): void
     {
@@ -44,18 +47,23 @@ final readonly class SeoMutationValidator
             return;
         }
 
-        foreach ($payload['translations'] as $locale => $translation) {
+        /** @var array<string,array<string,mixed>> $translations */
+        $translations = $payload['translations'];
+        foreach ($translations as $locale => $translation) {
             $this->assertTranslationSemantics($locale, $translation);
         }
     }
 
     /**
      * Validate one redirect mutation before persistence.
+     *
+     *
+     * @param  array<string,mixed>  $payload
      */
     public function redirect(array $payload): void
     {
         $this->validate($payload, self::redirectRules());
-
+        /** @var array{sourcePath:string,target:string,locale:?string,statusCode?:int,expectedRevision?:int|null} $payload */
         if ($payload['locale'] !== null) {
             try {
                 $supported = $this->locales->supports($payload['locale']);
@@ -203,6 +211,7 @@ final readonly class SeoMutationValidator
         ];
     }
 
+    /** @return array<string,mixed> */
     public static function translationRules(): array
     {
         return [
@@ -223,6 +232,7 @@ final readonly class SeoMutationValidator
         ];
     }
 
+    /** @return array<string,mixed> */
     public static function redirectRules(): array
     {
         return [
