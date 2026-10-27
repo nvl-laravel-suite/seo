@@ -5,6 +5,8 @@
             "common": [
                 "authorization.ability",
                 "migrations.enabled",
+                "models.profile",
+                "models.redirect",
                 "owners",
                 "redirects.enabled",
                 "routes.robots_path",

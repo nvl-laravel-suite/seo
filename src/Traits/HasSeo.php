@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Relations\StringMorphMany;
+use Nvl\Seo\Services\SeoModelRegistry;
 use Nvl\Seo\Support\SeoScope;
 
 /**
@@ -30,7 +31,7 @@ trait HasSeo
      */
     public function seoProfiles(): MorphMany
     {
-        $related = new SeoProfile;
+        $related = SeoModelRegistry::newProfile();
 
         return new StringMorphMany(
             $related->newQuery(),

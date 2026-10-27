@@ -16,7 +16,6 @@ use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImageResolver;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Contracts\StructuredDataProvider;
-use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Ownership\SeoAdoptionAdapter;
 use Nvl\Seo\Ownership\SeoResourceRegistrar as OwnershipSeoResourceRegistrar;
 use Nvl\Seo\Services\ConfiguredSeoAuthorization;
@@ -24,6 +23,7 @@ use Nvl\Seo\Services\DirectSeoImageResolver;
 use Nvl\Seo\Services\EloquentSeoSitemapSource;
 use Nvl\Seo\Services\FilesystemSitemapArtifactStore;
 use Nvl\Seo\Services\SeoDoctor;
+use Nvl\Seo\Services\SeoModelRegistry;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Seo\Services\StructuredDataRegistry;
@@ -80,6 +80,8 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
 
         $this->app->bindIf(SitemapArtifactStore::class, $artifactStore);
         $this->app->bindIf(SeoAuthorization::class, ConfiguredSeoAuthorization::class);
+        $this->app->singleton(SeoModelRegistry::class);
+        $this->app->booting(fn () => $this->app->make(SeoModelRegistry::class)->prepare());
         $this->app->singleton(SeoOwnerRegistry::class);
         $this->app->singleton(SitemapRegistry::class);
         $this->app->singleton(StructuredDataRegistry::class);
@@ -93,6 +95,8 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
         SitemapRegistry $sitemaps,
         StructuredDataRegistry $structuredData,
     ): void {
+        SeoModelRegistry::profileClass();
+        SeoModelRegistry::redirectClass();
         (new OwnershipSeoResourceRegistrar)->register($this->app->make(OwnershipResourceRegistry::class));
         if ($this->app->bound(OwnershipAdoptionRegistry::class)) {
             $this->app->make(OwnershipAdoptionRegistry::class)->register('seo', SeoAdoptionAdapter::class);
@@ -112,7 +116,7 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
 
         $translationResources->register(
             key: 'seo.profiles',
-            modelClass: SeoProfile::class,
+            modelClass: SeoModelRegistry::profileClass(),
             label: 'SEO profiles',
             searchableColumns: ['seoable_type', 'seoable_id', 'scope'],
             displayColumns: ['seoable_type', 'seoable_id', 'scope', 'is_indexable'],

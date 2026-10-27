@@ -1,8 +1,11 @@
 <?php
 
 declare(strict_types=1);
+use Nvl\Seo\Models\SeoProfile;
+use Nvl\Seo\Models\SeoRedirect;
 
 return [
+    'models' => ['profile' => SeoProfile::class, 'redirect' => SeoRedirect::class],
     'routes' => ['sitemap_path' => 'nvl/seo/sitemap.xml', 'sitemap_chunk_path' => 'nvl/seo/sitemap-{chunk}.xml', 'sitemap_scopes' => [], 'robots_path' => 'nvl/seo/robots.txt'],
     'authorization' => ['ability' => null],
     /*

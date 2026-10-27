@@ -15,6 +15,7 @@ use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImageResolver;
 use Nvl\Seo\Enums\SeoAbility;
 use Nvl\Seo\Enums\TwitterCard;
+use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
 use Nvl\Seo\Ownership\SeoOwnership;
@@ -28,7 +29,6 @@ use Nvl\Support\Contracts\LocaleCatalog;
 use Nvl\Support\Enums\PublicActor;
 use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
-use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
 use Nvl\Translatable\Services\ContentLocale;
 
@@ -64,7 +64,7 @@ final readonly class SeoReader
         $locale ??= $this->contentLocale->get();
         $profile = $owner instanceof SeoProfile
             ? $owner
-            : SeoProfile::query()
+            : SeoModelRegistry::profiles()
                 ->forOwner($owner, $scope)
                 ->active()
                 ->with('translations')
@@ -214,16 +214,23 @@ final readonly class SeoReader
     /** Canonically reload supplied models before any metadata, image, or provider work. */
     private function canonicalOwner(Model|SeoProfile $owner): Model|SeoProfile
     {
-        if (! SeoOwnership::active()) {
-            return $owner;
+        $prototype = $owner instanceof SeoProfile ? SeoModelRegistry::newProfile() : new ($owner::class);
+        $key = $prototype->getKeyName();
+        if (($owner instanceof SeoProfile && $owner::class !== SeoModelRegistry::profileClass())
+            || ! $owner->exists || $owner->getKey() === null || $owner->isDirty($key)
+            || $owner->getRawOriginal($key) !== $owner->getKey()
+            || $owner->getKeyName() !== $key || $owner->getTable() !== $prototype->getTable()
+            || $owner->getConnection() !== $prototype->getConnection()) {
+            throw InvalidSeoMutationException::because('SEO resolution requires an unchanged canonical persisted identity.');
         }
-
-        $resource = $this->ownershipResources->forModel($owner);
-        $canonical = $owner->newQuery()->findOrFail($owner->getKey());
-        if (! $canonical instanceof Model) {
-            throw new OwnershipViolation('The SEO owner cannot be resolved canonically.');
+        if (! $owner instanceof SeoProfile) {
+            return $this->owners->resolve($this->owners->aliasFor($owner), SeoModelIdentifier::required($owner));
         }
-        $this->tenancy->assertRecord($canonical, $resource->key);
+        $canonical = SeoModelRegistry::profiles()->useWritePdo()->findOrFail(SeoModelIdentifier::required($owner));
+        if (SeoOwnership::active()) {
+            $resource = $this->ownershipResources->forModel($canonical);
+            $this->tenancy->assertRecord($canonical, $resource->key);
+        }
 
         return $canonical;
     }
@@ -341,7 +348,7 @@ final readonly class SeoReader
     public function get(Authenticatable|SystemActor $actor, SeoProfile|string $profile): SeoProfile
     {
         $profileId = $profile instanceof SeoProfile ? $profile->id : $profile;
-        $profile = SeoProfile::query()
+        $profile = SeoModelRegistry::profiles()
             ->with('translations')
             ->findOrFail($profileId);
         $owner = $profile->seoable()->firstOrFail();
@@ -360,7 +367,7 @@ final readonly class SeoReader
     {
         $scope = SeoScope::normalize($scope);
         $owner = $this->owners->admitForRead([$owner], $scope, $this->authorization, $actor)[0]['owner'];
-        $profile = SeoProfile::query()
+        $profile = SeoModelRegistry::profiles()
             ->with('translations')
             ->forOwner($owner, $scope)
             ->first();
@@ -390,7 +397,7 @@ final readonly class SeoReader
             $identifiersByType[$identity['type']][$identity['id']] = true;
         }
 
-        $profiles = SeoProfile::query()
+        $profiles = SeoModelRegistry::profiles()
             ->with('translations')
             ->where('scope', $scope)
             ->where(static function (Builder $query) use ($identifiersByType): void {
@@ -429,7 +436,7 @@ final readonly class SeoReader
         $scope = SeoScope::normalize($scope);
         $identity = $this->owners->admitForRead([$owner], $scope, $this->authorization, $actor)[0];
         $owner = $identity['owner'];
-        $profile = SeoProfile::query()
+        $profile = SeoModelRegistry::profiles()
             ->forOwner($owner, $scope)
             ->first(['id', 'revision']);
 
@@ -470,7 +477,7 @@ final readonly class SeoReader
         }
         $ownerId = $query['ownerId'] === null ? null : SeoModelIdentifier::normalize($query['ownerId']);
         $owner = $ownerId === null
-            ? null : $this->owners->resolve($query['ownerAlias'], $ownerId);
+            ? null : $this->owners->resolveForCleanup($query['ownerAlias'], $ownerId);
         $ownerId = $owner === null ? null : SeoModelIdentifier::required($owner);
         $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor,
             ability: SeoAbility::List,
@@ -482,7 +489,7 @@ final readonly class SeoReader
             ? null
             : $this->owners->morphTypeForAlias($query['ownerAlias']);
 
-        $profiles = SeoProfile::query()
+        $profiles = SeoModelRegistry::profiles()
             ->with('translations')
             ->when(
                 $scope !== null,

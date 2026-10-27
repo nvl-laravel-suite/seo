@@ -31,7 +31,7 @@ final readonly class EloquentSeoSitemapSource implements OwnershipSafeSitemapSou
      */
     public function entries(string $scope): iterable
     {
-        $profiles = SeoProfile::query()
+        $profiles = SeoModelRegistry::profiles()
             ->select([
                 ...(SeoOwnership::declared() ? ['owner_scope_key', 'seoable_type', 'seoable_id'] : []),
                 'id',

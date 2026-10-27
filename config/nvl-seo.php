@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 use Nvl\Seo\Definitions\Tables\SeoTables;
+use Nvl\Seo\Models\SeoProfile;
+use Nvl\Seo\Models\SeoRedirect;
 use Nvl\Seo\Services\DirectSeoImageResolver;
 use Nvl\Seo\Services\FilesystemSitemapArtifactStore;
 use Nvl\Support\Config\PackageEnvironment;
 
 /** Complete runtime defaults; publication sections are declared in ../resources/config/sections.json. */
 return [
+    'models' => ['profile' => SeoProfile::class, 'redirect' => SeoRedirect::class],
     'tables' => ['owner_redirect_locks' => SeoTables::OwnerRedirectLocks],
     'ownership' => ['owner_resources' => []],
     'site' => [

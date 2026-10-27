@@ -513,6 +513,22 @@ it('rejects neutral redirects that close a localized fallback loop', function ()
     expect(app(SeoRedirects::class)->resolve(SystemActor::Background, '/b', 'en'))->toBeNull();
 });
 
+it('retires an inactive redirect while its reverse redirect remains active', function (): void {
+    $redirects = app(SeoRedirects::class);
+    $retired = $redirects->sync(SystemActor::Background, null, ['sourcePath' => '/old-brand', 'target' => '/new-brand']);
+    $retired = $redirects->sync(SystemActor::Background, $retired, ['sourcePath' => '/old-brand', 'target' => '/new-brand', 'isActive' => false, 'expected_revision' => $retired->revision]);
+    $redirects->sync(SystemActor::Background, null, ['sourcePath' => '/new-brand', 'target' => '/old-brand']);
+
+    $retired = $redirects->sync(SystemActor::Background, $retired, ['sourcePath' => '/old-brand', 'target' => '/new-brand', 'isActive' => false, 'expected_revision' => $retired->revision]);
+
+    expect($retired->is_active)->toBeFalse()
+        ->and($retired->target)->toBe('/new-brand')
+        ->and($redirects->resolve(SystemActor::Background, '/old-brand'))->toBeNull()
+        ->and($redirects->resolve(SystemActor::Background, '/new-brand')['target'])->toBe('/old-brand')
+        ->and(fn () => $redirects->sync(SystemActor::Background, $retired, ['sourcePath' => '/old-brand', 'target' => '/new-brand', 'expected_revision' => $retired->revision]))
+        ->toThrow(SeoRedirectLoopException::class);
+});
+
 it('rejects updates that expose a loop through neutral fallback', function (): void {
     $action = app(SeoRedirects::class);
     $shadow = $action->sync(SystemActor::Background, null, ['sourcePath' => '/a', 'target' => '/safe', 'locale' => 'en']);

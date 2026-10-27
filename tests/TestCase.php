@@ -79,6 +79,7 @@ abstract class TestCase extends Orchestra
             $table->uuid('id')->primary();
             $table->string('name');
             $table->timestamps();
+            $table->softDeletes();
         });
         Schema::create('seo_test_integer_owners', function (Blueprint $table): void {
             $table->id();

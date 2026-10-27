@@ -61,8 +61,8 @@ final readonly class SeoProfiles
         $scope = SeoScope::normalize($scope);
 
         try {
-            return (new SeoProfile)->getConnection()->transaction(function () use ($actor, $owner, $data, $scope, $translationMode): SeoProfile {
-                $profile = SeoProfile::query()
+            return SeoModelRegistry::newProfile()->getConnection()->transaction(function () use ($actor, $owner, $data, $scope, $translationMode): SeoProfile {
+                $profile = SeoModelRegistry::profiles()
                     ->forOwner($owner, $scope)
                     ->lockForUpdate()
                     ->first();
@@ -72,7 +72,7 @@ final readonly class SeoProfiles
                         throw StaleSeoProfileException::forProfile('new');
                     }
 
-                    $profile = new SeoProfile([
+                    $profile = SeoModelRegistry::newProfile([
                         'scope' => $scope,
                         'seoable_type' => $owner->getMorphClass(),
                         'seoable_id' => SeoModelIdentifier::required($owner),
@@ -122,7 +122,7 @@ final readonly class SeoProfiles
 
                 $profile->refresh()->load('translations');
                 $identity = $this->sitemapCache->capture($profile->scope);
-                (new SeoProfile)->getConnection()->afterCommit(function () use ($identity): void {
+                (SeoModelRegistry::newProfile())->getConnection()->afterCommit(function () use ($identity): void {
                     $this->sitemapCache->forgetCaptured($identity);
                 });
                 $this->domainEvents->dispatch(new SeoProfileChanged($profile->id, $profile->scope, 'synced'), $profile->getConnection());
@@ -138,7 +138,7 @@ final readonly class SeoProfiles
                 throw SeoPathConflictException::concurrent($scope, $exception);
             }
 
-            $profileModel = new SeoProfile;
+            $profileModel = SeoModelRegistry::newProfile();
             $profileTable = $profileModel->getConnection()->getTablePrefix().$profileModel->getTable();
             if (DatabaseConstraintViolation::matches($exception, [
                 'seo_profiles_scope_owner_unique',
@@ -157,7 +157,7 @@ final readonly class SeoProfiles
     {
         $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::List, scope: $scope));
         $scope = $scope === null ? null : SeoScope::normalize($scope);
-        $query = SeoProfile::query()->when(
+        $query = SeoModelRegistry::profiles()->when(
             $scope !== null,
             static fn ($builder) => $builder->where('scope', $scope),
         );
@@ -178,7 +178,7 @@ final readonly class SeoProfiles
         bool $copyPaths = false,
     ): SeoProfile {
         $sourceId = $source instanceof SeoProfile ? $source->id : $source;
-        $source = SeoProfile::query()
+        $source = SeoModelRegistry::profiles()
             ->with('translations')
             ->findOrFail($sourceId);
         $owner = $source->seoable()->firstOrFail();
@@ -234,8 +234,8 @@ final readonly class SeoProfiles
     ): SeoProfile {
         $profileId = $profile instanceof SeoProfile ? $profile->id : $profile;
 
-        return (new SeoProfile)->getConnection()->transaction(function () use ($actor, $profileId, $archived, $expectedRevision): SeoProfile {
-            $profile = SeoProfile::query()
+        return SeoModelRegistry::newProfile()->getConnection()->transaction(function () use ($actor, $profileId, $archived, $expectedRevision): SeoProfile {
+            $profile = SeoModelRegistry::profiles()
                 ->lockForUpdate()
                 ->findOrFail($profileId);
             $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::Archive, profile: $profile, owner: $profile->seoable()->firstOrFail(), scope: $profile->scope));
@@ -249,7 +249,7 @@ final readonly class SeoProfiles
             $profile->save();
             $profile->refresh()->load('translations');
             $identity = $this->sitemapCache->capture($profile->scope);
-            (new SeoProfile)->getConnection()->afterCommit(function () use ($identity): void {
+            (SeoModelRegistry::newProfile())->getConnection()->afterCommit(function () use ($identity): void {
                 $this->sitemapCache->forgetCaptured($identity);
             });
             $this->domainEvents->dispatch(new SeoProfileChanged(
@@ -266,11 +266,11 @@ final readonly class SeoProfiles
     {
         $profileId = $profile instanceof SeoProfile ? $profile->id : $profile;
 
-        return (new SeoProfile)->getConnection()->transaction(function () use ($actor, $profileId, $expectedRevision): bool {
-            $profile = SeoProfile::query()
+        return SeoModelRegistry::newProfile()->getConnection()->transaction(function () use ($actor, $profileId, $expectedRevision): bool {
+            $profile = SeoModelRegistry::profiles()
                 ->lockForUpdate()
                 ->findOrFail($profileId);
-            $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::Delete, profile: $profile, owner: $profile->seoable()->firstOrFail(), scope: $profile->scope));
+            $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::Delete, profile: $profile, owner: $profile->seoable()->withTrashed()->firstOrFail(), scope: $profile->scope));
 
             if ($expectedRevision !== null && $profile->revision !== $expectedRevision) {
                 throw StaleSeoProfileException::forProfile($profile->id);
@@ -283,7 +283,7 @@ final readonly class SeoProfiles
 
             if ($deleted) {
                 $identity = $this->sitemapCache->capture($scope);
-                (new SeoProfile)->getConnection()->afterCommit(function () use ($identity): void {
+                (SeoModelRegistry::newProfile())->getConnection()->afterCommit(function () use ($identity): void {
                     $this->sitemapCache->forgetCaptured($identity);
                 });
                 $this->domainEvents->dispatch(new SeoProfileChanged($id, $scope, 'deleted'), $profile->getConnection());

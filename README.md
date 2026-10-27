@@ -4,6 +4,10 @@ Localized SEO profiles, redirects, escaped head markup, structured data, sitemap
 
 Consumers own data objects, Actions, controllers, middleware, routes, previews and response resources. Services retain validation, explicit actor policy, canonical ownership, revisions, locks, cache boundaries and committed invalidation.
 
+## Model replacement
+
+Configure `nvl-seo.models.profile` and `nvl-seo.models.redirect` before provider boot with concrete subclasses of `Nvl\Seo\Models\SeoProfile` and `Nvl\Seo\Models\SeoRedirect`. Native services, owner/profile and translation/profile relations, route/sitemap queries, factories and Ownership adoption use the selected roots. Existing morph aliases remain readable; both selections are immutable for the application lifetime. Subclasses may add attributes, casts, accessors and relations while retaining UUID identity, required casts, query/persistence hooks and the native ownership declaration. Native invariant listeners are final; use an observer or bootable trait for additional listeners. Tables and connections remain package-configured, and a selected root must match its native effective storage so fixed translations and technical lock records share its transaction source. Added columns require host migrations. `SeoProfileTranslation` and technical records are not replaceable.
+
 ## Native services
 
 - `SeoProfiles`: sync, status, duplicate, archive, delete and import complete profile operations.
@@ -19,6 +23,8 @@ $head = app(SeoHeadRenderer::class)->render($owner, $actor, locale: 'en');
 ```
 
 Services use native models, enums and documented arrays. Consumers project model fields and assemble editor interfaces. Bind host authorization and reference/image adapters. A background or public identity does not implicitly grant access.
+
+Resolution reloads canonical registered owners and native profiles from their configured storage before authorization, image or structured-data providers run, including without Ownership. Dirty attributes and loaded relations cannot replace persisted facts; changed identity, table or connection is rejected. A stale in-memory active profile cannot resurrect persisted inactive metadata.
 
 SEO works unowned without Auth or the deprecated Tenancy bridge. Native ownership is explicit: register the host resources, configure owner-resource keys, adopt populated storage and supply admitted contexts. Preserve profile/locale parent identity and owner-local path/redirect constraints.
 

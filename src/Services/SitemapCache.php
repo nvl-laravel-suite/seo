@@ -8,7 +8,6 @@ use Illuminate\Container\Container;
 use Illuminate\Contracts\Cache\Repository;
 use LogicException;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
-use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\SeoConfiguration;
 use Nvl\Seo\Support\SeoScope;
@@ -149,7 +148,7 @@ final readonly class SitemapCache
     private function facts(string $scope): array
     {
         $container = Container::getInstance();
-        $connection = (new SeoProfile)->getConnection()->getName() ?? 'default';
+        $connection = (SeoModelRegistry::newProfile())->getConnection()->getName() ?? 'default';
 
         if (SeoOwnership::declared()) {
             $site = OwnerSiteContext::current();

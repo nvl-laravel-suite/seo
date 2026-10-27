@@ -87,7 +87,8 @@
             "file": "database/factories/SeoProfileFactory.php",
             "methods": [
                 "definition",
-                "forOwner"
+                "forOwner",
+                "modelName"
             ],
             "properties": [],
             "constants": []
@@ -106,7 +107,8 @@
             "kind": "class",
             "file": "database/factories/SeoRedirectFactory.php",
             "methods": [
-                "definition"
+                "definition",
+                "modelName"
             ],
             "properties": [],
             "constants": []
@@ -524,6 +526,17 @@
                 "__construct",
                 "render",
                 "renderResolved"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Services\\SeoModelRegistry": {
+            "kind": "class",
+            "file": "src/Services/SeoModelRegistry.php",
+            "methods": [
+                "__construct",
+                "profileClass",
+                "redirectClass"
             ],
             "properties": [],
             "constants": []

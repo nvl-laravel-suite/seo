@@ -8,6 +8,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use InvalidArgumentException;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
@@ -66,11 +68,28 @@ final class SeoOwnerRegistry
      */
     public function resolve(string $alias, string|int $id): Model
     {
+        return $this->resolveRecord($alias, $id, false);
+    }
+
+    /** Resolve an exact owner for authorized profile listing after soft deletion.
+     *
+     * @internal
+     */
+    public function resolveForCleanup(string $alias, string|int $id): Model
+    {
+        return $this->resolveRecord($alias, $id, true);
+    }
+
+    private function resolveRecord(string $alias, string|int $id, bool $includeTrashed): Model
+    {
         $modelClass = $this->modelClass($alias);
         $id = SeoModelIdentifier::normalize($id);
 
-        /** @var Model $model */
-        $model = $modelClass::query()->findOrFail($id);
+        $query = $modelClass::query()->useWritePdo();
+        if ($includeTrashed && in_array(SoftDeletes::class, class_uses_recursive($modelClass), true)) {
+            $query->withoutGlobalScope(SoftDeletingScope::class);
+        }
+        $model = $query->findOrFail($id);
         if (SeoOwnership::active()) {
             $resource = $this->ownershipResources->forModel($model);
             $this->tenancy->assertRecord($model, $resource->key);

@@ -42,7 +42,7 @@ final class SeoRedirectLookup
         ?string $ignoreId,
         bool $lockForUpdate,
     ): ?SeoRedirect {
-        return SeoRedirect::query()
+        return SeoModelRegistry::redirects()
             ->where('source_hash', SeoRedirect::sourceHash($scope, $locale, $source))
             ->where('is_active', true)
             ->where(static function ($query): void {

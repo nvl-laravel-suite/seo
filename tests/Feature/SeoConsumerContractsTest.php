@@ -892,3 +892,33 @@ it('rejects invalid uncached sitemap chunks and disabled required indexes', func
     expect(fn () => app(SitemapGenerator::class)->generate())
         ->toThrow(LogicException::class, 'requires an index');
 });
+
+it('authorizes exact soft deleted owners when listing profiles for cleanup', function (): void {
+    $owner = seoConsumerOwner('Deleted source owner');
+    $foreign = seoConsumerOwner('Foreign source owner');
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background, $owner, [], 'brand-site');
+    app(SeoProfiles::class)->sync(SystemActor::Background, $foreign, [], 'brand-site');
+    $owner->delete();
+    app()->instance(SeoAuthorization::class, new class($owner->id) implements SeoAuthorization
+    {
+        public function __construct(private readonly string $ownerId) {}
+
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            if ($context->ability !== SeoAbility::List || ! $context->owner instanceof TestSeoOwner
+                || $context->owner->id !== $this->ownerId || ! $context->owner->trashed()
+                || $context->scope !== 'brand-site') {
+                throw new AuthorizationException('Only the exact deleted source owner is admitted.');
+            }
+        }
+    });
+
+    $reader = app(SeoReader::class);
+    expect($reader->paginate(SystemActor::Background, ['ownerAlias' => 'article', 'ownerId' => $owner->id, 'scope' => 'brand-site'])->items())
+        ->toHaveCount(1)
+        ->and($reader->paginate(SystemActor::Background, ['ownerAlias' => 'article', 'ownerId' => $owner->id, 'scope' => 'brand-site'])->items()[0]->id)->toBe($profile->id)
+        ->and(fn () => $reader->paginate(SystemActor::Background, ['ownerAlias' => 'article', 'ownerId' => $foreign->id, 'scope' => 'brand-site']))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => $reader->paginate(SystemActor::Background, ['ownerAlias' => 'article', 'scope' => 'brand-site']))
+        ->toThrow(AuthorizationException::class);
+});

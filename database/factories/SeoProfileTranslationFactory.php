@@ -7,6 +7,7 @@ namespace Nvl\Seo\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
+use Nvl\Seo\Services\SeoModelRegistry;
 
 /**
  * Builds SeoProfileTranslation fixture rows and their declared package parents.
@@ -38,7 +39,7 @@ final class SeoProfileTranslationFactory extends Factory
             }
 
             if ($model->getAttribute('seo_profile_id') !== null) {
-                $parent = SeoProfile::query()->findOrFail(FactoryGuard::identifier($model->getAttribute('seo_profile_id')));
+                $parent = SeoModelRegistry::profiles()->findOrFail(FactoryGuard::identifier($model->getAttribute('seo_profile_id')));
                 FactoryGuard::parent($parent, $model);
                 FactoryGuard::inherit($model, $parent);
             }

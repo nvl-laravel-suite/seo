@@ -38,7 +38,7 @@ use Nvl\Translatable\Support\LocaleCode;
  *
  * @api
  */
-final class SeoRedirect extends Model implements Ownable
+class SeoRedirect extends Model implements Ownable
 {
     use GuardsSeoOwnership;
 
@@ -93,7 +93,7 @@ final class SeoRedirect extends Model implements Ownable
         ];
     }
 
-    protected static function booted(): void
+    final protected static function booted(): void
     {
         self::saving(function (SeoRedirect $redirect): void {
             $redirect->scope = SeoScope::normalize($redirect->scope);

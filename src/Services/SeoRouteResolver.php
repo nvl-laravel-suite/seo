@@ -36,7 +36,7 @@ final class SeoRouteResolver
             ->where('path_hash', $hash)
             ->whereIn(
                 'seo_profile_id',
-                SeoProfile::query()
+                SeoModelRegistry::profiles()
                     ->active()
                     ->select('id'),
             )

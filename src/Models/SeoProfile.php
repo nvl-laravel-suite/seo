@@ -55,7 +55,7 @@ use Nvl\Translatable\Translatable;
  *
  * @api
  */
-final class SeoProfile extends Model implements Ownable, TranslatableModel
+class SeoProfile extends Model implements Ownable, TranslatableModel
 {
     use GuardsSeoOwnership;
 
@@ -192,7 +192,7 @@ final class SeoProfile extends Model implements Ownable, TranslatableModel
     /**
      * Guard scope as part of the profile's immutable identity.
      */
-    protected static function booted(): void
+    final protected static function booted(): void
     {
         self::creating(function (SeoProfile $profile): void {
             $profile->scope = SeoScope::normalize($profile->scope);

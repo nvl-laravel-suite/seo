@@ -6,6 +6,7 @@ namespace Nvl\Seo\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Nvl\Seo\Models\SeoRedirect;
+use Nvl\Seo\Services\SeoModelRegistry;
 
 /**
  * Builds SeoRedirect fixture rows and their declared package parents.
@@ -17,6 +18,12 @@ use Nvl\Seo\Models\SeoRedirect;
 final class SeoRedirectFactory extends Factory
 {
     protected $model = SeoRedirect::class;
+
+    /** Resolve the configured native fixture model. */
+    public function modelName(): string
+    {
+        return SeoModelRegistry::redirectClass();
+    }
 
     /**
      * Prepare native parent and owner facts after Laravel expands relationships.

@@ -13,6 +13,7 @@ use Nvl\Seo\Database\Factories\SeoProfileTranslationFactory;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\TwitterCard;
 use Nvl\Seo\Models\Concerns\GuardsSeoOwnership;
+use Nvl\Seo\Services\SeoModelRegistry;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Support\Config\PackageStorage;
 use Nvl\Support\Ownership\Contracts\Ownable;
@@ -86,7 +87,7 @@ final class SeoProfileTranslation extends Model implements Ownable
      */
     public function profile(): BelongsTo
     {
-        return $this->belongsTo(SeoProfile::class, 'seo_profile_id');
+        return $this->belongsTo(SeoModelRegistry::profileClass(), 'seo_profile_id');
     }
 
     /**

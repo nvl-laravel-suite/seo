@@ -91,6 +91,38 @@ function seoPayload(array $overrides = []): array
     ], $overrides);
 }
 
+it('resolves unowned provider facts and authorization from canonical persisted owners', function (): void {
+    $owner = seoOwner('Persisted owner');
+    app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload());
+    $owner->name = 'Dirty caller';
+    $owner->setRelation('untrusted', new TestSeoOwner(['name' => 'Injected relation']));
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            expect($context->owner?->getAttribute('name'))->toBe('Persisted owner')
+                ->and($context->owner?->getRelations())->toBe([]);
+        }
+    });
+
+    $resolved = app(SeoReader::class)->resolve(SystemActor::Background, $owner, 'en');
+    $node = collect($resolved['structuredData'][0]['@graph'])->firstWhere('@type', 'Thing');
+    expect($node['name'])->toBe('Persisted owner');
+});
+
+it('rejects mutated SEO input identity and reloads stale profile status', function (): void {
+    $owner = seoOwner('Canonical owner');
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload());
+    $profile->status = 'inactive';
+    $profile->save();
+    $profile->status = 'active';
+    expect(app(SeoReader::class)->resolve(SystemActor::Background, $profile, 'en')['canonicalUrl'])->toBeNull();
+
+    $owner->setTable('foreign_seo_table');
+    expect(fn () => app(SeoReader::class)->resolve(SystemActor::Background, $owner, 'en'))
+        ->toThrow(InvalidSeoMutationException::class);
+});
+
 it('registers migrations, type sources, and centralized translation management', function (): void {
     expect(Schema::hasTable(SeoTables::Profiles))->toBeTrue()
         ->and(Schema::hasTable(SeoTables::I18n))->toBeTrue()
@@ -407,6 +439,30 @@ it('deletes profiles and cascades localized rows', function (): void {
     expect(app(SeoProfiles::class)->delete(SystemActor::Background, $profile))->toBeTrue()
         ->and(SeoProfile::query()->count())->toBe(0)
         ->and(DB::table(SeoTables::I18n)->count())->toBe(0);
+});
+
+it('authorizes cleanup against the canonical soft-deleted owner', function (): void {
+    $owner = seoOwner();
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload());
+    $owner->delete();
+    $seen = null;
+    app()->instance(SeoAuthorization::class, new class($seen) implements SeoAuthorization
+    {
+        public function __construct(private mixed &$seen) {}
+
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            $this->seen = $context;
+        }
+    });
+
+    expect(TestSeoOwner::query()->find($owner->id))->toBeNull()
+        ->and(app(SeoProfiles::class)->delete(SystemActor::Background, $profile, $profile->revision))->toBeTrue()
+        ->and($seen->ability)->toBe(SeoAbility::Delete)
+        ->and($seen->owner->is($owner))->toBeTrue()
+        ->and($seen->owner->trashed())->toBeTrue()
+        ->and(SeoProfile::query()->find($profile->id))->toBeNull()
+        ->and(DB::table(SeoTables::I18n)->where('seo_profile_id', $profile->id)->count())->toBe(0);
 });
 
 it('rejects stale profile writes and excludes archived profiles from runtime resolution', function (): void {

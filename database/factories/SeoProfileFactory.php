@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
 use Nvl\Seo\Enums\SitemapChangeFrequency;
 use Nvl\Seo\Models\SeoProfile;
+use Nvl\Seo\Services\SeoModelRegistry;
 
 /**
  * Generates structurally valid SEO profiles for consumer tests.
@@ -19,6 +20,12 @@ use Nvl\Seo\Models\SeoProfile;
 final class SeoProfileFactory extends Factory
 {
     protected $model = SeoProfile::class;
+
+    /** Resolve the configured native fixture model. */
+    public function modelName(): string
+    {
+        return SeoModelRegistry::profileClass();
+    }
 
     /**
      * Prepare native parent and owner facts after Laravel expands relationships.
@@ -68,7 +75,7 @@ final class SeoProfileFactory extends Factory
      */
     public function forOwner(Model $owner): static
     {
-        FactoryGuard::parent($owner, new SeoProfile);
+        FactoryGuard::parent($owner, SeoModelRegistry::newProfile());
 
         return $this->state([
             'seoable_type' => $owner->getMorphClass(),

@@ -41,7 +41,7 @@ final readonly class SeoRedirects
     {
         $container = Container::getInstance();
         if (SeoOwnership::declared()) {
-            $connection = (new SeoRedirect)->getConnection();
+            $connection = (SeoModelRegistry::newRedirect())->getConnection();
             $name = substr(hash('sha256', $container->make(OwnershipBoundary::class)->key('seo.redirects', 'graph')), 0, 32);
             $connection->table(SeoTables::get(SeoTables::OwnerRedirectLocks))->insertOrIgnore(['name' => $name]);
             if ($connection->table(SeoTables::get(SeoTables::OwnerRedirectLocks))->where('name', $name)->lockForUpdate()->first() === null) {
@@ -50,7 +50,7 @@ final readonly class SeoRedirects
 
             return;
         }
-        $connection = (new SeoRedirect)->getConnection();
+        $connection = (SeoModelRegistry::newRedirect())->getConnection();
         $connection->table(SeoTables::get(SeoTables::RedirectLocks))->insertOrIgnore(['name' => 'graph']);
         $connection->table(SeoTables::get(SeoTables::RedirectLocks))->where('name', 'graph')->lockForUpdate()->first();
     }
@@ -72,7 +72,7 @@ final readonly class SeoRedirects
         $redirectId = $redirect instanceof SeoRedirect ? $redirect->id : $redirect;
 
         try {
-            return (new SeoRedirect)->getConnection()->transaction(function () use (
+            return SeoModelRegistry::newRedirect()->getConnection()->transaction(function () use (
                 $data,
                 $locale,
                 $redirectId,
@@ -81,15 +81,15 @@ final readonly class SeoRedirects
             ): SeoRedirect {
                 $this->lockGraph();
                 $model = $redirectId === null
-                    ? SeoRedirect::withTrashed()
+                    ? SeoModelRegistry::redirects()->withTrashed()
                         ->where('source_hash', SeoRedirect::sourceHash($scope, $locale, $source))
                         ->lockForUpdate()
                         ->first()
-                    : SeoRedirect::withTrashed()->lockForUpdate()->findOrFail($redirectId);
+                    : SeoModelRegistry::redirects()->withTrashed()->lockForUpdate()->findOrFail($redirectId);
                 $wasDeleted = $model?->trashed() ?? false;
                 $previousScope = $model?->scope;
                 $previousSource = $model?->source_path;
-                $model ??= new SeoRedirect;
+                $model ??= SeoModelRegistry::newRedirect();
 
                 if (is_int($data['expected_revision'] ?? null)
                     && (($model->exists && ! $wasDeleted
@@ -102,13 +102,17 @@ final readonly class SeoRedirects
                 }
 
                 try {
-                    $target = $this->chains->flatten(
-                        $scope,
-                        $locale,
-                        $source,
-                        SeoRedirectTarget::normalize($data['target']),
-                        $model->exists ? $model->id : null,
-                    );
+                    $target = SeoRedirectTarget::normalize($data['target']);
+
+                    if ($data['isActive']) {
+                        $target = $this->chains->flatten(
+                            $scope,
+                            $locale,
+                            $source,
+                            $target,
+                            $model->exists ? $model->id : null,
+                        );
+                    }
                 } catch (InvalidArgumentException $exception) {
                     throw InvalidSeoMutationException::forField(
                         'target',
@@ -172,7 +176,7 @@ final readonly class SeoRedirects
             ability: SeoAbility::ManageRedirects, scope: $scope,
             redirectSource: $source, redirectLocale: $locale,
         ));
-        $redirect = SeoRedirect::query()
+        $redirect = SeoModelRegistry::redirects()
             ->where('source_hash', SeoRedirect::sourceHash($scope, $locale, $source))
             ->first();
 
@@ -189,11 +193,11 @@ final readonly class SeoRedirects
         if (OwnerSiteContext::current() !== null) {
             throw new OwnershipViolation('Public site admission cannot prune retained redirects.');
         }
-        $connection = (new SeoRedirect)->getConnection();
+        $connection = (SeoModelRegistry::newRedirect())->getConnection();
         $deletedBefore = now('UTC')->subDays($retentionDays);
 
         return $connection->transaction(
-            static fn (): int => SeoRedirect::onlyTrashed()
+            static fn (): int => SeoModelRegistry::redirects()->onlyTrashed()
                 ->where('deleted_at', '<=', $deletedBefore)
                 ->toBase()->delete(),
         );
@@ -221,7 +225,7 @@ final readonly class SeoRedirects
         }
 
         if ((bool) config('nvl-seo.redirects.record_hits', true)) {
-            SeoRedirect::query()->whereKey($redirect->id)->update([
+            SeoModelRegistry::redirects()->whereKey($redirect->id)->update([
                 'hit_count' => DB::raw('hit_count + 1'),
                 'last_hit_at' => now(),
             ]);

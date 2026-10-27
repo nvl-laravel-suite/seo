@@ -6,6 +6,7 @@ namespace Nvl\Seo\Tests\Fixtures;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Nvl\Seo\Traits\HasSeo;
 
 /**
@@ -15,6 +16,7 @@ final class TestSeoOwner extends Model
 {
     use HasSeo;
     use HasUuids;
+    use SoftDeletes;
 
     protected $table = 'seo_test_owners';
 
