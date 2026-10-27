@@ -196,7 +196,7 @@ it('bounds directly constructed management profile queries inside the Action', f
 });
 
 it('returns authorized owner-centric profile and revision projections', function (): void {
-    $owner = seoConsumerOwner('Owner-centric reads');
+    $owner = seoConsumerOwner('Owner-centric reads')->refresh();
     $profile = app(SeoProfiles::class)->sync(SystemActor::Background,
         $owner,
         [
@@ -221,7 +221,7 @@ it('returns authorized owner-centric profile and revision projections', function
     $profileData = app(SeoReader::class)->forOwner(SystemActor::Background, $owner, ' CATALOG ');
     $revisionData = app(SeoReader::class)->revisions(SystemActor::Background, $owner, 'catalog');
     $missingProfile = app(SeoReader::class)->forOwner(SystemActor::Background, $owner, 'missing');
-    $missingOwner = seoConsumerOwner('Owner without SEO');
+    $missingOwner = seoConsumerOwner('Owner without SEO')->refresh();
     $missing = app(SeoReader::class)->revisions(SystemActor::Background, $missingOwner, 'catalog');
 
     expect($profileData)->toBeInstanceOf(SeoProfile::class)
@@ -277,7 +277,7 @@ it('denies owner-centric SEO reads before querying profiles', function (): void 
 });
 
 it('returns authorized owner SEO profiles positionally with fixed query counts', function (): void {
-    $owners = [seoConsumerOwner('Bulk owner 01')];
+    $owners = [seoConsumerOwner('Bulk owner 01')->refresh()];
     app(SeoProfiles::class)->sync(SystemActor::Background,
         $owners[0],
         [
@@ -321,7 +321,7 @@ it('returns authorized owner SEO profiles positionally with fixed query counts',
     [$single, $singleQueries] = $measure($owners);
 
     foreach (range(2, 25) as $index) {
-        $owner = seoConsumerOwner("Bulk owner {$index}");
+        $owner = seoConsumerOwner("Bulk owner {$index}")->refresh();
         $owners[] = $owner;
         app(SeoProfiles::class)->sync(SystemActor::Background,
             $owner,
