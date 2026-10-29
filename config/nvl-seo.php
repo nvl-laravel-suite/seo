@@ -7,7 +7,6 @@ use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoRedirect;
 use Nvl\Seo\Services\DirectSeoImageResolver;
 use Nvl\Seo\Services\FilesystemSitemapArtifactStore;
-use Nvl\Support\Config\PackageEnvironment;
 
 /** Complete runtime defaults; publication sections are declared in ../resources/config/sections.json. */
 return [
@@ -15,12 +14,12 @@ return [
     'tables' => ['owner_redirect_locks' => SeoTables::OwnerRedirectLocks],
     'ownership' => ['owner_resources' => []],
     'site' => [
-        'scope' => PackageEnvironment::get('NVL_SEO_SITE_SCOPE', 'default'),
-        'name' => PackageEnvironment::get('NVL_SEO_SITE_NAME', env('APP_NAME', 'Laravel')),
+        'scope' => env('NVL_SEO_SITE_SCOPE', 'default'),
+        'name' => env('NVL_SEO_SITE_NAME', env('APP_NAME', 'Laravel')),
         'title_separator' => ' | ',
         'title_position' => 'suffix',
-        'base_url' => PackageEnvironment::get('NVL_SEO_BASE_URL', env('APP_URL', 'http://localhost')),
-        'default_image_url' => PackageEnvironment::get('NVL_SEO_DEFAULT_IMAGE_URL'),
+        'base_url' => env('NVL_SEO_BASE_URL', env('APP_URL', 'http://localhost')),
+        'default_image_url' => env('NVL_SEO_DEFAULT_IMAGE_URL'),
         'open_graph_type' => 'website',
         'twitter_site' => null,
         'twitter_creator' => null,

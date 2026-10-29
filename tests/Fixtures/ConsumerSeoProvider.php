@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Tests\Fixtures;
 
-use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -15,7 +14,6 @@ use Nvl\Seo\Support\SeoAuthorizationContext;
 use Nvl\Seo\Tests\Fixtures\Http\Controllers\RobotsController;
 use Nvl\Seo\Tests\Fixtures\Http\Controllers\SitemapChunkController;
 use Nvl\Seo\Tests\Fixtures\Http\Controllers\SitemapController;
-use Nvl\Support\Globals\GlobalNames;
 
 final class ConsumerSeoProvider extends ServiceProvider
 {
@@ -56,23 +54,22 @@ final class ConsumerSeoProvider extends ServiceProvider
         }
         $middleware = array_values(array_unique($middleware));
 
-        $this->app->make(GlobalNames::class)->loadRoutes('seo', $this->app->make(Router::class), function () use ($middleware): void {
-            Route::middleware($middleware)
-                ->name(SeoRouteConfiguration::publicName())
-                ->group(function (): void {
-                    Route::get(
-                        SeoRouteConfiguration::sitemapPath(),
-                        SitemapController::class,
-                    )->name('sitemap');
-                    Route::get(
-                        SeoRouteConfiguration::sitemapChunkPath(),
-                        SitemapChunkController::class,
-                    )->whereNumber('chunk')->name('sitemap.chunk');
-                    Route::get(
-                        SeoRouteConfiguration::robotsPath(),
-                        RobotsController::class,
-                    )->name('robots');
-                });
-        });
+        Route::middleware($middleware)
+            ->name(SeoRouteConfiguration::publicName())
+            ->group(function (): void {
+                Route::get(
+                    SeoRouteConfiguration::sitemapPath(),
+                    SitemapController::class,
+                )->name('sitemap');
+                Route::get(
+                    SeoRouteConfiguration::sitemapChunkPath(),
+                    SitemapChunkController::class,
+                )->whereNumber('chunk')->name('sitemap.chunk');
+                Route::get(
+                    SeoRouteConfiguration::robotsPath(),
+                    RobotsController::class,
+                )->name('robots');
+            });
+
     }
 }

@@ -136,10 +136,10 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
 
         $this->publishes([
             __DIR__.'/../../config/nvl-seo.php' => config_path('nvl-seo.php'),
-        ], 'seo-config');
+        ], 'nvl-seo-config');
         $this->publishesMigrations([
             __DIR__.'/../../database/migrations' => database_path('migrations'),
-        ], 'seo-migrations');
+        ], 'nvl-seo-migrations');
 
     }
 

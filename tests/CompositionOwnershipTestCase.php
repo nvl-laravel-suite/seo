@@ -84,7 +84,7 @@ abstract class CompositionOwnershipTestCase extends TestCase
             'nvl-comments.moderation.new_status' => 'approved',
             'nvl-comments.mutation_lock.enabled' => false,
             'nvl-content.migrations.enabled' => false,
-            'nvl-media.deduplication_lock.store' => 'array',
+            'nvl-media.locks.deduplication.store' => 'array',
             'nvl-media.routes.api_enabled' => false,
             'auth.providers.users.model' => OwnershipActor::class,
         ]);

@@ -33,3 +33,5 @@ Enable optional Content or Media integration explicitly and retain its authoriza
 The package registers no HTTP routes or redirect middleware. Consumer endpoints serve generated artifacts, apply cache headers and turn resolved redirect facts into responses. Do not bypass service visibility checks by querying private profiles for a public response.
 
 Choose one migration owner and review configuration before migrating populated tables. See the [source services](src/Services/SeoProfiles.php), [events](docs/events.md), [upgrading](UPGRADING.md), [security](SECURITY.md) and [contributing](CONTRIBUTING.md).
+
+Shared [service contracts, model extensions and composition](https://github.com/nvl-laravel-suite/laravel-suite/blob/main/docs/consumer-api.md) apply alongside the package-specific rules above.
