@@ -4,6 +4,8 @@ Localized SEO profiles, redirects, escaped head markup, structured data, sitemap
 
 Consumers own data objects, Actions, controllers, middleware, routes, previews and response resources. Services retain validation, explicit actor policy, canonical ownership, revisions, locks, cache boundaries and committed invalidation.
 
+Authorization contexts reload canonical persisted actors before host policy evaluation. Redirect updates authorize both the stored identity under lock and the proposed scope, source and locale; permission for a new destination cannot grant authority over an existing redirect in another scope.
+
 ## Model replacement
 
 Configure `nvl-seo.models.profile` and `nvl-seo.models.redirect` before provider boot with concrete subclasses of `Nvl\Seo\Models\SeoProfile` and `Nvl\Seo\Models\SeoRedirect`. Native services, owner/profile and translation/profile relations, route/sitemap queries, factories and Ownership adoption use the selected roots. Existing morph aliases remain readable; both selections are immutable for the application lifetime. Subclasses may add attributes, casts, accessors and relations while retaining UUID identity, required casts, query/persistence hooks and the native ownership declaration. Native invariant listeners are final; use an observer or bootable trait for additional listeners. Tables and connections remain package-configured, and a selected root must match its native effective storage so fixed translations and technical lock records share its transaction source. Added columns require host migrations. `SeoProfileTranslation` and technical records are not replaceable.

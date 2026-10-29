@@ -9,6 +9,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Nvl\Seo\Enums\SeoAbility;
 use Nvl\Seo\Models\SeoProfile;
+use Nvl\Support\Auth\CanonicalActorResolver;
 use Nvl\Support\Enums\PublicActor;
 use Nvl\Support\Enums\SystemActor;
 
@@ -19,11 +20,14 @@ use Nvl\Support\Enums\SystemActor;
  */
 final readonly class SeoAuthorizationContext
 {
+    /** The current persisted principal or explicitly supplied public/system identity. */
+    public Authenticatable|SystemActor|PublicActor $actor;
+
     /**
      * Create one authorization decision context.
      */
     public function __construct(
-        public Authenticatable|SystemActor|PublicActor $actor,
+        Authenticatable|SystemActor|PublicActor $actor,
         public SeoAbility $ability,
         public ?SeoProfile $profile = null,
         public ?Model $owner = null,
@@ -34,11 +38,15 @@ final readonly class SeoAuthorizationContext
         public ?string $redirectSource = null,
         public ?string $redirectLocale = null,
     ) {
-        if ($actor instanceof Authenticatable && (! $actor instanceof Model || ! $actor->exists || $actor->getKey() === null || $actor->getRawOriginal($actor->getKeyName()) !== $actor->getKey() || ! $actor->newQuery()->whereKey($actor->getKey())->exists())) {
-            throw new AuthorizationException('SEO requires a persisted actor.');
+        if ($actor instanceof Authenticatable) {
+            if (! $actor instanceof Model) {
+                throw new AuthorizationException('SEO requires a persisted actor.');
+            }
+            $actor = app(CanonicalActorResolver::class)->resolve($actor);
         }
         if ($actor instanceof PublicActor && $ability !== SeoAbility::Resolve) {
             throw new AuthorizationException('Anonymous SEO access is limited to explicit public resolution.');
         }
+        $this->actor = $actor;
     }
 }

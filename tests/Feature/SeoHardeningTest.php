@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Cache\ApcStore;
 use Illuminate\Cache\ApcWrapper;
 use Illuminate\Cache\ArrayStore;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImportSource;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Contracts\SitemapSource;
@@ -30,9 +32,60 @@ use Nvl\Seo\Services\SeoRedirects;
 use Nvl\Seo\Services\SitemapCache;
 use Nvl\Seo\Services\SitemapGenerator;
 use Nvl\Seo\Services\SitemapRegistry;
+use Nvl\Seo\Support\SeoAuthorizationContext;
+use Nvl\Seo\Tests\Fixtures\OwnershipActor;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
 use Nvl\Seo\ValueObjects\SitemapEntry;
 use Nvl\Support\Enums\SystemActor;
+
+it('authorizes redirect updates against the stored source identity', function (string $identity): void {
+    $redirect = app(SeoRedirects::class)->sync(SystemActor::Background, null, [
+        'sourcePath' => '/protected', 'target' => '/original', 'locale' => 'bg',
+    ], 'protected');
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            if ($context->scope === 'protected' || $context->redirectSource === '/protected' || $context->redirectLocale === 'bg') {
+                throw new AuthorizationException;
+            }
+        }
+    });
+
+    expect(fn () => app(SeoRedirects::class)->sync(SystemActor::Background, $identity === 'model' ? $redirect : $redirect->id, [
+        'sourcePath' => '/allowed', 'target' => '/replacement', 'locale' => 'en', 'expected_revision' => 1,
+    ], 'allowed'))->toThrow(AuthorizationException::class);
+
+    expect($redirect->fresh()?->source_path)->toBe('/protected')
+        ->and($redirect->fresh()?->scope)->toBe('protected')
+        ->and($redirect->fresh()?->revision)->toBe(1);
+})->with(['model', 'id']);
+
+it('supplies current persisted actor facts to SEO host authorization', function (string $mutation): void {
+    Schema::create('content_owned_actors', function (Blueprint $table): void {
+        $table->id();
+        $table->string('name');
+    });
+    $actor = OwnershipActor::query()->create(['name' => $mutation === 'revoked' ? 'Allowed' : 'Denied']);
+    if ($mutation === 'attribute') {
+        $actor->name = 'Allowed';
+    } elseif ($mutation === 'relation') {
+        $actor->setRelation('grant', new OwnershipActor);
+    } else {
+        OwnershipActor::query()->whereKey($actor->getKey())->update(['name' => 'Denied']);
+    }
+    app()->instance(SeoAuthorization::class, new class implements SeoAuthorization
+    {
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            if (! $context->actor instanceof OwnershipActor || ($context->actor->name !== 'Allowed' && ! $context->actor->relationLoaded('grant'))) {
+                throw new AuthorizationException;
+            }
+        }
+    });
+
+    expect(fn () => app(SeoProfiles::class)->status($actor))->toThrow(AuthorizationException::class);
+})->with(['attribute', 'relation', 'revoked']);
 
 it('enforces mutation invariants for programmatic action callers', function (): void {
     $owner = TestSeoOwner::query()->create(['name' => 'Invalid profile owner']);

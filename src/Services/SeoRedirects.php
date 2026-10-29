@@ -63,16 +63,17 @@ final readonly class SeoRedirects
     ): SeoRedirect {
         $data += ['locale' => null, 'statusCode' => 301, 'isActive' => true, 'expiresAt' => null];
         $this->validator->redirect($data);
-        $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::ManageRedirects, scope: $scope, redirectSource: $data['sourcePath'], redirectLocale: $data['locale']));
         $scope = SeoScope::normalize($scope);
         $locale = $data['locale'] === null
             ? null
             : $this->locales->assertSupported($data['locale']);
         $source = SeoPath::normalize($data['sourcePath']) ?? '/';
+        $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::ManageRedirects, scope: $scope, redirectSource: $source, redirectLocale: $locale));
         $redirectId = $redirect instanceof SeoRedirect ? $redirect->id : $redirect;
 
         try {
             return SeoModelRegistry::newRedirect()->getConnection()->transaction(function () use (
+                $actor,
                 $data,
                 $locale,
                 $redirectId,
@@ -86,6 +87,9 @@ final readonly class SeoRedirects
                         ->lockForUpdate()
                         ->first()
                     : SeoModelRegistry::redirects()->withTrashed()->lockForUpdate()->findOrFail($redirectId);
+                if ($model instanceof SeoRedirect) {
+                    $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::ManageRedirects, scope: $model->scope, redirectSource: $model->source_path, redirectLocale: $model->locale));
+                }
                 $wasDeleted = $model?->trashed() ?? false;
                 $previousScope = $model?->scope;
                 $previousSource = $model?->source_path;
