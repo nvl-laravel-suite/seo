@@ -27,8 +27,13 @@ it('prunes the configured SEO source while the application default database diff
         $blueprint->timestamp('deleted_at')->nullable();
     });
     $foreign->table($table)->insert(['id' => 'foreign-host-row', 'deleted_at' => now()->subDays(40)]);
-    config(['database.default' => 'foreign_prune_default']);
-    expect(app(SeoRedirects::class)->prune(SystemActor::Background))->toBe(1);
-    expect($source->table($table)->where('id', $redirect->id)->exists())->toBeFalse()
-        ->and($foreign->table($table)->where('id', 'foreign-host-row')->exists())->toBeTrue();
+    $defaultConnection = DB::getDefaultConnection();
+    try {
+        DB::setDefaultConnection('foreign_prune_default');
+        expect(app(SeoRedirects::class)->prune(SystemActor::Background))->toBe(1);
+        expect($source->table($table)->where('id', $redirect->id)->exists())->toBeFalse()
+            ->and($foreign->table($table)->where('id', 'foreign-host-row')->exists())->toBeTrue();
+    } finally {
+        DB::setDefaultConnection($defaultConnection);
+    }
 });

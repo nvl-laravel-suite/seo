@@ -44,5 +44,5 @@ it('allows identical code registration through a shared seo reference', function
     $registry->register('detail', 'article');
 
     expect($registry->modelClass('detail'))->toBe(TestSeoOwner::class)
-        ->and(app(OwnerRegistry::class)->deprecations())->not->toHaveKey('seo.owners.detail');
+        ->and(app(OwnerRegistry::class)->model('article'))->toBe(TestSeoOwner::class);
 });

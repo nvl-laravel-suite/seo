@@ -34,6 +34,8 @@ Enable optional Content or Media integration explicitly and retain its authoriza
 
 The package registers no HTTP routes or redirect middleware. Consumer endpoints serve generated artifacts, apply cache headers and turn resolved redirect facts into responses. Do not bypass service visibility checks by querying private profiles for a public response.
 
+`nvl-seo.redirects.record_hits` defaults to true: each successful `SeoRedirects::resolve` synchronously increments the matched redirect's hit counter. Set it false before serving a high-volume or read-only redirect path; external analytics then belong to the host. `find` is a management read and never records a hit. Profile the actual storage workload before enabling counting on a hot redirect.
+
 Choose one migration owner and review configuration before migrating populated tables. See the [source services](src/Services/SeoProfiles.php), [events](docs/events.md), [upgrading](UPGRADING.md), [security](SECURITY.md) and [contributing](CONTRIBUTING.md).
 
 Shared [service contracts, model extensions and composition](https://github.com/nvl-laravel-suite/laravel-suite/blob/main/docs/consumer-api.md) apply alongside the package-specific rules above.
