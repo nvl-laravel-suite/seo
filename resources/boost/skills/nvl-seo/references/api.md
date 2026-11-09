@@ -387,7 +387,9 @@ public function translationParameters(): array
 ```text
 class Nvl\Seo\Models\SeoProfile extends Illuminate\Database\Eloquent\Model implements Nvl\Support\Ownership\Contracts\Ownable, Nvl\Translatable\Contracts\TranslatableModel
 public const string TENANT_RESOURCE="seo.profiles"
-public function delete(): ?bool
+public function delete(): mixed
+@return ($this is Pivot ? (bool | int | null) : (bool | null))
+resolved @return ($this is Illuminate\Database\Eloquent\Relations\Pivot ? (bool | int | null) : (bool | null))
 public function fresh(mixed $with=[]): ?static
 @param (array<array-key, mixed> | string) $with
 public function getAllTranslations(): Illuminate\Database\Eloquent\Collection
@@ -511,7 +513,9 @@ resolved @property Carbon\Carbon $updated_at
 ```text
 final class Nvl\Seo\Models\SeoProfileTranslation extends Illuminate\Database\Eloquent\Model implements Nvl\Support\Ownership\Contracts\Ownable
 public const string TENANT_RESOURCE="seo.translations"
-public function delete(): ?bool
+public function delete(): mixed
+@return ($this is Pivot ? (bool | int | null) : (bool | null))
+resolved @return ($this is Illuminate\Database\Eloquent\Relations\Pivot ? (bool | int | null) : (bool | null))
 public function fresh(mixed $with=[]): ?static
 @param (array<array-key, mixed> | string) $with
 public function getConnectionName(): ?string
@@ -561,7 +565,9 @@ resolved @property Carbon\Carbon $updated_at
 ```text
 class Nvl\Seo\Models\SeoRedirect extends Illuminate\Database\Eloquent\Model implements Nvl\Support\Ownership\Contracts\Ownable
 public const string TENANT_RESOURCE="seo.redirects"
-public function delete(): ?bool
+public function delete(): mixed
+@return ($this is Pivot ? (bool | int | null) : (bool | null))
+resolved @return ($this is Illuminate\Database\Eloquent\Relations\Pivot ? (bool | int | null) : (bool | null))
 public function fresh(mixed $with=[]): ?static
 @param (array<array-key, mixed> | string) $with
 public function getConnectionName(): ?string
