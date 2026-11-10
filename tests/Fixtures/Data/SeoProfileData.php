@@ -6,19 +6,13 @@ namespace Nvl\Seo\Tests\Fixtures\Data;
 
 use Nvl\Seo\Enums\SitemapChangeFrequency;
 use Nvl\Seo\Models\SeoProfile;
-use Spatie\LaravelData\Attributes\MapInputName;
-use Spatie\LaravelData\Attributes\MapOutputName;
-use Spatie\LaravelData\Data;
-use Spatie\LaravelData\Mappers\CamelCaseMapper;
 
 /**
  * Privileged management representation of one SEO profile.
  *
  * @api
  */
-#[MapInputName(CamelCaseMapper::class)]
-#[MapOutputName(CamelCaseMapper::class)]
-final class SeoProfileData extends Data
+final class SeoProfileData
 {
     /**
      * @param  array<string, SeoProfileTranslationData>  $translations
@@ -46,6 +40,19 @@ final class SeoProfileData extends Data
         public readonly string $updatedAt,
         public readonly array $translations,
     ) {}
+
+    /** @return array<string, mixed> */
+    public function toArray(): array
+    {
+        return [
+            ...get_object_vars($this),
+            'sitemapChangeFrequency' => $this->sitemapChangeFrequency?->value,
+            'translations' => array_map(
+                static fn (SeoProfileTranslationData $translation): array => $translation->toArray(),
+                $this->translations,
+            ),
+        ];
+    }
 
     /**
      * Create the complete management representation for one registered owner alias.

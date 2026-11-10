@@ -454,14 +454,18 @@ it('exercises the complete opt-in management API lifecycle', function (): void {
         'ownerAlias' => 'article',
         'ownerId' => $owner->getKey(),
         'profile' => [
+            'sitemapChangeFrequency' => 'weekly',
             'translations' => [
                 'en' => [
                     'path' => '/consumer-owner',
                     'title' => 'Consumer title',
+                    'twitterCard' => 'summary_large_image',
                 ],
             ],
         ],
-    ])->assertCreated();
+    ])->assertCreated()
+        ->assertJsonPath('data.sitemapChangeFrequency', 'weekly')
+        ->assertJsonPath('data.translations.en.twitterCard', 'summary_large_image');
     $profileId = $created->json('data.id');
     $revision = $created->json('data.revision');
 

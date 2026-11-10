@@ -17,7 +17,6 @@ use Nvl\Support\Providers\LocaleServiceProvider;
 use Nvl\Support\Providers\SupportServiceProvider;
 use Nvl\Translatable\Providers\TranslatableServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Spatie\LaravelData\LaravelDataServiceProvider;
 
 /**
  * Boots SEO and its explicit runtime dependencies in isolation.
@@ -34,7 +33,6 @@ abstract class TestCase extends Orchestra
         return [
             LocaleServiceProvider::class,
             SupportServiceProvider::class,
-            LaravelDataServiceProvider::class,
             TranslatableServiceProvider::class,
             SeoServiceProvider::class,
             ConsumerSeoProvider::class,

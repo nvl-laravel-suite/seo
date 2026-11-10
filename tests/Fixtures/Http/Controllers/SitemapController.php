@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Nvl\Seo\Services\SitemapGenerator;
 use Nvl\Seo\Support\SeoConfiguration;
-use Nvl\Seo\Tests\Fixtures\Data\SeoSitemapQueryData;
+use Nvl\Seo\Tests\Fixtures\SeoManagementInput;
 
 /**
  * Serves the generated XML sitemap when public routes are enabled.
@@ -24,8 +24,8 @@ final readonly class SitemapController
      */
     public function __invoke(Request $request): Response
     {
-        $query = SeoSitemapQueryData::validateAndCreate($request->query());
-        $xml = $this->sitemaps->generate($query->scope);
+        $query = SeoManagementInput::sitemap($request->query());
+        $xml = $this->sitemaps->generate($query['scope'] ?? null);
         $response = response(
             $xml,
             200,

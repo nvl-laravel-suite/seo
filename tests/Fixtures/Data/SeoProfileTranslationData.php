@@ -6,14 +6,13 @@ namespace Nvl\Seo\Tests\Fixtures\Data;
 
 use Nvl\Seo\Enums\TwitterCard;
 use Nvl\Seo\Models\SeoProfileTranslation;
-use Spatie\LaravelData\Data;
 
 /**
  * Privileged management representation of one localized SEO profile row.
  *
  * @api
  */
-final class SeoProfileTranslationData extends Data
+final class SeoProfileTranslationData
 {
     /**
      * @param  array<array-key, mixed>|null  $structuredData
@@ -38,6 +37,12 @@ final class SeoProfileTranslationData extends Data
         public readonly string $createdAt,
         public readonly string $updatedAt,
     ) {}
+
+    /** @return array<string, mixed> */
+    public function toArray(): array
+    {
+        return [...get_object_vars($this), 'twitterCard' => $this->twitterCard?->value];
+    }
 
     /**
      * Create the management representation from one translation model.

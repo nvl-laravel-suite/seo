@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Nvl\Seo\Services\SitemapGenerator;
 use Nvl\Seo\Support\SeoConfiguration;
-use Nvl\Seo\Tests\Fixtures\Data\SeoSitemapQueryData;
+use Nvl\Seo\Tests\Fixtures\SeoManagementInput;
 use OutOfBoundsException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -24,11 +24,11 @@ final readonly class SitemapChunkController
      */
     public function __invoke(Request $request, int|string $chunk): Response
     {
-        $query = SeoSitemapQueryData::validateAndCreate($request->query());
+        $query = SeoManagementInput::sitemap($request->query());
         try {
             $xml = $this->sitemaps->generateChunk(
                 (int) $chunk,
-                $query->scope,
+                $query['scope'] ?? null,
             );
         } catch (OutOfBoundsException) {
             throw new NotFoundHttpException;

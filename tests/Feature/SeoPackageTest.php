@@ -39,7 +39,7 @@ use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Seo\Services\StructuredDataBuilder;
 use Nvl\Seo\Services\StructuredDataRegistry;
 use Nvl\Seo\Support\SeoAuthorizationContext;
-use Nvl\Seo\Tests\Fixtures\Data\SeoProfileQuery;
+use Nvl\Seo\Tests\Fixtures\SeoManagementInput;
 use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestStringSeoOwner;
@@ -856,11 +856,38 @@ it('lists every scope for one authorized owner without including other owners', 
 });
 
 it('requires an owner alias when filtering profile management by owner identity', function (): void {
-    expect(fn () => SeoProfileQuery::validateAndCreate(['ownerId' => 'owner-1']))
+    expect(fn () => SeoManagementInput::profiles(['ownerId' => 'owner-1']))
         ->toThrow(ValidationException::class);
     expect(fn () => app(SeoReader::class)->paginate(SystemActor::Background, ['ownerId' => 'owner-1']))
         ->toThrow(InvalidArgumentException::class);
 });
+
+it('retains sparse native management patches with explicit nulls and typed revisions', function (): void {
+    $patch = SeoManagementInput::update([
+        'expectedRevision' => '4',
+        'isIndexable' => '0',
+        'maxSnippet' => null,
+        'translations' => ['bg' => ['title' => null]],
+    ]);
+
+    expect($patch['expected_revision'])->toBe(4)
+        ->and($patch['isIndexable'])->toBeFalse()
+        ->and($patch['maxSnippet'])->toBeNull()
+        ->and($patch['translations'])->toBe(['bg' => ['title' => null]])
+        ->and($patch)->not->toHaveKeys(['isFollowable', 'metadata', 'sitemapIncluded', 'expectedRevision']);
+
+    expect(SeoManagementInput::profiles(['perPage' => '5', 'page' => '2']))
+        ->toBe(['page' => 2, 'per_page' => 5]);
+});
+
+it('rejects unsupported native management patch fields before reaching services', function (array $input): void {
+    expect(fn () => SeoManagementInput::update(['expected_revision' => 1, ...$input]))
+        ->toThrow(ValidationException::class);
+})->with([
+    'protected owner' => [['ownerId' => 'another-owner']],
+    'unknown field' => [['unsupported' => true]],
+    'unknown locale field' => [['translations' => ['en' => ['unsupported' => true]]]],
+]);
 
 it('uses the resolved canonical integer key for owner profile filtering', function (): void {
     $owner = TestIntegerSeoOwner::query()->create(['name' => 'Native integer']);

@@ -15,15 +15,9 @@ use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Seo\Services\SeoProfiles;
 use Nvl\Seo\Services\SeoReader;
 use Nvl\Seo\Support\SeoAuthorizationContext;
+use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Seo\Support\SeoScope;
-use Nvl\Seo\Tests\Fixtures\Data\Mutations\SeoProfilePayload;
-use Nvl\Seo\Tests\Fixtures\Data\SeoArchiveProfileData;
-use Nvl\Seo\Tests\Fixtures\Data\SeoDuplicateProfileData;
-use Nvl\Seo\Tests\Fixtures\Data\SeoPreviewQueryData;
-use Nvl\Seo\Tests\Fixtures\Data\SeoProfileQuery;
-use Nvl\Seo\Tests\Fixtures\Data\SeoRevisionData;
-use Nvl\Seo\Tests\Fixtures\Data\SeoScopeQueryData;
-use Nvl\Seo\Tests\Fixtures\Data\SeoStoreProfileData;
+use Nvl\Seo\Tests\Fixtures\SeoManagementInput;
 use Nvl\Seo\Tests\Fixtures\SeoProfilePresenter;
 use Nvl\Support\Enums\SystemActor;
 
@@ -45,8 +39,8 @@ final class SeoManagementController extends Controller
         Request $request,
         SeoReader $action,
     ): JsonResponse {
-        $query = SeoProfileQuery::validateAndCreate($request->query());
-        $profiles = $action->paginate(SystemActor::Background, $query->toArray());
+        $query = SeoManagementInput::profiles($request->query());
+        $profiles = $action->paginate(SystemActor::Background, $query);
         $items = [];
 
         foreach ($profiles->items() as $profile) {
@@ -85,10 +79,10 @@ final class SeoManagementController extends Controller
         Request $request,
         SeoProfiles $action,
     ): JsonResponse {
-        $data = SeoStoreProfileData::validateAndCreate($request->all());
-        $ownerAlias = $data->ownerAlias;
-        $owner = $this->owners->resolve($ownerAlias, $data->normalizedOwnerId());
-        $scope = SeoScope::normalize($data->scope);
+        $data = SeoManagementInput::store($request->all());
+        $ownerAlias = $data['ownerAlias'];
+        $owner = $this->owners->resolve($ownerAlias, SeoModelIdentifier::normalize($data['ownerId']));
+        $scope = SeoScope::normalize(($data['scope'] ?? null));
         $this->authorization->authorize(new SeoAuthorizationContext(actor: SystemActor::Background,
             ability: SeoAbility::Create,
             owner: $owner,
@@ -97,7 +91,7 @@ final class SeoManagementController extends Controller
         ));
         $profile = $action->sync(SystemActor::Background,
             $owner,
-            $data->payload()->toArray(),
+            $data['profile'],
             $scope,
         );
 
@@ -120,10 +114,10 @@ final class SeoManagementController extends Controller
             }
         }
 
-        $data = SeoProfilePayload::validateForUpdate($input);
+        $data = SeoManagementInput::update($input);
         $profileModel = $this->profileModel($profile);
         $owner = $this->authorizeProfile(SeoAbility::Update, $profileModel);
-        $updated = $action->sync(SystemActor::Background, $owner, $data->toArray(), $profileModel->scope);
+        $updated = $action->sync(SystemActor::Background, $owner, $data, $profileModel->scope);
 
         return response()->json(['data' => $this->presenter->present($updated)->toArray()]);
     }
@@ -136,13 +130,13 @@ final class SeoManagementController extends Controller
         string $profile,
         SeoProfiles $action,
     ): JsonResponse {
-        $data = SeoDuplicateProfileData::validateAndCreate($request->all());
+        $data = SeoManagementInput::duplicate($request->all());
         $profileModel = $this->profileModel($profile);
-        $ownerAlias = $data->ownerAlias;
-        $target = $this->owners->resolve($ownerAlias, $data->normalizedOwnerId());
+        $ownerAlias = $data['ownerAlias'];
+        $target = $this->owners->resolve($ownerAlias, SeoModelIdentifier::normalize($data['ownerId']));
         $sourceOwner = $profileModel->seoable()->firstOrFail();
         $sourceOwnerAlias = $this->owners->aliasFor($sourceOwner);
-        $scope = SeoScope::normalize($data->scope);
+        $scope = SeoScope::normalize(($data['scope'] ?? null));
         $this->authorization->authorize(new SeoAuthorizationContext(actor: SystemActor::Background,
             ability: SeoAbility::Duplicate,
             profile: $profileModel,
@@ -156,7 +150,7 @@ final class SeoManagementController extends Controller
             $profile,
             $target,
             $scope,
-            $data->copyPaths ?? false,
+            $data['copyPaths'] ?? false,
         );
 
         return response()->json(['data' => $this->presenter->present($duplicate)->toArray()], 201);
@@ -170,13 +164,13 @@ final class SeoManagementController extends Controller
         string $profile,
         SeoProfiles $action,
     ): JsonResponse {
-        $data = SeoArchiveProfileData::validateAndCreate($request->all());
+        $data = SeoManagementInput::archive($request->all());
         $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Archive, $profileModel);
         $updated = $action->archive(SystemActor::Background,
             $profile,
-            $data->archived,
-            $data->expectedRevision,
+            $data['archived'],
+            $data['expected_revision'],
         );
 
         return response()->json(['data' => $this->presenter->present($updated)->toArray()]);
@@ -190,7 +184,7 @@ final class SeoManagementController extends Controller
         string $profile,
         SeoProfiles $action,
     ): JsonResponse {
-        $data = SeoRevisionData::validateAndCreate($request->all());
+        $data = SeoManagementInput::revision($request->all());
         $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Delete, $profileModel);
 
@@ -198,7 +192,7 @@ final class SeoManagementController extends Controller
             'data' => [
                 'deleted' => $action->delete(SystemActor::Background,
                     $profile,
-                    $data->expectedRevision,
+                    $data['expected_revision'],
                 ),
             ],
         ]);
@@ -212,14 +206,14 @@ final class SeoManagementController extends Controller
         string $profile,
         SeoReader $action,
     ): JsonResponse {
-        $query = SeoPreviewQueryData::validateAndCreate($request->query());
+        $query = SeoManagementInput::preview($request->query());
         $profileModel = $this->profileModel($profile);
         $this->authorizeProfile(SeoAbility::Preview, $profileModel);
 
         return response()->json([
             'data' => $action->resolve(SystemActor::Background,
                 $profileModel,
-                $query->locale,
+                $query['locale'] ?? null,
             ),
         ]);
     }
@@ -231,8 +225,8 @@ final class SeoManagementController extends Controller
         Request $request,
         SeoProfiles $action,
     ): JsonResponse {
-        $query = SeoScopeQueryData::validateAndCreate($request->query());
-        $scope = $query->scope;
+        $query = SeoManagementInput::status($request->query());
+        $scope = $query['scope'] ?? null;
         $this->authorization->authorize(new SeoAuthorizationContext(actor: SystemActor::Background,
             ability: SeoAbility::List,
             scope: $scope === null ? null : SeoScope::normalize($scope),
