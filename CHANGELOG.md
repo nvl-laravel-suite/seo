@@ -5,9 +5,17 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+## [7.0.2] - 2026-11-10
+
 ### Changed
 
 - Remove the obsolete Spatie Laravel Data development dependency. SEO test adapters now use native validation and sparse mutation arrays with explicit null and revision handling.
+
+<!-- NVL GENERATED CHANGES START -->
+### Changed
+
+- retire Spatie Data test dependency
+<!-- NVL GENERATED CHANGES END -->
 
 ## [7.0.1] - 2026-11-09
 
