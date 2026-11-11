@@ -347,7 +347,7 @@ final readonly class SeoReader
 
     public function get(Authenticatable|SystemActor $actor, SeoProfile|string $profile): SeoProfile
     {
-        $profileId = $profile instanceof SeoProfile ? $profile->id : $profile;
+        $profileId = $profile instanceof SeoProfile ? $profile->id : SeoModelIdentifier::uuid($profile, SeoProfile::class);
         $profile = SeoModelRegistry::profiles()
             ->with('translations')
             ->findOrFail($profileId);

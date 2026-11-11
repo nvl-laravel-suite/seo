@@ -510,6 +510,17 @@ it('publishes sitemap xml to immutable filesystem artifacts and clears them atom
         ->assertExitCode(Command::INVALID);
 });
 
+it('refuses a sitemap origin with a clear error when SEO declares no owned resources', function (): void {
+    Storage::fake('seo-artifacts');
+    config()->set('nvl-seo.sitemap.disk', 'seo-artifacts');
+
+    $this->artisan('nvl:seo:sitemap:warm', ['--origin' => 'https://a.seo.test'])
+        ->expectsOutputToContain('The --origin option requires owned SEO resources')
+        ->assertExitCode(Command::INVALID);
+
+    expect(Storage::disk('seo-artifacts')->allFiles())->toBe([]);
+});
+
 it('prefers localized redirects and falls back to locale-neutral redirects', function (): void {
     $action = app(SeoRedirects::class);
     $action->sync(SystemActor::Background, null, [

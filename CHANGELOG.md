@@ -5,6 +5,15 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- `nvl:seo:sitemap:warm --origin=…` reports a clear error when SEO declares no owned resources (including when `nvl/ownership` is not installed) instead of failing while resolving the public owner site runner.
+- `SeoRedirects::resolve` and `SeoRouteResolver::resolve` return no match for an incoming path that can never be stored (encoded space or separator, dot segment, malformed escape, query string) instead of throwing.
+- Unowned installations verify registered SEO hosts once per owner set and resource graph instead of re-normalising every host on each ownership check.
+- Configured profile and redirect model capabilities are validated on first use of the model registry instead of on every boot.
+- A malformed profile or redirect identifier is treated as not found on every database driver.
+- Scopes, structured-data types and identifiers, sitemap priorities and hreflang codes ending in a line break are rejected.
+
 ## [7.0.2] - 2026-11-10
 
 ### Changed

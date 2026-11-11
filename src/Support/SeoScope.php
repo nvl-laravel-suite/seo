@@ -73,7 +73,7 @@ final class SeoScope
         if (
             $scope === ''
             || mb_strlen($scope) > 100
-            || preg_match('/^[a-z0-9][a-z0-9._-]*$/', $scope) !== 1
+            || preg_match('/^[a-z0-9][a-z0-9._-]*$/D', $scope) !== 1
         ) {
             throw InvalidSeoMutationException::forField(
                 'scope',

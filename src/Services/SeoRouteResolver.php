@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Services;
 
+use InvalidArgumentException;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
 use Nvl\Seo\Support\SeoPath;
@@ -24,7 +25,11 @@ final class SeoRouteResolver
     ): ?SeoProfile {
         $scope = SeoScope::normalize($scope);
         $locale = (new LocaleCode($locale))->value;
-        $hash = SeoPath::hash($scope, $locale, $path);
+        try {
+            $hash = SeoPath::hash($scope, $locale, $path);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
 
         if ($hash === null) {
             return null;

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Nvl\Seo\Support;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 /**
@@ -29,6 +31,20 @@ final class SeoModelIdentifier
             throw new InvalidArgumentException(
                 'An SEO owner identifier may not exceed 255 characters.',
             );
+        }
+
+        return $identifier;
+    }
+
+    /**
+     * Treat a malformed package identifier as absent; PostgreSQL rejects a non-UUID value compared with a UUID key.
+     *
+     * @param  class-string<Model>  $model
+     */
+    public static function uuid(string $identifier, string $model): string
+    {
+        if (! Str::isUuid($identifier)) {
+            throw (new ModelNotFoundException)->setModel($model, [$identifier]);
         }
 
         return $identifier;

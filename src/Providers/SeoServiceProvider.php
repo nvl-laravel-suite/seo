@@ -95,8 +95,6 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
         SitemapRegistry $sitemaps,
         StructuredDataRegistry $structuredData,
     ): void {
-        SeoModelRegistry::profileClass();
-        SeoModelRegistry::redirectClass();
         (new OwnershipSeoResourceRegistrar)->register($this->app->make(OwnershipResourceRegistry::class));
         if ($this->app->bound(OwnershipAdoptionRegistry::class)) {
             $this->app->make(OwnershipAdoptionRegistry::class)->register('seo', SeoAdoptionAdapter::class);
@@ -116,7 +114,7 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
 
         $translationResources->register(
             key: 'seo.profiles',
-            modelClass: SeoModelRegistry::profileClass(),
+            modelClass: $this->app->make(SeoModelRegistry::class)->prepare()['profile'],
             label: 'SEO profiles',
             searchableColumns: ['seoable_type', 'seoable_id', 'scope'],
             displayColumns: ['seoable_type', 'seoable_id', 'scope', 'is_indexable'],

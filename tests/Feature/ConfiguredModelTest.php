@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
 use Nvl\Seo\Models\SeoRedirect;
+use Nvl\Seo\Services\SeoModelRegistry;
 use Nvl\Seo\Services\SeoProfiles;
 use Nvl\Seo\Services\SeoReader;
 use Nvl\Seo\Services\SeoRedirects;
@@ -97,12 +98,13 @@ it('profile replacement cannot leave fixed translation storage', function (): vo
     Relation::morphMap([], false);
     try {
         $this->refreshApplication();
+        SeoModelRegistry::profileClass();
     } finally {
         Relation::morphMap($morphMap, false);
     }
 });
 
-it('redirect replacement must preserve required casts', function (): void {
+it('redirect replacement must preserve required casts on first use of the model registry', function (): void {
     $this->redirectModel = UnsafeRedirectCasts::class;
     $this->expectException(OwnershipConfigurationInvalid::class);
     $this->expectExceptionMessage('required package casts');
@@ -110,6 +112,8 @@ it('redirect replacement must preserve required casts', function (): void {
     Relation::morphMap([], false);
     try {
         $this->refreshApplication();
+        expect(app()->isBooted())->toBeTrue();
+        SeoModelRegistry::redirects();
     } finally {
         Relation::morphMap($morphMap, false);
     }

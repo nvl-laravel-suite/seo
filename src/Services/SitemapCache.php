@@ -186,7 +186,7 @@ final readonly class SitemapCache
             return $version;
         }
 
-        if (is_string($version) && preg_match('/^[1-9][0-9]*$/', $version) === 1) {
+        if (is_string($version) && preg_match('/^[1-9][0-9]*$/D', $version) === 1) {
             return (int) $version;
         }
 

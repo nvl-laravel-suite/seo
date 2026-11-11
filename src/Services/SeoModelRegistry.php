@@ -42,13 +42,16 @@ final class SeoModelRegistry
         });
     }
 
-    /** Freeze both roots before native resource compilation.
+    /**
+     * Freeze both roots before native resource compilation; capabilities are validated on first use.
+     *
      * @internal
+     *
+     * @return array{profile: class-string<SeoProfile>, redirect: class-string<SeoRedirect>}
      */
-    public function prepare(): void
+    public function prepare(): array
     {
-        $this->profile->prepare();
-        $this->redirect->prepare();
+        return ['profile' => $this->profile->prepare(), 'redirect' => $this->redirect->prepare()];
     }
 
     /** @return class-string<SeoProfile> */

@@ -23,7 +23,7 @@ final readonly class RobotsGenerator
     {
         $userAgent = SeoConfiguration::string('nvl-seo.robots.user_agent', '*');
 
-        if (preg_match('/^(?:\*|[A-Za-z][A-Za-z0-9_-]*)$/', $userAgent) !== 1) {
+        if (preg_match('/^(?:\*|[A-Za-z][A-Za-z0-9_-]*)$/D', $userAgent) !== 1) {
             throw new LogicException('seo.robots.user_agent must be a valid crawler product token.');
         }
 

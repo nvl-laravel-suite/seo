@@ -19,6 +19,7 @@ use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\OwnerRegistry;
 use Nvl\Support\Ownership\Contracts\OwnershipBoundary;
 use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
+use Nvl\Support\Ownership\ValueObjects\OwnershipResourceDefinition;
 
 /**
  * Resolves explicitly registered owner aliases for HTTP and import boundaries.
@@ -39,6 +40,13 @@ final class SeoOwnerRegistry
      * @var array<string, string>|null
      */
     private ?array $morphAliases = null;
+
+    /**
+     * Owner declarations and resource graph for which unowned host compatibility was last verified.
+     *
+     * @var array{mixed, array<string, string>, array<string, OwnershipResourceDefinition>}|null
+     */
+    private ?array $verifiedUnownedHosts = null;
 
     /** Create the capability registry against the shared identity and tenancy boundaries. */
     public function __construct(
@@ -61,6 +69,25 @@ final class SeoOwnerRegistry
         $this->registered[$alias] = $model;
         $this->owners = null;
         $this->morphAliases = null;
+    }
+
+    /**
+     * Reject natively owned hosts of an unowned SEO graph, once per owner declaration set and resource graph.
+     *
+     * @internal
+     *
+     * @param  bool  $remember  False while providers are still booting and declarations can change.
+     */
+    public function assertUnownedHostsCompatible(bool $remember): void
+    {
+        $state = [$this->configuration->get('nvl-seo.owners', []), $this->registered, $this->ownershipResources->all()];
+        if ($this->verifiedUnownedHosts === $state) {
+            return;
+        }
+        foreach ($this->configured() as $class) {
+            SeoOwnership::assertCompatibleHost($class, false);
+        }
+        $this->verifiedUnownedHosts = $remember ? $state : null;
     }
 
     /**
@@ -208,7 +235,7 @@ final class SeoOwnerRegistry
                 $alias = $modelClass;
             }
             if (! is_string($alias)
-                || (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]*$/', $alias) !== 1 && ! is_a($alias, Model::class, true))
+                || (preg_match('/^[A-Za-z0-9][A-Za-z0-9_.-]*$/D', $alias) !== 1 && ! is_a($alias, Model::class, true))
                 || ! is_string($modelClass)) {
                 throw new InvalidArgumentException(
                     'Every seo.owners entry must use a safe alias and an Eloquent model class.',

@@ -177,7 +177,7 @@ final readonly class SeoProfiles
         ?string $scope = null,
         bool $copyPaths = false,
     ): SeoProfile {
-        $sourceId = $source instanceof SeoProfile ? $source->id : $source;
+        $sourceId = $source instanceof SeoProfile ? $source->id : SeoModelIdentifier::uuid($source, SeoProfile::class);
         $source = SeoModelRegistry::profiles()
             ->with('translations')
             ->findOrFail($sourceId);
@@ -232,7 +232,7 @@ final readonly class SeoProfiles
         bool $archived,
         int $expectedRevision,
     ): SeoProfile {
-        $profileId = $profile instanceof SeoProfile ? $profile->id : $profile;
+        $profileId = $profile instanceof SeoProfile ? $profile->id : SeoModelIdentifier::uuid($profile, SeoProfile::class);
 
         return SeoModelRegistry::newProfile()->getConnection()->transaction(function () use ($actor, $profileId, $archived, $expectedRevision): SeoProfile {
             $profile = SeoModelRegistry::profiles()
@@ -264,7 +264,7 @@ final readonly class SeoProfiles
 
     public function delete(Authenticatable|SystemActor $actor, SeoProfile|string $profile, ?int $expectedRevision = null): bool
     {
-        $profileId = $profile instanceof SeoProfile ? $profile->id : $profile;
+        $profileId = $profile instanceof SeoProfile ? $profile->id : SeoModelIdentifier::uuid($profile, SeoProfile::class);
 
         return SeoModelRegistry::newProfile()->getConnection()->transaction(function () use ($actor, $profileId, $expectedRevision): bool {
             $profile = SeoModelRegistry::profiles()

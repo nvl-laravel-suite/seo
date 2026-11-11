@@ -23,13 +23,13 @@ final readonly class StructuredDataNode
         public readonly ?string $id = null,
         public readonly array $properties = [],
     ) {
-        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9]*$/', $this->type) !== 1) {
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9]*$/D', $this->type) !== 1) {
             throw new InvalidArgumentException("Invalid schema.org type [{$this->type}].");
         }
 
         if ($this->id !== null
             && ! HttpUrl::isAbsolute($this->id)
-            && preg_match('/^(?:#|urn:)[^\s]+$/', $this->id) !== 1) {
+            && preg_match('/^(?:#|urn:)[^\s]+$/D', $this->id) !== 1) {
             throw new InvalidArgumentException(
                 'Structured-data node identifiers must be absolute HTTP URLs, fragments, or URNs.',
             );

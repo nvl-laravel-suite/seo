@@ -34,7 +34,7 @@ final readonly class SitemapEntry
 
         if (
             $this->priority !== null
-            && preg_match('/^(?:0(?:\.[0-9]+)?|1(?:\.0+)?)$/', $this->priority) !== 1
+            && preg_match('/^(?:0(?:\.[0-9]+)?|1(?:\.0+)?)$/D', $this->priority) !== 1
         ) {
             throw new InvalidArgumentException(
                 'A sitemap priority must use decimal notation between 0 and 1.',
@@ -43,7 +43,7 @@ final readonly class SitemapEntry
 
         foreach ($this->alternates as $locale => $url) {
             if (($locale !== 'x-default'
-                    && preg_match('/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/', $locale) !== 1)
+                    && preg_match('/^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/D', $locale) !== 1)
                 || ! HttpUrl::isCanonical($url)) {
                 throw new InvalidArgumentException(
                     'Every sitemap alternate requires a valid locale and an absolute fragment-free HTTP or HTTPS URL.',

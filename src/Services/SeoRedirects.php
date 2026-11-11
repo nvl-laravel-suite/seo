@@ -18,6 +18,7 @@ use Nvl\Seo\Models\SeoRedirect;
 use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\DatabaseConstraintViolation;
 use Nvl\Seo\Support\SeoAuthorizationContext;
+use Nvl\Seo\Support\SeoModelIdentifier;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoRedirectTarget;
 use Nvl\Seo\Support\SeoScope;
@@ -69,7 +70,7 @@ final readonly class SeoRedirects
             : $this->locales->assertSupported($data['locale']);
         $source = SeoPath::normalize($data['sourcePath']) ?? '/';
         $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::ManageRedirects, scope: $scope, redirectSource: $source, redirectLocale: $locale));
-        $redirectId = $redirect instanceof SeoRedirect ? $redirect->id : $redirect;
+        $redirectId = is_string($redirect) ? SeoModelIdentifier::uuid($redirect, SeoRedirect::class) : $redirect?->id;
 
         try {
             return SeoModelRegistry::newRedirect()->getConnection()->transaction(function () use (
@@ -221,7 +222,11 @@ final readonly class SeoRedirects
 
         $scope = SeoScope::normalize($scope);
         $locale = $locale === null ? null : $this->locales->assertSupported($locale);
-        $source = SeoPath::normalize($source) ?? '/';
+        try {
+            $source = SeoPath::normalize($source) ?? '/';
+        } catch (InvalidArgumentException) {
+            return null;
+        }
         $redirect = $this->redirects->findActive($scope, $locale, $source);
 
         if (! $redirect instanceof SeoRedirect) {

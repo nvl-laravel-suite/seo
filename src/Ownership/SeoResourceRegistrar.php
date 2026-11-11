@@ -31,8 +31,9 @@ final class SeoResourceRegistrar
         }
         $owned = $parents !== [];
         SeoOwnership::assertCompatibleHosts($owned);
-        $resources->register(new OwnershipResourceDefinition('seo.profiles', 'seo', SeoModelRegistry::profileClass(), $owned ? OwnershipDefinition::inherited('seoable') : OwnershipDefinition::unscoped(), parentResources: $parents, immutableFields: $owned ? ['scope'] : []));
+        $models = app(SeoModelRegistry::class)->prepare();
+        $resources->register(new OwnershipResourceDefinition('seo.profiles', 'seo', $models['profile'], $owned ? OwnershipDefinition::inherited('seoable') : OwnershipDefinition::unscoped(), parentResources: $parents, immutableFields: $owned ? ['scope'] : []));
         $resources->register(new OwnershipResourceDefinition('seo.translations', 'seo', SeoProfileTranslation::class, $owned ? OwnershipDefinition::inherited('profile') : OwnershipDefinition::unscoped(), parentResource: $owned ? 'seo.profiles' : null, immutableFields: $owned ? ['scope'] : []));
-        $resources->register(new OwnershipResourceDefinition('seo.redirects', 'seo', SeoModelRegistry::redirectClass(), $owned ? OwnershipDefinition::captured() : OwnershipDefinition::unscoped(), immutableFields: $owned ? ['scope'] : []));
+        $resources->register(new OwnershipResourceDefinition('seo.redirects', 'seo', $models['redirect'], $owned ? OwnershipDefinition::captured() : OwnershipDefinition::unscoped(), immutableFields: $owned ? ['scope'] : []));
     }
 }

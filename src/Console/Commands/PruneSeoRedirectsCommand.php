@@ -26,7 +26,7 @@ final class PruneSeoRedirectsCommand extends Command
         $days = $this->option('days');
 
         if (! is_string($days)
-            || preg_match('/^[1-9][0-9]*$/', (string) $days) !== 1) {
+            || preg_match('/^[1-9][0-9]*$/D', (string) $days) !== 1) {
             $this->components->error('The --days option must be a positive integer.');
 
             return self::INVALID;

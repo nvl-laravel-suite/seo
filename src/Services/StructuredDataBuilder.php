@@ -81,7 +81,7 @@ final class StructuredDataBuilder
     public function reference(string $id): array
     {
         if (! HttpUrl::isAbsolute($id)
-            && preg_match('/^(?:#|urn:)[^\s]+$/', $id) !== 1) {
+            && preg_match('/^(?:#|urn:)[^\s]+$/D', $id) !== 1) {
             throw new InvalidArgumentException(
                 'Structured-data references must use an absolute HTTP URL, fragment, or URN.',
             );

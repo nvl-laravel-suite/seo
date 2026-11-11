@@ -55,7 +55,7 @@ final class SeoPath
             static function (array $matches): string {
                 $character = chr((int) hexdec($matches[1]));
 
-                return preg_match('/^[A-Za-z0-9._~-]$/', $character) === 1
+                return preg_match('/^[A-Za-z0-9._~-]$/D', $character) === 1
                     ? $character
                     : '%'.strtoupper($matches[1]);
             },

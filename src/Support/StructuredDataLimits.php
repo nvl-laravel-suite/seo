@@ -108,13 +108,13 @@ final class StructuredDataLimits
         $type = $node['@type'] ?? null;
 
         if (is_string($type)) {
-            if (preg_match('/^[A-Za-z0-9][A-Za-z0-9]*$/', $type) !== 1) {
+            if (preg_match('/^[A-Za-z0-9][A-Za-z0-9]*$/D', $type) !== 1) {
                 return false;
             }
         } elseif (is_array($type) && array_is_list($type) && $type !== []) {
             foreach ($type as $candidate) {
                 if (! is_string($candidate)
-                    || preg_match('/^[A-Za-z0-9][A-Za-z0-9]*$/', $candidate) !== 1) {
+                    || preg_match('/^[A-Za-z0-9][A-Za-z0-9]*$/D', $candidate) !== 1) {
                     return false;
                 }
             }
@@ -127,7 +127,7 @@ final class StructuredDataLimits
         return $id === null
             || (is_string($id)
                 && (HttpUrl::isAbsolute($id)
-                    || preg_match('/^(?:#|urn:)[^\s]+$/', $id) === 1));
+                    || preg_match('/^(?:#|urn:)[^\s]+$/D', $id) === 1));
     }
 
     public static function assert(mixed $value): void

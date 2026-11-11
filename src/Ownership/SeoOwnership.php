@@ -37,9 +37,7 @@ final class SeoOwnership
     public static function assertCompatibleHosts(bool $owned): void
     {
         if (! $owned) {
-            foreach (app(SeoOwnerRegistry::class)->configured() as $class) {
-                self::assertCompatibleHost($class, false);
-            }
+            app(SeoOwnerRegistry::class)->assertUnownedHostsCompatible(app()->isBooted());
         }
     }
 

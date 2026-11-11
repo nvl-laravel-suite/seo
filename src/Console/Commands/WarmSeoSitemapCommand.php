@@ -30,18 +30,25 @@ final class WarmSeoSitemapCommand extends Command
     public function handle(SitemapGenerator $sitemaps, Container $container): int
     {
         $origin = $this->option('origin');
-        if (is_string($origin) && $origin !== '') {
-            return $container->make(PublicOwnerSiteRunner::class)->run(
-                $origin, fn (): int => $this->warm($sitemaps),
-            );
+        $origin = is_string($origin) && $origin !== '' ? $origin : null;
+
+        if (! SeoOwnership::declared()) {
+            if ($origin === null) {
+                return $this->warm($sitemaps);
+            }
+            $this->components->error('The --origin option requires owned SEO resources declared through nvl/ownership.');
+
+            return self::INVALID;
         }
-        if (SeoOwnership::declared()) {
+        if ($origin === null) {
             $this->components->error('Owned sitemap warming requires --origin and a verified public site resolver.');
 
             return self::INVALID;
         }
 
-        return $this->warm($sitemaps);
+        return $container->make(PublicOwnerSiteRunner::class)->run(
+            $origin, fn (): int => $this->warm($sitemaps),
+        );
     }
 
     /** Publish under the already admitted site and owner resource graph. */

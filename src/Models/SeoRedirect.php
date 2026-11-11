@@ -125,7 +125,7 @@ class SeoRedirect extends Model implements Ownable
         $locale = $locale === null ? '*' : (new LocaleCode($locale))->value;
         $scope = mb_strtolower(trim($scope));
         if ($scope === '' || mb_strlen($scope) > 100
-            || preg_match('/^[a-z0-9][a-z0-9._-]*$/', $scope) !== 1) {
+            || preg_match('/^[a-z0-9][a-z0-9._-]*$/D', $scope) !== 1) {
             throw new \InvalidArgumentException('An SEO scope must use its canonical stored form.');
         }
 

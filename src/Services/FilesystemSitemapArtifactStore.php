@@ -86,7 +86,7 @@ final readonly class FilesystemSitemapArtifactStore implements SitemapArtifactSt
      */
     private function path(string $namespace, string $artifact): string
     {
-        if (preg_match('/^(?:index|chunk-[1-9][0-9]*)\.xml$/', $artifact) !== 1) {
+        if (preg_match('/^(?:index|chunk-[1-9][0-9]*)\.xml$/D', $artifact) !== 1) {
             throw new LogicException("Sitemap artifact name [{$artifact}] is invalid.");
         }
 
@@ -114,7 +114,7 @@ final readonly class FilesystemSitemapArtifactStore implements SitemapArtifactSt
      */
     private function validatedNamespace(string $namespace): string
     {
-        if (preg_match('/^[a-f0-9]{64}$/', $namespace) !== 1) {
+        if (preg_match('/^[a-f0-9]{64}$/D', $namespace) !== 1) {
             throw new LogicException("Sitemap artifact namespace [{$namespace}] is invalid.");
         }
 
