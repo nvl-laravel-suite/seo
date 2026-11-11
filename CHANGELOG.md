@@ -5,6 +5,8 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+## [7.0.3] - 2026-11-11
+
 ### Fixed
 
 - `nvl:seo:sitemap:warm --origin=…` reports a clear error when SEO declares no owned resources (including when `nvl/ownership` is not installed) instead of failing while resolving the public owner site runner.
@@ -13,6 +15,12 @@ All notable changes to `nvl/seo` are documented here.
 - Configured profile and redirect model capabilities are validated on first use of the model registry instead of on every boot.
 - A malformed profile or redirect identifier is treated as not found on every database driver.
 - Scopes, structured-data types and identifiers, sitemap priorities and hreflang codes ending in a line break are rejected.
+
+<!-- NVL GENERATED CHANGES START -->
+### Changed
+
+- harden owner reads and review handling
+<!-- NVL GENERATED CHANGES END -->
 
 ## [7.0.2] - 2026-11-10
 
