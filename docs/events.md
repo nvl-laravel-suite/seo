@@ -60,9 +60,9 @@ Producers and exact scheduling connection expressions (variables are resolved in
 
 | Producer | Source connection |
 | --- | --- |
-| [services/ArchiveSeoProfileoperation.php](../src/services/ArchiveSeoProfileoperation.php) | `$profile->getConnection()` |
-| [services/DeleteSeoProfileoperation.php](../src/services/DeleteSeoProfileoperation.php) | `$profile->getConnection()` |
-| [services/SyncSeoProfileoperation.php](../src/services/SyncSeoProfileoperation.php) | `$profile->getConnection()` |
+| [Services/SeoProfiles.php](../src/Services/SeoProfiles.php) (`archive()`) | `$profile->getConnection()` |
+| [Services/SeoProfiles.php](../src/Services/SeoProfiles.php) (`delete()`) | `$profile->getConnection()` |
+| [Services/SeoProfiles.php](../src/Services/SeoProfiles.php) (`sync()`) | `$profile->getConnection()` |
 
 ## Deferred acceptance checks
 

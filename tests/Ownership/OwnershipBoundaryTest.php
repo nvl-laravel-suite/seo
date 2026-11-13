@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Str;
+use Nvl\Ownership\Tests\Fixtures\OptsIntoAdoptedSchemaReuse;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoRedirect;
@@ -17,6 +18,8 @@ use Nvl\Support\Ownership\Contracts\OwnershipWriter;
 use Nvl\Support\Ownership\Exceptions\OwnershipConfigurationInvalid;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 use Nvl\Support\Ownership\Services\OwnershipResourceRegistry;
+
+uses(OptsIntoAdoptedSchemaReuse::class);
 
 it('isolates duplicate profile paths redirects and canonical parents by owner', function (): void {
     $profiles = [];
@@ -47,7 +50,7 @@ it('keeps ownership redirect locks independent from released tenant lock rows', 
     $this->owned(7, function (): void {
         expect(app(SeoRedirects::class)->sync(SystemActor::Background, null, ['sourcePath' => '/legacy-lock', 'target' => '/target'])->source_path)->toBe('/legacy-lock');
     });
-});
+})->group('fresh-adoption');
 
 it('enforces canonical host scope for raw polymorphic profile writes', function (): void {
     $hosts = [];

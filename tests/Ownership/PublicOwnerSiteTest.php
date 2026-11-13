@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Nvl\Ownership\Contracts\OwnerSiteResolver;
 use Nvl\Ownership\Services\OwnerIdentityResolver;
 use Nvl\Ownership\Services\PublicOwnerSiteRunner;
+use Nvl\Ownership\Tests\Fixtures\OptsIntoAdoptedSchemaReuse;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Services\SeoProfiles;
@@ -20,6 +21,8 @@ use Nvl\Support\Enums\SystemActor;
 use Nvl\Support\Ownership\Contracts\OwnershipWriter;
 use Nvl\Support\Ownership\Exceptions\OwnershipViolation;
 use Nvl\Support\Ownership\ValueObjects\VerifiedOwnerSiteContext;
+
+uses(OptsIntoAdoptedSchemaReuse::class);
 
 beforeEach(function (): void {
     config(['nvl-seo.routes.enabled' => true]);

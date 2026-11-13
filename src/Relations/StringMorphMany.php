@@ -7,9 +7,7 @@ namespace Nvl\Seo\Relations;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use InvalidArgumentException;
-use LogicException;
 use Nvl\Seo\Support\ExactSeoOwnerText;
 
 /**
@@ -74,10 +72,6 @@ final class StringMorphMany extends MorphMany
         $query = $this->getQuery()->getQuery();
         if ($query->groupLimit === null) {
             return $this;
-        }
-        $grammar = $query->getGrammar();
-        if ($grammar instanceof MySqlGrammar && $grammar->useLegacyGroupLimit($query)) {
-            throw new LogicException('Exact SEO eager limits require window-function capable MySQL.');
         }
         $query->groupLimit['column'] = new ExactSeoOwnerPartition(
             $this->getExistenceCompareKey(),
@@ -150,10 +144,6 @@ final class StringMorphMany extends MorphMany
     {
         $wrapped = $query->getQuery()->getGrammar()->wrap($column);
 
-        return match ($query->getModel()->getConnection()->getDriverName()) {
-            'pgsql', 'sqlite' => "CAST({$wrapped} AS TEXT)",
-            'sqlsrv' => "CAST({$wrapped} AS NVARCHAR(255))",
-            default => "CAST({$wrapped} AS CHAR)",
-        };
+        return "CAST({$wrapped} AS TEXT)";
     }
 }

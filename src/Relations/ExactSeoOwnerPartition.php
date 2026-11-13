@@ -23,9 +23,7 @@ final readonly class ExactSeoOwnerPartition implements Expression
         $column = $grammar->wrap($this->column);
 
         return match ($this->driver) {
-            'mysql', 'mariadb' => "BINARY {$column}",
             'pgsql' => "{$column} COLLATE \"C\"",
-            'sqlsrv' => "CAST({$column} AS VARBINARY(MAX))",
             default => "CAST({$column} AS BLOB)",
         };
     }

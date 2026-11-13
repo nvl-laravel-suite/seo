@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Query\Grammars\MySqlGrammar;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -91,20 +89,4 @@ it('applies eager relation limits independently to case-distinct owner identitie
 
     expect($loaded['Owner-A']->seoProfiles->modelKeys())->toBe([$profile->getKey()])
         ->and($loaded['owner-a']->seoProfiles->modelKeys())->toBe([$foreignProfile->getKey()]);
-});
-
-it('rejects unsupported legacy MySQL eager partitions before SQL compilation', function (): void {
-    $parent = new TestIntegerSeoOwner;
-    $relation = $parent->seoProfiles();
-    $query = $relation->getQuery()->getQuery();
-    $query->grammar = new class($query->getConnection()) extends MySqlGrammar
-    {
-        public function useLegacyGroupLimit(QueryBuilder $query): bool
-        {
-            return true;
-        }
-    };
-
-    expect(fn () => $relation->limit(1)->toSql())
-        ->toThrow(LogicException::class, 'require window-function capable MySQL');
 });

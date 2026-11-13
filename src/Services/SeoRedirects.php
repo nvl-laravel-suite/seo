@@ -7,7 +7,6 @@ namespace Nvl\Seo\Services;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Definitions\Tables\SeoTables;
@@ -157,10 +156,16 @@ final readonly class SeoRedirects
                 return $model->refresh();
             });
         } catch (QueryException $exception) {
+            $redirectModel = SeoModelRegistry::newRedirect();
+            $redirectLogicalTable = $redirectModel->getTable();
+            $redirectTable = $redirectModel->getConnection()->getTablePrefix().$redirectLogicalTable;
             if (DatabaseConstraintViolation::matches($exception, [
                 'seo_redirects_source_hash_unique',
                 'seo_redirects_tenant_source_hash_unique',
+                'seo_owned_'.substr(hash('sha256', $redirectLogicalTable.'source_hash'), 0, 24),
                 'seo_redirects.source_hash',
+                "{$redirectTable}.source_hash",
+                "{$redirectTable}.owner_scope_key, {$redirectTable}.source_hash",
             ])) {
                 throw StaleSeoRedirectException::forRedirect(
                     $redirectId ?? SeoRedirect::sourceHash($scope, $locale, $source),
@@ -234,8 +239,9 @@ final readonly class SeoRedirects
         }
 
         if ((bool) config('nvl-seo.redirects.record_hits', true)) {
+            $redirectConnection = (SeoModelRegistry::newRedirect())->getConnection();
             SeoModelRegistry::redirects()->whereKey($redirect->id)->update([
-                'hit_count' => DB::raw('hit_count + 1'),
+                'hit_count' => $redirectConnection->raw('hit_count + 1'),
                 'last_hit_at' => now(),
             ]);
         }

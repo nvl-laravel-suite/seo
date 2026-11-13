@@ -7,13 +7,13 @@ namespace Nvl\Seo\Services;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Container\Container;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\ConnectionInterface;
 use InvalidArgumentException;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImageResolver;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Definitions\Tables\SeoTables;
+use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Support\HttpUrl;
 use Nvl\Seo\Support\SeoScope;
 use Throwable;
@@ -57,14 +57,40 @@ final readonly class SeoDoctor
     }
 
     /**
+     * Safely resolve whether SEO ownership is declared without aborting schema diagnostics on invalid owner configuration.
+     */
+    private function ownershipDeclared(): bool
+    {
+        try {
+            return SeoOwnership::declared();
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /**
      * Inspect required tables, columns, identifier types, and indexes.
      *
      * @return list<array{key:string,severity:string,passed:bool,message:string}>
      */
     private function schemaChecks(): array
     {
+        $owned = $this->ownershipDeclared();
+        $profilesTable = SeoTables::get(SeoTables::Profiles);
+        $i18nTable = SeoTables::get(SeoTables::I18n);
+        $redirectsTable = SeoTables::get(SeoTables::Redirects);
+        $profileUniqueIndex = $owned
+            ? 'seo_owned_'.substr(hash('sha256', $profilesTable.'scope,seoable_type,seoable_id'), 0, 24)
+            : 'seo_profiles_scope_owner_unique';
+        $i18nRouteUniqueIndex = $owned
+            ? 'seo_owned_'.substr(hash('sha256', $i18nTable.'scope,locale,path_hash'), 0, 24)
+            : 'seo_profiles_i18n_route_unique';
+        $redirectSourceUniqueIndex = $owned
+            ? 'seo_owned_'.substr(hash('sha256', $redirectsTable.'source_hash'), 0, 24)
+            : 'seo_redirects_source_hash_unique';
+
         $tables = [
-            SeoTables::get(SeoTables::Profiles) => [
+            $profilesTable => [
                 'columns' => [
                     'id', 'scope', 'seoable_type', 'seoable_id', 'revision',
                     'status', 'archived_at', 'is_indexable', 'is_followable',
@@ -72,14 +98,15 @@ final readonly class SeoDoctor
                     'sitemap_included', 'sitemap_priority',
                     'sitemap_change_frequency', 'metadata', 'created_at',
                     'updated_at',
+                    ...($owned ? ['owner_scope_key'] : []),
                 ],
                 'indexes' => [
-                    'seo_profiles_scope_owner_unique' => true,
+                    $profileUniqueIndex => true,
                     'seo_profiles_owner_index' => false,
                     'seo_profiles_sitemap_scan_index' => false,
                 ],
             ],
-            SeoTables::get(SeoTables::I18n) => [
+            $i18nTable => [
                 'columns' => [
                     'id', 'seo_profile_id', 'scope', 'locale', 'path',
                     'path_hash', 'title', 'description', 'canonical_url',
@@ -87,21 +114,23 @@ final readonly class SeoDoctor
                     'open_graph_title', 'open_graph_description',
                     'twitter_title', 'twitter_description', 'twitter_card',
                     'structured_data', 'metadata', 'created_at', 'updated_at',
+                    ...($owned ? ['owner_scope_key'] : []),
                 ],
                 'indexes' => [
                     'seo_profiles_i18n_owner_locale_unique' => true,
-                    'seo_profiles_i18n_route_unique' => true,
+                    $i18nRouteUniqueIndex => true,
                 ],
             ],
-            SeoTables::get(SeoTables::Redirects) => [
+            $redirectsTable => [
                 'columns' => [
                     'id', 'scope', 'locale', 'source_path', 'source_hash',
                     'target', 'status_code', 'revision', 'is_active',
                     'expires_at', 'hit_count', 'last_hit_at', 'metadata',
                     'created_at', 'updated_at', 'deleted_at',
+                    ...($owned ? ['owner_scope_key'] : []),
                 ],
                 'indexes' => [
-                    'seo_redirects_source_hash_unique' => true,
+                    $redirectSourceUniqueIndex => true,
                 ],
             ],
             SeoTables::get(SeoTables::RedirectLocks) => [
@@ -110,11 +139,35 @@ final readonly class SeoDoctor
             ],
         ];
 
+        if ($owned) {
+            $tables[SeoTables::get(SeoTables::OwnerRedirectLocks)] = [
+                'columns' => ['name'],
+                'indexes' => [],
+            ];
+        }
+
         $checks = [];
+
+        try {
+            $connection = SeoModelRegistry::newProfile()->getConnection();
+        } catch (Throwable $exception) {
+            foreach (array_keys($tables) as $table) {
+                $checks[] = [
+                    'key' => "schema.table.{$table}",
+                    'severity' => 'error',
+                    'passed' => false,
+                    'message' => 'The SEO database is unavailable: '.$exception->getMessage(),
+                ];
+            }
+
+            return $checks;
+        }
+
+        $schema = $connection->getSchemaBuilder();
 
         foreach ($tables as $table => $requirements) {
             try {
-                $exists = Schema::hasTable($table);
+                $exists = $this->probe($connection, static fn (): bool => $schema->hasTable($table));
             } catch (Throwable $exception) {
                 $checks[] = [
                     'key' => "schema.table.{$table}",
@@ -137,10 +190,20 @@ final readonly class SeoDoctor
                 continue;
             }
 
-            $missing = array_values(array_filter(
-                $requirements['columns'],
-                static fn (string $column): bool => ! Schema::hasColumn($table, $column),
-            ));
+            try {
+                $existingColumns = $this->probe($connection, static fn (): array => $schema->getColumnListing($table));
+            } catch (Throwable $exception) {
+                $checks[] = [
+                    'key' => "schema.columns.{$table}",
+                    'severity' => 'error',
+                    'passed' => false,
+                    'message' => 'Could not inspect columns: '.$exception->getMessage(),
+                ];
+
+                continue;
+            }
+
+            $missing = array_values(array_diff($requirements['columns'], $existingColumns));
             $checks[] = [
                 'key' => "schema.columns.{$table}",
                 'severity' => 'error',
@@ -150,24 +213,24 @@ final readonly class SeoDoctor
                     : 'Missing columns: '.implode(', ', $missing).'.',
             ];
 
-            if (! Schema::hasColumn($table, 'id')) {
+            if (! in_array('id', $existingColumns, true)) {
                 continue;
             }
 
-            $idType = Schema::getColumnType($table, 'id');
+            $idType = $this->probe($connection, static fn (): string => $schema->getColumnType($table, 'id'));
             $checks[] = [
                 'key' => "schema.id-type.{$table}",
                 'severity' => 'error',
                 'passed' => in_array($idType, ['uuid', 'guid', 'char', 'varchar', 'string'], true),
                 'message' => "Identifier column on [{$table}] uses [{$idType}].",
             ];
-            $indexes = collect(Schema::getIndexes($table));
+            $indexes = collect($this->probe($connection, static fn (): array => $schema->getIndexes($table)));
 
             foreach ($requirements['indexes'] as $name => $unique) {
                 $index = null;
 
                 foreach ($indexes as $candidate) {
-                    if (is_array($candidate) && ($candidate['name'] ?? null) === $name) {
+                    if ($candidate['name'] === $name) {
                         $index = $candidate;
 
                         break;
@@ -177,16 +240,16 @@ final readonly class SeoDoctor
                     'key' => "schema.index.{$name}",
                     'severity' => 'error',
                     'passed' => is_array($index)
-                        && (! $unique || ($index['unique'] ?? false) === true),
+                        && (! $unique || $index['unique'] === true),
                     'message' => is_array($index)
                         ? "Index [{$name}] exists."
                         : "Index [{$name}] is missing.",
                 ];
             }
 
-            if ($table === SeoTables::get(SeoTables::Redirects)) {
+            if ($table === $redirectsTable) {
                 $targetIndexExists = $indexes->contains(
-                    static fn (array $index): bool => ($index['name'] ?? null)
+                    static fn (array $index): bool => $index['name']
                         === 'seo_redirects_target_index',
                 );
                 $checks[] = [
@@ -198,12 +261,15 @@ final readonly class SeoDoctor
                         : 'No non-portable redirect target TEXT index exists.',
                 ];
 
-                if (Schema::hasColumn($table, 'source_hash')) {
-                    $invalidHashesExist = DB::table($table)
-                        ->whereNull('source_hash')
-                        ->orWhere('source_hash', '')
-                        ->orWhereRaw('LENGTH(source_hash) <> 64')
-                        ->exists();
+                if (in_array('source_hash', $existingColumns, true)) {
+                    $invalidHashesExist = $this->probe(
+                        $connection,
+                        static fn (): bool => $connection->table($table)
+                            ->whereNull('source_hash')
+                            ->orWhere('source_hash', '')
+                            ->orWhereRaw('LENGTH(source_hash) <> 64')
+                            ->exists(),
+                    );
                     $checks[] = [
                         'key' => 'schema.redirect-source-hashes',
                         'severity' => 'error',
@@ -212,12 +278,18 @@ final readonly class SeoDoctor
                             ? 'Redirect source hashes contain null, empty, or invalid-width values.'
                             : 'Redirect source hashes use the required fixed-width identity.',
                     ];
-                    $duplicatesExist = DB::table($table)
-                        ->select('source_hash')
-                        ->whereNotNull('source_hash')
-                        ->groupBy('source_hash')
-                        ->havingRaw('COUNT(*) > 1')
-                        ->exists();
+                    $duplicateColumns = $owned && in_array('owner_scope_key', $existingColumns, true)
+                        ? ['owner_scope_key', 'source_hash']
+                        : ['source_hash'];
+                    $duplicatesExist = $this->probe(
+                        $connection,
+                        static fn (): bool => $connection->table($table)
+                            ->select($duplicateColumns)
+                            ->whereNotNull('source_hash')
+                            ->groupBy($duplicateColumns)
+                            ->havingRaw('COUNT(*) > 1')
+                            ->exists(),
+                    );
                     $checks[] = [
                         'key' => 'schema.redirect-duplicate-identities',
                         'severity' => 'error',
@@ -229,13 +301,16 @@ final readonly class SeoDoctor
                 }
             }
 
-            if ($table === SeoTables::get(SeoTables::Profiles)
-                && Schema::hasColumn($table, 'revision')
-                && Schema::hasColumn($table, 'status')) {
-                $invalidProfilesExist = DB::table($table)
-                    ->where('revision', '<', 1)
-                    ->orWhereNotIn('status', ['active', 'archived'])
-                    ->exists();
+            if ($table === $profilesTable
+                && in_array('revision', $existingColumns, true)
+                && in_array('status', $existingColumns, true)) {
+                $invalidProfilesExist = $this->probe(
+                    $connection,
+                    static fn (): bool => $connection->table($table)
+                        ->where('revision', '<', 1)
+                        ->orWhereNotIn('status', ['active', 'archived'])
+                        ->exists(),
+                );
                 $checks[] = [
                     'key' => 'schema.profile-row-integrity',
                     'severity' => 'error',
@@ -248,6 +323,21 @@ final readonly class SeoDoctor
         }
 
         return $checks;
+    }
+
+    /**
+     * Execute a read-only database probe inside a savepoint when an outer transaction is active.
+     *
+     * @template TResult
+     *
+     * @param  callable(): TResult  $operation
+     * @return TResult
+     */
+    private function probe(ConnectionInterface $connection, callable $operation): mixed
+    {
+        return $connection->transactionLevel() > 0
+            ? $connection->transaction(static fn () => $operation())
+            : $operation();
     }
 
     /**
@@ -326,15 +416,21 @@ final readonly class SeoDoctor
                 $registeredMorphTypes[] = (new $modelClass)->getMorphClass();
             }
 
-            $storedMorphTypes = Schema::hasTable(SeoTables::get(SeoTables::Profiles))
-                ? DB::table(SeoTables::get(SeoTables::Profiles))
-                    ->distinct()
-                    ->orderBy('seoable_type')
-                    ->pluck('seoable_type')
-                    ->filter(static fn (mixed $value): bool => is_string($value))
-                    ->values()
-                    ->all()
-                : [];
+            $profilesTable = SeoTables::get(SeoTables::Profiles);
+            $connection = SeoModelRegistry::newProfile()->getConnection();
+            $schema = $connection->getSchemaBuilder();
+            $storedMorphTypes = $this->probe(
+                $connection,
+                static fn (): array => $schema->hasTable($profilesTable) && $schema->hasColumn($profilesTable, 'seoable_type')
+                    ? $connection->table($profilesTable)
+                        ->distinct()
+                        ->orderBy('seoable_type')
+                        ->pluck('seoable_type')
+                        ->filter(static fn (mixed $value): bool => is_string($value))
+                        ->values()
+                        ->all()
+                    : [],
+            );
             $missing = array_values(array_diff($storedMorphTypes, $registeredMorphTypes));
 
             return [

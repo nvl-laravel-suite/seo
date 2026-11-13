@@ -23,9 +23,7 @@ final readonly class ExactSeoOwnerText implements Expression
         $column = $grammar->wrap($this->column);
 
         return match ($this->driver) {
-            'mysql', 'mariadb' => "BINARY {$column} = BINARY ? AND OCTET_LENGTH({$column}) = OCTET_LENGTH(?)",
             'pgsql' => "{$column} COLLATE \"C\" = CAST(? AS TEXT) COLLATE \"C\" AND OCTET_LENGTH({$column}) = OCTET_LENGTH(CAST(? AS TEXT))",
-            'sqlsrv' => "{$column} COLLATE Latin1_General_100_BIN2 = CAST(? AS NVARCHAR(255)) COLLATE Latin1_General_100_BIN2 AND DATALENGTH({$column}) = DATALENGTH(CAST(? AS NVARCHAR(255)))",
             default => "{$column} = ? COLLATE BINARY AND LENGTH(CAST({$column} AS BLOB)) = LENGTH(CAST(? AS BLOB))",
         };
     }

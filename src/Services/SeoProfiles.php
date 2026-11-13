@@ -12,6 +12,7 @@ use InvalidArgumentException;
 use LogicException;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImportSource;
+use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Enums\SeoAbility;
 use Nvl\Seo\Enums\SitemapChangeFrequency;
 use Nvl\Seo\Events\SeoProfileChanged;
@@ -130,20 +131,29 @@ final readonly class SeoProfiles
                 return $profile;
             });
         } catch (QueryException $exception) {
+            $profileModel = SeoModelRegistry::newProfile();
+            $prefix = $profileModel->getConnection()->getTablePrefix();
+            $i18nLogicalTable = SeoTables::get(SeoTables::I18n);
+            $i18nTable = $prefix.$i18nLogicalTable;
             if (DatabaseConstraintViolation::matches($exception, [
                 'seo_profiles_i18n_route_unique',
                 'seo_i18n_tenant_route_unique',
+                'seo_owned_'.substr(hash('sha256', $i18nLogicalTable.'scope,locale,path_hash'), 0, 24),
                 'seo_profiles_i18n.scope, seo_profiles_i18n.locale, seo_profiles_i18n.path_hash',
+                "{$i18nTable}.scope, {$i18nTable}.locale, {$i18nTable}.path_hash",
+                "{$i18nTable}.owner_scope_key, {$i18nTable}.scope, {$i18nTable}.locale, {$i18nTable}.path_hash",
             ])) {
                 throw SeoPathConflictException::concurrent($scope, $exception);
             }
 
-            $profileModel = SeoModelRegistry::newProfile();
-            $profileTable = $profileModel->getConnection()->getTablePrefix().$profileModel->getTable();
+            $profileLogicalTable = $profileModel->getTable();
+            $profileTable = $prefix.$profileLogicalTable;
             if (DatabaseConstraintViolation::matches($exception, [
                 'seo_profiles_scope_owner_unique',
                 'seo_profiles_tenant_scope_owner_unique',
+                'seo_owned_'.substr(hash('sha256', $profileLogicalTable.'scope,seoable_type,seoable_id'), 0, 24),
                 "{$profileTable}.scope, {$profileTable}.seoable_type, {$profileTable}.seoable_id",
+                "{$profileTable}.owner_scope_key, {$profileTable}.scope, {$profileTable}.seoable_type, {$profileTable}.seoable_id",
             ])) {
                 throw StaleSeoProfileException::forProfile('new', $exception);
             }
@@ -238,7 +248,7 @@ final readonly class SeoProfiles
             $profile = SeoModelRegistry::profiles()
                 ->lockForUpdate()
                 ->findOrFail($profileId);
-            $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::Archive, profile: $profile, owner: $profile->seoable()->firstOrFail(), scope: $profile->scope));
+            $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::Archive, profile: $profile, owner: $profile->seoable()->withTrashed()->firstOrFail(), scope: $profile->scope));
 
             if ($profile->revision !== $expectedRevision) {
                 throw StaleSeoProfileException::forProfile($profile->id);

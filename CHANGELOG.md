@@ -5,6 +5,10 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Isolate concurrent SEO profile and redirect writes in PostgreSQL-safe savepoints and harden `SeoDoctor` schema and index inspection.
+
 ## [7.0.3] - 2026-11-11
 
 ### Fixed

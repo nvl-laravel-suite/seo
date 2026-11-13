@@ -87,7 +87,6 @@ abstract class TestCase extends Orchestra
         $driver = Schema::getConnection()->getDriverName();
         Schema::create('seo_test_string_owners', function (Blueprint $table) use ($driver): void {
             $table->string('id')->collation(match ($driver) {
-                'mysql', 'mariadb' => 'utf8mb4_bin',
                 'pgsql' => 'C',
                 default => 'BINARY',
             })->primary();
