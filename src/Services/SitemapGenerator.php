@@ -7,6 +7,7 @@ namespace Nvl\Seo\Services;
 use Closure;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Support\Facades\DB;
 use LogicException;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
 use Nvl\Seo\Ownership\SeoOwnership;
@@ -53,7 +54,7 @@ final readonly class SitemapGenerator
     {
         $scope = SeoScope::normalize($scope);
 
-        if ($this->cacheSeconds() === 0) {
+        if (! $this->usesCache()) {
             $firstChunk = null;
             $artifacts = $this->buildArtifacts(
                 $scope,
@@ -79,7 +80,7 @@ final readonly class SitemapGenerator
     {
         $scope = SeoScope::normalize($scope);
 
-        if ($this->cacheSeconds() === 0) {
+        if (! $this->usesCache()) {
             if ($chunk < 1) {
                 throw new OutOfBoundsException("Sitemap chunk [{$chunk}] does not exist.");
             }
@@ -114,7 +115,7 @@ final readonly class SitemapGenerator
     {
         $scope = SeoScope::normalize($scope);
 
-        if ($this->cacheSeconds() === 0) {
+        if (! $this->usesCache()) {
             return $this->buildArtifacts(
                 $scope,
                 static function (int $chunk, string $xml): void {},
@@ -479,6 +480,22 @@ final readonly class SitemapGenerator
     private function cacheKey(string $key, string $suffix): string
     {
         return $key.':'.$suffix;
+    }
+
+    /** Keep uncommitted profile and registered-source reads out of shared artifacts. */
+    private function usesCache(): bool
+    {
+        if ($this->cacheSeconds() === 0) {
+            return false;
+        }
+
+        foreach (DB::getConnections() as $connection) {
+            if ($connection->transactionLevel() > 0) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

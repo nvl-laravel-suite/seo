@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Tests;
 
+use Illuminate\Database\DatabaseTransactionsManager;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -24,6 +25,16 @@ use Orchestra\Testbench\TestCase as Orchestra;
 abstract class TestCase extends Orchestra
 {
     use RefreshDatabase;
+
+    /** Commit fixture setup so cache publication exercises real outer transaction boundaries. */
+    protected function commitDatabaseFixture(): void
+    {
+        $connection = $this->app['db']->connection();
+        $this->assertSame(1, $connection->transactionLevel());
+        $connection->commit();
+        $this->app->instance('db.transactions', $transactions = new DatabaseTransactionsManager);
+        $connection->setTransactionManager($transactions);
+    }
 
     /**
      * @return list<class-string>

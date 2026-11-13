@@ -5,6 +5,10 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Generate sitemaps without shared cache or artifact publication while a resolved database connection has an active transaction, keeping rolled-back profile and registered-source URLs out of later public responses.
+
 ## [7.0.4] - 2026-11-13
 
 ### Fixed

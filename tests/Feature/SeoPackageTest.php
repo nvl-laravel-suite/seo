@@ -745,6 +745,7 @@ it('requires SEO domain actions for centralized translation mutations', function
 });
 
 it('caches sitemap builds, returns etags, and rejects duplicate source keys', function (): void {
+    $this->commitDatabaseFixture();
     $source = new class implements SitemapSource
     {
         public int $scans = 0;

@@ -8,6 +8,7 @@ use Illuminate\Cache\ApcWrapper;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Console\Command;
+use Illuminate\Database\Connection;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Event;
@@ -227,6 +228,7 @@ it('enforces sitemap path scope for same-origin source entries', function (): vo
 });
 
 it('requires atomic lock support before generating cached sitemaps', function (): void {
+    $this->commitDatabaseFixture();
     $cache = new CacheRepository(new ApcStore(new class extends ApcWrapper
     {
         /**
@@ -253,6 +255,7 @@ it('requires atomic lock support before generating cached sitemaps', function ()
 });
 
 it('self heals cached sitemap manifests whose published artifact disappeared', function (): void {
+    $this->commitDatabaseFixture();
     Storage::fake('seo-healing');
     config()->set('nvl-seo.sitemap.disk', 'seo-healing');
     $cache = app(SitemapCache::class);
@@ -273,6 +276,120 @@ it('self heals cached sitemap manifests whose published artifact disappeared', f
         ->and($recoveredNamespace)->not->toBe($originalNamespace)
         ->and(Storage::disk('seo-healing')->exists($recoveredArtifact))->toBeTrue();
 });
+
+it('keeps transactional sitemap reads out of shared artifacts on the actual profile connection', function (string $operation): void {
+    $this->commitDatabaseFixture();
+    Storage::fake('seo-transaction');
+    config()->set('nvl-seo.sitemap.disk', 'seo-transaction');
+    $owner = TestSeoOwner::query()->create(['name' => 'Uncommitted sitemap owner']);
+    $connection = (new SeoProfile)->getConnection();
+    $generator = app(SitemapGenerator::class);
+    $connection->beginTransaction();
+
+    try {
+        app(SeoProfiles::class)->sync(SystemActor::Background, $owner, [
+            'translations' => ['en' => ['path' => '/rolled-back-profile']],
+        ]);
+        config()->set('nvl-seo.connection', $connection->getName());
+        config()->set('database.connections.seo_unrelated_default', $connection->getConfig());
+        DB::setDefaultConnection('seo_unrelated_default');
+        expect(DB::connection()->transactionLevel())->toBe(0);
+
+        $result = match ($operation) {
+            'generate' => $generator->generate(),
+            'generateChunk' => $generator->generateChunk(1),
+            'chunkCount' => $generator->chunkCount(),
+        };
+        if (is_string($result)) {
+            expect($result)->toContain('/rolled-back-profile');
+        } else {
+            expect($result)->toBe(1);
+        }
+        expect(Storage::disk('seo-transaction')->allFiles())->toBe([]);
+    } finally {
+        $connection->rollBack();
+        DB::setDefaultConnection($connection->getName());
+    }
+
+    expect(SeoProfile::query()->count())->toBe(0)
+        ->and($generator->generate())->not->toContain('/rolled-back-profile')
+        ->and(Storage::disk('seo-transaction')->allFiles())->not->toBe([]);
+})->with(['generate', 'generateChunk', 'chunkCount']);
+
+it('preserves committed sitemap artifacts while reading a changed profile transaction', function (): void {
+    $this->commitDatabaseFixture();
+    Storage::fake('seo-transaction');
+    config()->set('nvl-seo.sitemap.disk', 'seo-transaction');
+    $owner = TestSeoOwner::query()->create(['name' => 'Committed sitemap owner']);
+    $profiles = app(SeoProfiles::class);
+    $profile = $profiles->sync(SystemActor::Background, $owner, [
+        'translations' => ['en' => ['path' => '/committed-profile']],
+    ]);
+    $generator = app(SitemapGenerator::class);
+    $committed = $generator->generate();
+    $artifact = Storage::disk('seo-transaction')->allFiles()[0];
+    $connection = $profile->getConnection();
+    $connection->beginTransaction();
+
+    try {
+        $profiles->sync(SystemActor::Background, $owner, [
+            'expected_revision' => $profile->revision,
+            'translations' => ['en' => ['path' => '/rolled-back-change']],
+        ]);
+        expect($generator->generate())->toContain('/rolled-back-change')->not->toContain('/committed-profile')
+            ->and(Storage::disk('seo-transaction')->get($artifact))->toBe($committed);
+    } finally {
+        $connection->rollBack();
+    }
+
+    expect($generator->generate())->toBe($committed);
+});
+
+it('keeps a registered source transaction out of shared sitemap artifacts', function (string $operation): void {
+    $this->commitDatabaseFixture();
+    Storage::fake('seo-source-transaction');
+    config()->set('nvl-seo.sitemap.disk', 'seo-source-transaction');
+    $profileConnection = (new SeoProfile)->getConnection();
+    config()->set('database.connections.seo_custom_source', $profileConnection->getConfig());
+    $source = DB::connection('seo_custom_source');
+    $source->getSchemaBuilder()->create('seo_custom_sitemap_entries', static function (Blueprint $table): void {
+        $table->string('url');
+    });
+    app(SitemapRegistry::class)->register(new class($source) implements SitemapSource
+    {
+        public function __construct(private Connection $connection) {}
+
+        public function entries(string $scope): iterable
+        {
+            foreach ($this->connection->table('seo_custom_sitemap_entries')->pluck('url') as $url) {
+                yield new SitemapEntry($url);
+            }
+        }
+    }, 'test.transactional-source');
+    $generator = app(SitemapGenerator::class);
+    $source->beginTransaction();
+
+    try {
+        $source->table('seo_custom_sitemap_entries')->insert(['url' => 'https://example.test/rolled-back-source']);
+        expect($profileConnection->transactionLevel())->toBe(0);
+        $result = match ($operation) {
+            'generate' => $generator->generate(),
+            'generateChunk' => $generator->generateChunk(1),
+            'chunkCount' => $generator->chunkCount(),
+        };
+        if (is_string($result)) {
+            expect($result)->toContain('/rolled-back-source');
+        } else {
+            expect($result)->toBe(1);
+        }
+        expect(Storage::disk('seo-source-transaction')->allFiles())->toBe([]);
+    } finally {
+        $source->rollBack();
+    }
+
+    expect($generator->generate())->not->toContain('/rolled-back-source')
+        ->and(Storage::disk('seo-source-transaction')->allFiles())->not->toBe([]);
+})->with(['generate', 'generateChunk', 'chunkCount']);
 
 it('keeps committed profile writes successful when sitemap invalidation fails', function (): void {
     $owner = TestSeoOwner::query()->create(['name' => 'Cache failure owner']);
@@ -484,6 +601,7 @@ it('fails closed for invalid management middleware and doctor output formats', f
 });
 
 it('publishes sitemap xml to immutable filesystem artifacts and clears them atomically', function (): void {
+    $this->commitDatabaseFixture();
     Storage::fake('seo-artifacts');
     config()->set('nvl-seo.sitemap.disk', 'seo-artifacts');
     $cache = app(SitemapCache::class);
