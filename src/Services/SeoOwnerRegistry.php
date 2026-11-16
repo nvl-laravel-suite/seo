@@ -6,7 +6,9 @@ namespace Nvl\Seo\Services;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Config\Repository;
+use Illuminate\Database\Eloquent\Concerns\HasUniqueStringIds;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -116,7 +118,15 @@ final class SeoOwnerRegistry
         if ($includeTrashed && in_array(SoftDeletes::class, class_uses_recursive($modelClass), true)) {
             $query->withoutGlobalScope(SoftDeletingScope::class);
         }
-        $model = $query->findOrFail($id);
+        $prototype = $query->getModel();
+        // Reject keys the owner's key column cannot hold before PostgreSQL raises an invalid-text or range error.
+        $digits = ltrim($id, '0') ?: '0';
+        if ($prototype->getKeyType() === 'int' && (string) (int) $digits !== $digits) {
+            throw (new ModelNotFoundException)->setModel($modelClass, [$id]);
+        }
+        $model = in_array(HasUniqueStringIds::class, class_uses_recursive($modelClass), true)
+            ? $prototype->resolveRouteBindingQuery($query, $id, $prototype->getKeyName())->firstOrFail()
+            : $query->findOrFail($id);
         if (SeoOwnership::active()) {
             $resource = $this->ownershipResources->forModel($model);
             $this->tenancy->assertRecord($model, $resource->key);

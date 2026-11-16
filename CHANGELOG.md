@@ -5,6 +5,17 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- `SeoReader::resolve()` given a profile now rejects a `$scope` that differs from the profile's stored scope, resolves the profile's canonical owner, authorizes the `Resolve` decision with that owner and the profile, and returns defaults for an archived profile. Hidden, deleted or unregistered owners no longer resolve through their profile.
+- `SeoProfiles::sync()` and `SeoRedirects::sync()` compare an accepted string `expected_revision` such as `'1'` as an integer, so stale writes no longer overwrite newer revisions.
+- Owner lookups by alias reject an identifier the owner key cannot hold (a malformed UUID or ULID, or a non-integer value or one beyond the 64-bit integer range for an integer key) as not found before querying, so PostgreSQL no longer raises an invalid-text error.
+- A resumed `nvl:adopt seo apply` re-reads the committed legacy prefix and refuses the stored checkpoint, completed ones included, when a staged profile or translation behind it is missing or differs, or when legacy profiles behind it were deleted at the source, instead of continuing on top of it.
+
+### Added
+
+- PostgreSQL process-level race tests for initial profile creation, identical localized paths and opposing redirect edges.
+
 ## [7.2.0] - 2026-11-16
 
 ### Added

@@ -60,17 +60,24 @@ final readonly class SeoReader
         ?string $scope = null,
     ): array {
         $owner = $this->canonicalOwner($owner);
-        $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::Resolve, owner: $owner, scope: $scope));
+        $profile = null;
+        if ($owner instanceof SeoProfile) {
+            $profile = $owner;
+            if ($scope !== null && SeoScope::normalize($scope) !== $profile->scope) {
+                throw InvalidSeoMutationException::forField('scope', 'The requested SEO scope does not match the stored profile scope.');
+            }
+            $scope = $profile->scope;
+            $owner = $this->owners->resolve($this->owners->aliasForMorphType($profile->seoable_type), $profile->seoable_id);
+        }
+        $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::Resolve, profile: $profile, owner: $owner, scope: $scope));
         $locale ??= $this->contentLocale->get();
-        $profile = $owner instanceof SeoProfile
-            ? $owner
-            : SeoModelRegistry::profiles()
-                ->forOwner($owner, $scope)
-                ->active()
-                ->with('translations')
-                ->first();
+        $profile ??= SeoModelRegistry::profiles()
+            ->forOwner($owner, $scope)
+            ->active()
+            ->with('translations')
+            ->first();
 
-        if (! $profile instanceof SeoProfile || $profile->status !== 'active') {
+        if (! $profile instanceof SeoProfile || $profile->status !== 'active' || $profile->archived_at !== null) {
             return $this->defaults($locale);
         }
 
@@ -172,10 +179,6 @@ final readonly class SeoReader
             'twitter:image' => $image?->url,
             'twitter:image:alt' => $image?->alt,
         ], static fn (?string $value): bool => $value !== null && $value !== '');
-        $resource = $owner instanceof SeoProfile
-            ? $profile->seoable()->first()
-            : $owner;
-        $resource = $resource instanceof Model ? $resource : $profile;
         $siteUrl = $this->urls->resolve('/') ?? SeoConfiguration::string(
             'nvl-seo.site.base_url',
             'http://localhost',
@@ -194,10 +197,10 @@ final readonly class SeoReader
             'openGraphLocales' => $openGraphLocales,
             'twitter' => $twitter,
             'structuredData' => $this->structuredData->resolve(
-                resource: $resource,
+                resource: $owner,
                 context: [
-                    'resourceType' => $resource->getMorphClass(),
-                    'resourceId' => SeoModelIdentifier::required($resource),
+                    'resourceType' => $owner->getMorphClass(),
+                    'resourceId' => SeoModelIdentifier::required($owner),
                     'profileId' => $profile->id,
                     'locale' => $translation->locale,
                     'scope' => $profile->scope,

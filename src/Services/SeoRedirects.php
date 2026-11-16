@@ -63,6 +63,7 @@ final readonly class SeoRedirects
     ): SeoRedirect {
         $data += ['locale' => null, 'statusCode' => 301, 'isActive' => true, 'expiresAt' => null];
         $this->validator->redirect($data);
+        $expectedRevision = isset($data['expected_revision']) ? (int) $data['expected_revision'] : null;
         $scope = SeoScope::normalize($scope);
         $locale = $data['locale'] === null
             ? null
@@ -75,6 +76,7 @@ final readonly class SeoRedirects
             return SeoModelRegistry::newRedirect()->getConnection()->transaction(function () use (
                 $actor,
                 $data,
+                $expectedRevision,
                 $locale,
                 $redirectId,
                 $scope,
@@ -95,11 +97,11 @@ final readonly class SeoRedirects
                 $previousSource = $model?->source_path;
                 $model ??= SeoModelRegistry::newRedirect();
 
-                if (is_int($data['expected_revision'] ?? null)
+                if ($expectedRevision !== null
                     && (($model->exists && ! $wasDeleted
-                        && $model->revision !== $data['expected_revision'])
-                        || (! $model->exists && $data['expected_revision'] !== 0)
-                        || ($wasDeleted && $data['expected_revision'] !== 0))) {
+                        && $model->revision !== $expectedRevision)
+                        || (! $model->exists && $expectedRevision !== 0)
+                        || ($wasDeleted && $expectedRevision !== 0))) {
                     throw StaleSeoRedirectException::forRedirect(
                         $model->exists ? $model->id : 'new',
                     );

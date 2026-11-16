@@ -28,6 +28,8 @@ use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Events\SeoProfileChanged;
 use Nvl\Seo\Exceptions\InvalidSeoMutationException;
 use Nvl\Seo\Exceptions\SeoRedirectLoopException;
+use Nvl\Seo\Exceptions\StaleSeoProfileException;
+use Nvl\Seo\Exceptions\StaleSeoRedirectException;
 use Nvl\Seo\Models\SeoProfile;
 use Nvl\Seo\Models\SeoProfileTranslation;
 use Nvl\Seo\Models\SeoRedirect;
@@ -47,9 +49,11 @@ use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Tests\Fixtures\OwnershipActor;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
 use Nvl\Seo\ValueObjects\SitemapEntry;
+use Nvl\Support\Adoption\AdoptionAdapter;
 use Nvl\Support\Adoption\AdoptionCoordinator;
 use Nvl\Support\Adoption\AdoptionException;
 use Nvl\Support\Adoption\AdoptionRegistry;
+use Nvl\Support\Adoption\AdoptionStep;
 use Nvl\Support\Adoption\AdoptionStore;
 use Nvl\Support\Enums\SystemActor;
 use Nvl\Translatable\Enums\TranslationSyncMode;
@@ -97,6 +101,29 @@ function seoAdoptCommand(array $arguments): array
 
     return ['status' => $status, ...json_decode(Artisan::output(), true, flags: JSON_THROW_ON_ERROR)];
 }
+
+it('honors every accepted revision precondition', function (): void {
+    $actor = SystemActor::Background;
+    $owner = TestSeoOwner::query()->create(['name' => 'Revisioned']);
+    $profiles = app(SeoProfiles::class);
+    $redirects = app(SeoRedirects::class);
+
+    expect(fn () => $profiles->sync($actor, $owner, ['expected_revision' => '1', 'translations' => ['en' => ['title' => 'Absent']]]))
+        ->toThrow(StaleSeoProfileException::class);
+    $profile = $profiles->sync($actor, $owner, ['expected_revision' => '0', 'translations' => ['en' => ['title' => 'Created']]]);
+    $profile = $profiles->sync($actor, $owner, ['expected_revision' => (string) $profile->revision, 'translations' => ['en' => ['title' => 'Fresh']]]);
+    expect(fn () => $profiles->sync($actor, $owner, ['expected_revision' => (string) ($profile->revision - 1), 'translations' => ['en' => ['title' => 'Stale']]]))
+        ->toThrow(StaleSeoProfileException::class)
+        ->and($profile->refresh()->getTranslation('en')?->title)->toBe('Fresh');
+
+    expect(fn () => $redirects->sync($actor, null, ['sourcePath' => '/old', 'target' => '/new', 'expected_revision' => '1']))
+        ->toThrow(StaleSeoRedirectException::class);
+    $redirect = $redirects->sync($actor, null, ['sourcePath' => '/old', 'target' => '/new', 'expected_revision' => '0']);
+    $redirect = $redirects->sync($actor, $redirect, ['sourcePath' => '/old', 'target' => '/newer', 'expected_revision' => (string) $redirect->revision]);
+    expect(fn () => $redirects->sync($actor, $redirect, ['sourcePath' => '/old', 'target' => '/stale', 'expected_revision' => (string) ($redirect->revision - 1)]))
+        ->toThrow(StaleSeoRedirectException::class)
+        ->and($redirect->refresh()->target)->toBe('/newer');
+});
 
 it('authorizes redirect updates against the stored source identity', function (string $identity): void {
     $redirect = app(SeoRedirects::class)->sync(SystemActor::Background, null, [
@@ -681,6 +708,94 @@ it('resumes interrupted nvl:adopt SEO batches with profiles matching the legacy 
         Schema::dropIfExists('seo');
         $owners->each->forceDelete();
         unlink($manifest);
+    }
+});
+
+it('refuses to resume SEO adoption after a staged translation behind the cursor was deleted', function (bool $complete): void {
+    $this->commitDatabaseFixture();
+    createLegacySeoSchema();
+    $adoption = seoAdoptionMigration();
+    $adoption->up();
+    $owners = collect(range(1, 2))->map(static fn (int $index): TestSeoOwner => TestSeoOwner::query()->create(['name' => "Legacy {$index}"]));
+    $profileIds = collect(range(1, 2))->map(static fn (): string => (string) Str::uuid())->sort()->values()->all();
+    $manifest = (string) tempnam(sys_get_temp_dir(), 'nvl-seo-adopt-');
+    file_put_contents($manifest, json_encode(['scope' => 'shop', 'owner_aliases' => ['old-article' => 'article']], JSON_THROW_ON_ERROR));
+    $translationTable = (new SeoProfileTranslation)->getTable();
+    $armed = false;
+
+    try {
+        foreach ($profileIds as $index => $profileId) {
+            DB::table('seo')->insert(['id' => $profileId, 'seoable_type' => 'old-article', 'seoable_id' => $owners[$index]->getKey()]);
+            foreach (['en', 'bg'] as $locale) {
+                DB::table('seo_i18n')->insert(['id' => (string) Str::uuid(), 'seo_id' => $profileId, 'locale' => $locale, 'path' => "{$locale}/legacy-{$index}"]);
+            }
+        }
+        DB::listen(static function (QueryExecuted $query) use (&$armed, $translationTable, $profileIds): void {
+            if ($armed && str_starts_with(strtolower($query->sql), 'insert') && str_contains($query->sql, $translationTable) && in_array($profileIds[1], $query->bindings, true)) {
+                $armed = false;
+
+                throw new RuntimeException('Injected SEO adoption failure.');
+            }
+        });
+        $plan = seoAdoptCommand(['manifest' => $manifest]);
+        $armed = ! $complete;
+        $first = seoAdoptCommand(['phase' => 'apply', 'manifest' => $manifest, '--fingerprint' => $plan['fingerprint'], '--batch-size' => '1']);
+        expect($first['status'])->toBe($complete ? 0 : 1);
+        $runId = (string) DB::table(AdoptionStore::Runs)->value('id');
+        DB::table($translationTable)->where('seo_profile_id', $profileIds[0])->where('locale', 'bg')->delete();
+        $staged = DB::table($translationTable)->where('scope', 'shop')->count();
+
+        $resumed = seoAdoptCommand(['phase' => 'apply', 'manifest' => $manifest, '--fingerprint' => $plan['fingerprint'], '--run' => $runId, '--batch-size' => '1']);
+        expect($resumed['status'])->toBe(1)
+            ->and($resumed['error'])->toContain('deleted staged SEO row')
+            ->and(DB::table($translationTable)->where('scope', 'shop')->count())->toBe($staged)
+            ->and(SeoProfile::query()->whereKey($profileIds)->count())->toBe($complete ? 2 : 1)
+            ->and(DB::table(AdoptionStore::Checkpoints)->where('run_id', $runId)->value('processed'))->toEqual($complete ? 2 : 1);
+    } finally {
+        $armed = false;
+        DB::table($translationTable)->whereIn('seo_profile_id', $profileIds)->delete();
+        SeoProfile::query()->whereKey($profileIds)->delete();
+        $adoption->down();
+        Schema::dropIfExists('seo_i18n');
+        Schema::dropIfExists('seo');
+        $owners->each->forceDelete();
+        unlink($manifest);
+    }
+})->with(['incomplete cursor' => [false], 'completed step' => [true]]);
+
+it('refuses an SEO adoption checkpoint after a legacy source profile behind the cursor was deleted', function (): void {
+    $this->commitDatabaseFixture();
+    createLegacySeoSchema();
+    $adoption = seoAdoptionMigration();
+    $adoption->up();
+    $owners = collect(range(1, 2))->map(static fn (int $index): TestSeoOwner => TestSeoOwner::query()->create(['name' => "Legacy {$index}"]));
+    $profileIds = collect(range(1, 2))->map(static fn (): string => (string) Str::uuid())->sort()->values()->all();
+    $translationTable = (new SeoProfileTranslation)->getTable();
+    $adapter = static fn (): AdoptionAdapter => app(AdoptionRegistry::class)->make('seo', SystemActor::Background);
+
+    try {
+        foreach ($profileIds as $index => $profileId) {
+            DB::table('seo')->insert(['id' => $profileId, 'seoable_type' => $owners[$index]->getMorphClass(), 'seoable_id' => $owners[$index]->getKey()]);
+            DB::table('seo_i18n')->insert(['id' => (string) Str::uuid(), 'seo_id' => $profileId, 'locale' => 'en', 'path' => "legacy-{$index}"]);
+        }
+        $coordinator = new AdoptionCoordinator($adapter());
+        $coordinator->apply($coordinator->plan()->fingerprint);
+        $step = new AdoptionStep('profiles');
+        $cursor = ['id' => $profileIds[1]];
+        $adapter()->assertCheckpoint($step, $cursor, 2);
+
+        DB::table('seo_i18n')->where('seo_id', $profileIds[0])->delete();
+        DB::table('seo')->where('id', $profileIds[0])->delete();
+
+        expect(fn () => $adapter()->assertCheckpoint($step, $cursor, 2))
+            ->toThrow(AdoptionException::class, 'counts 2 legacy SEO profiles, but 1 precede its cursor');
+    } finally {
+        DB::table($translationTable)->whereIn('seo_profile_id', $profileIds)->delete();
+        SeoProfile::query()->whereKey($profileIds)->delete();
+        $adoption->down();
+        Schema::dropIfExists('seo_i18n');
+        Schema::dropIfExists('seo');
+        $owners->each->forceDelete();
     }
 });
 

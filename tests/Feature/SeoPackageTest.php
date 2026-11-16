@@ -123,6 +123,49 @@ it('rejects mutated SEO input identity and reloads stale profile status', functi
         ->toThrow(InvalidSeoMutationException::class);
 });
 
+it('rejects profile scope spoofing and unavailable owners', function (): void {
+    $owner = seoOwner('Private owner');
+    $profile = app(SeoProfiles::class)->sync(SystemActor::Background, $owner, seoPayload(), 'private');
+    $contexts = [];
+    app()->instance(SeoAuthorization::class, new class($contexts) implements SeoAuthorization
+    {
+        public function __construct(private array &$contexts) {}
+
+        public function authorize(SeoAuthorizationContext $context): void
+        {
+            $this->contexts[] = $context;
+        }
+    });
+    $reader = app(SeoReader::class);
+
+    expect(fn () => $reader->resolve(SystemActor::Background, $profile, 'en', 'public'))
+        ->toThrow(InvalidSeoMutationException::class)
+        ->and($reader->resolve(SystemActor::Background, $profile, 'en', 'private')['canonicalUrl'])
+        ->toBe('https://example.test/products/red-dress')
+        ->and($contexts)->toHaveCount(1)
+        ->and($contexts[0]->owner)->toBeInstanceOf(TestSeoOwner::class)
+        ->and($contexts[0]->owner->is($owner))->toBeTrue()
+        ->and($contexts[0]->profile?->is($profile))->toBeTrue()
+        ->and($contexts[0]->scope)->toBe('private');
+
+    SeoProfile::query()->whereKey($profile->id)->update(['archived_at' => now()]);
+    expect($reader->resolve(SystemActor::Background, $profile, 'en')['canonicalUrl'])->toBeNull();
+    SeoProfile::query()->whereKey($profile->id)->update(['archived_at' => null]);
+
+    $originalScopes = TestSeoOwner::getAllGlobalScopes();
+    try {
+        TestSeoOwner::addGlobalScope('hidden-owner', static function (Builder $query): void {
+            $query->where('name', '!=', 'Private owner');
+        });
+        expect(fn () => $reader->resolve(SystemActor::Background, $profile, 'en'))->toThrow(ModelNotFoundException::class);
+    } finally {
+        TestSeoOwner::setAllGlobalScopes($originalScopes);
+    }
+
+    $owner->delete();
+    expect(fn () => $reader->resolve(SystemActor::Background, $profile, 'en'))->toThrow(ModelNotFoundException::class);
+});
+
 it('registers migrations, type sources, and centralized translation management', function (): void {
     expect(Schema::hasTable(SeoTables::Profiles))->toBeTrue()
         ->and(Schema::hasTable(SeoTables::I18n))->toBeTrue()

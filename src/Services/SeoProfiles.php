@@ -62,16 +62,17 @@ final readonly class SeoProfiles
 
         $this->validator->profile($data);
         $scope = SeoScope::normalize($scope);
+        $expectedRevision = isset($data['expected_revision']) ? (int) $data['expected_revision'] : null;
 
         try {
-            return SeoModelRegistry::newProfile()->getConnection()->transaction(function () use ($actor, $owner, $data, $scope, $translationMode): SeoProfile {
+            return SeoModelRegistry::newProfile()->getConnection()->transaction(function () use ($actor, $owner, $data, $scope, $translationMode, $expectedRevision): SeoProfile {
                 $profile = SeoModelRegistry::profiles()
                     ->forOwner($owner, $scope)
                     ->lockForUpdate()
                     ->first();
 
                 if (! $profile instanceof SeoProfile) {
-                    if (is_int($data['expected_revision'] ?? null) && $data['expected_revision'] !== 0) {
+                    if ($expectedRevision !== null && $expectedRevision !== 0) {
                         throw StaleSeoProfileException::forProfile('new');
                     }
 
@@ -80,8 +81,7 @@ final readonly class SeoProfiles
                         'seoable_type' => $owner->getMorphClass(),
                         'seoable_id' => SeoModelIdentifier::required($owner),
                     ]);
-                } elseif (is_int($data['expected_revision'] ?? null)
-                    && $profile->revision !== $data['expected_revision']) {
+                } elseif ($expectedRevision !== null && $profile->revision !== $expectedRevision) {
                     throw StaleSeoProfileException::forProfile($profile->id);
                 }
 

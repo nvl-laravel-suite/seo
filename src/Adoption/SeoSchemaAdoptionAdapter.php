@@ -95,20 +95,47 @@ final class SeoSchemaAdoptionAdapter extends AdoptionAdapter
         /** @var list<stdClass> $read */
         $read = $step->page($origin->table('seo')->useWritePdo(), $cursor, $limit + 1)->get()->all();
         $page = array_slice($read, 0, $limit);
-        $translations = $this->graph->legacyTranslations($origin, $page);
-        $rows = [];
-        foreach ($page as $legacy) {
-            $profile = $this->graph->profile($this->actor, $legacy, $this->source);
-            $rows[] = [
-                'profile' => $profile,
-                'translations' => array_values($translations->get($profile['id'], collect())
-                    ->map(fn (stdClass $translation): array => $this->graph->translation($translation, $profile['id'], $this->source['scope']))
-                    ->all()),
-            ];
-        }
         $last = $page === [] ? null : $page[array_key_last($page)];
 
-        return new AdoptionBatch(self::Step, $cursor, $last === null ? $cursor : $step->cursorFrom($last), $rows, count($read) <= $limit);
+        return new AdoptionBatch(self::Step, $cursor, $last === null ? $cursor : $step->cursorFrom($last), $this->map($origin, $page), count($read) <= $limit);
+    }
+
+    /**
+     * Re-map the committed legacy prefix and refuse the checkpoint when its profile count differs or a staged profile or translation is missing or differs.
+     */
+    public function assertCheckpoint(AdoptionStep $step, ?array $cursor, int $processed): void
+    {
+        if ($step->id !== self::Step) {
+            throw new AdoptionException("SEO adoption has no step [{$step->id}].");
+        }
+        $origin = $this->graph->origin($this->source);
+        $target = $this->graph->target();
+        $after = null;
+        $committed = 0;
+        do {
+            /** @var list<stdClass> $page */
+            $page = $step->page($step->through($origin->table('seo')->useWritePdo(), $cursor), $after, 500)->get()->all();
+            $profiles = $translations = $conflicts = [];
+            foreach ($this->map($origin, $page) as $row) {
+                $profiles[] = $row['profile'];
+                $committed++;
+                array_push($translations, ...$row['translations']);
+            }
+            $missing = [
+                ...$this->graph->pending($target, $this->graph->profileTable(), $profiles, $conflicts),
+                ...$this->graph->pending($target, $this->graph->translationTable(), $translations, $conflicts),
+            ];
+            if ($missing !== []) {
+                throw new AdoptionException("Adoption checkpoint of step [{$step->id}] is behind deleted staged SEO row [{$missing[0]['id']}].");
+            }
+            if ($conflicts !== []) {
+                throw new AdoptionException("Adoption checkpoint of step [{$step->id}] is behind changed staged output: {$conflicts[0]}");
+            }
+            $after = $page === [] ? null : $step->cursorFrom($page[array_key_last($page)]);
+        } while (count($page) === 500);
+        if ($committed !== $processed) {
+            throw new AdoptionException("Adoption checkpoint of step [{$step->id}] counts {$processed} legacy SEO profiles, but {$committed} precede its cursor.");
+        }
     }
 
     /**
@@ -155,6 +182,29 @@ final class SeoSchemaAdoptionAdapter extends AdoptionAdapter
             digest: AdoptionPlan::digest(['graph' => $inspection['fingerprint'], 'staged' => $inspection['digest']]),
             problems: $inspection['collisions'],
         );
+    }
+
+    /**
+     * Map legacy profiles with every one of their translations, as one batch row each.
+     *
+     * @param  list<stdClass>  $page
+     * @return list<array{profile: StagedRow, translations: list<StagedRow>}>
+     */
+    private function map(Connection $origin, array $page): array
+    {
+        $translations = $this->graph->legacyTranslations($origin, $page);
+        $rows = [];
+        foreach ($page as $legacy) {
+            $profile = $this->graph->profile($this->actor, $legacy, $this->source);
+            $rows[] = [
+                'profile' => $profile,
+                'translations' => array_values($translations->get($profile['id'], collect())
+                    ->map(fn (stdClass $translation): array => $this->graph->translation($translation, $profile['id'], $this->source['scope']))
+                    ->all()),
+            ];
+        }
+
+        return $rows;
     }
 
     /**

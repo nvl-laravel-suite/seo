@@ -59,14 +59,18 @@ $profile = $profiles->sync($manager, $article, [
 $metadata = app(SeoReader::class)->resolve($viewer, $article, 'en', 'main');
 ```
 
+`resolve()` also accepts a `SeoProfile` (previews): it resolves and authorizes the profile's canonical
+owner, rejects a `$scope` other than the profile's own, and returns defaults for an archived profile.
+
 Profile keys: `isIndexable`, `isFollowable`, `maxSnippet`, `maxImagePreview`,
 `maxVideoPreview`, `sitemapIncluded`, `sitemapPriority`, `sitemapChangeFrequency`,
-`metadata`, `translations`, `expected_revision`. Ownership, status and actor are
+`metadata`, `translations`, `expected_revision` (an integer or numeric string, always enforced). Ownership, status and actor are
 not editable payload fields. Use dedicated archive/delete operations for lifecycle.
 
-Translation keys include `path`, `title`, `description`, `canonicalUrl`, `imageUrl`,
-`imageReference`, `imageAlt`, `openGraphTitle`, `openGraphDescription`, `twitterTitle`,
-`twitterDescription`, `twitterCard`, `structuredData`, `metadata`. Read the API schema for exact
+Translation keys include `path`, `title`, `description`, `robots`, `prependSiteTitle`,
+`keywords`, `author`, `canonicalUrl`, `imageUrl`, `imageReference`, `imageAlt`,
+`openGraphTitle`, `openGraphDescription`, `twitterTitle`, `twitterDescription`, `twitterCard`,
+`structuredData`, `metadata`. Read the API schema for exact
 nullable fields and limits. Unknown fields fail. Patch keeps omitted fields/locales;
 `TranslationSyncMode::Replace` explicitly removes omitted locales. An absent
 translation map with replace requests deletion of the retained locale set.

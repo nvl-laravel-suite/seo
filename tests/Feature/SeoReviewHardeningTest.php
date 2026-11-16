@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 use Nvl\Seo\Ownership\SeoOwnership;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Seo\Services\SeoProfiles;
@@ -10,6 +11,7 @@ use Nvl\Seo\Services\SeoReader;
 use Nvl\Seo\Services\SeoRedirects;
 use Nvl\Seo\Services\SeoRouteResolver;
 use Nvl\Seo\Tests\Fixtures\CountingSeoOwner;
+use Nvl\Seo\Tests\Fixtures\TestIntegerSeoOwner;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
 use Nvl\Seo\ValueObjects\StructuredDataNode;
 use Nvl\Support\Enums\PublicActor;
@@ -60,4 +62,33 @@ it('rejects structured data types and identifiers that end with a line break', f
     expect(fn () => new StructuredDataNode("Article\n"))->toThrow(InvalidArgumentException::class)
         ->and(fn () => new StructuredDataNode('Article', "#main\n"))->toThrow(InvalidArgumentException::class)
         ->and((new StructuredDataNode('Article', '#main'))->type)->toBe('Article');
+});
+
+it('rejects malformed registered owner keys before SQL', function (string $alias, string $id, bool $cleanup): void {
+    $registry = app(SeoOwnerRegistry::class);
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        expect(fn () => $cleanup ? $registry->resolveForCleanup($alias, $id) : $registry->resolve($alias, $id))
+            ->toThrow(ModelNotFoundException::class)
+            ->and(DB::getQueryLog())->toBe([]);
+    } finally {
+        DB::disableQueryLog();
+    }
+})->with([
+    'uuid owner' => ['article', 'not-a-uuid'],
+    'integer owner text' => ['integer-article', 'not-an-integer'],
+    'integer owner fraction' => ['integer-article', '1.5'],
+    'integer owner overflow' => ['integer-article', '99999999999999999999'],
+])->with(['live' => [false], 'cleanup' => [true]]);
+
+it('resolves well-formed registered owner keys after key validation', function (): void {
+    $uuidOwner = TestSeoOwner::query()->create(['name' => 'Article']);
+    $integerOwner = TestIntegerSeoOwner::query()->create(['name' => 'Integer']);
+    $registry = app(SeoOwnerRegistry::class);
+
+    expect($registry->resolve('article', $uuidOwner->getKey())->is($uuidOwner))->toBeTrue()
+        ->and($registry->resolve('integer-article', '00'.$integerOwner->getKey())->is($integerOwner))->toBeTrue()
+        ->and($registry->resolve('integer-article', $integerOwner->getKey())->is($integerOwner))->toBeTrue();
 });

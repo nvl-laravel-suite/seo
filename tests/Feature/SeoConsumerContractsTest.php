@@ -533,6 +533,49 @@ it('exercises the complete opt-in management API lifecycle', function (): void {
     expect(SeoProfile::query()->whereKey($profileId)->exists())->toBeFalse();
 });
 
+it('round trips localized head metadata', function (): void {
+    config()->set([
+        'nvl-seo.management.enabled' => true,
+        'nvl-seo.management.path' => 'api/consumer/seo',
+        'nvl-seo.management.name' => 'consumer.seo',
+        'nvl-seo.management.middleware' => ['api'],
+        'nvl-seo.authorization.ability' => 'manage-consumer-seo',
+    ]);
+    Gate::define('manage-consumer-seo', static fn (?Authenticatable $actor, SeoAuthorizationContext $context): bool => true);
+    require __DIR__.'/../Fixtures/management.php';
+    app('router')->getRoutes()->refreshNameLookups();
+    $head = ['robots' => 'noindex, nofollow', 'prependSiteTitle' => false, 'keywords' => 'Shop, gifts', 'author' => 'A & B'];
+
+    $created = $this->postJson('/api/consumer/seo/profiles', [
+        'ownerAlias' => 'article',
+        'ownerId' => seoConsumerOwner()->getKey(),
+        'profile' => ['translations' => ['en' => ['path' => '/head-metadata', 'title' => 'Head', ...$head]]],
+    ])->assertCreated();
+    $profileId = $created->json('data.id');
+    foreach ($head as $field => $value) {
+        $created->assertJsonPath("data.translations.en.{$field}", $value);
+    }
+    $this->getJson("/api/consumer/seo/profiles/{$profileId}/preview?locale=en")
+        ->assertOk()
+        ->assertJsonPath('data.robots', 'noindex, nofollow')
+        ->assertJsonPath('data.title', 'Head')
+        ->assertJsonPath('data.keywords', 'Shop, gifts')
+        ->assertJsonPath('data.author', 'A & B');
+
+    $updated = $this->putJson("/api/consumer/seo/profiles/{$profileId}", [
+        'expected_revision' => $created->json('data.revision'),
+        'translations' => ['en' => ['robots' => null, 'prependSiteTitle' => true, 'keywords' => null, 'author' => 'C']],
+    ])->assertOk()
+        ->assertJsonPath('data.translations.en.robots', null)
+        ->assertJsonPath('data.translations.en.prependSiteTitle', true)
+        ->assertJsonPath('data.translations.en.keywords', null)
+        ->assertJsonPath('data.translations.en.author', 'C');
+    $this->getJson("/api/consumer/seo/profiles/{$profileId}")
+        ->assertOk()
+        ->assertJsonPath('data.translations.en.author', 'C')
+        ->assertJsonPath('data.revision', $updated->json('data.revision'));
+});
+
 it('covers bounded import success and stable continuation data', function (): void {
     $owner = seoConsumerOwner('Imported owner');
     $record = ['ownerAlias' => 'article', 'ownerId' => (string) $owner->getKey(), 'scope' => 'catalog', 'profile' => [
