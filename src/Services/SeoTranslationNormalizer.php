@@ -24,6 +24,10 @@ final class SeoTranslationNormalizer
         'path',
         'title',
         'description',
+        'robots',
+        'prepend_site_title',
+        'keywords',
+        'author',
         'canonical_url',
         'image_url',
         'image_reference',
@@ -58,6 +62,9 @@ final class SeoTranslationNormalizer
                 }
 
                 $translation[$field] = $value instanceof BackedEnum ? $value->value : $value;
+                if ($field === 'robots' && is_string($value)) {
+                    $translation[$field] = trim($value) === '' ? null : trim($value);
+                }
 
                 if ($field === 'structured_data') {
                     StructuredDataLimits::assert($translation[$field]);

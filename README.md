@@ -12,6 +12,8 @@ Configure `nvl-seo.models.profile` and `nvl-seo.models.redirect` before provider
 
 ## Native services
 
+Translation mutations support `robots`, `prependSiteTitle`, `keywords`, and `author`. A null `robots` value inherits profile directives. A null title flag inherits the configured site title position. `true` prefixes the site title, and `false` renders the page title on its own. Localized keywords and author appear in resolved metadata and escaped head tags.
+
 - `SeoProfiles`: sync, status, duplicate, archive, delete and import complete profile operations.
 - `SeoReader`: authorized resolution, owner reads, finite owner batches, revisions and pagination.
 - `SeoRedirects`: sync, find, resolve and prune with native conflict/cycle handling.
@@ -39,3 +41,9 @@ The package registers no HTTP routes or redirect middleware. Consumer endpoints 
 Choose one migration owner and review configuration before migrating populated tables. See the [source services](src/Services/SeoProfiles.php), [events](docs/events.md), [upgrading](UPGRADING.md), [security](SECURITY.md) and [contributing](CONTRIBUTING.md).
 
 Shared [service contracts, model extensions and composition](https://github.com/nvl-laravel-suite/laravel-suite/blob/main/docs/consumer-api.md) apply alongside the package-specific rules above.
+
+## Adopt legacy SEO tables
+
+Migrate an empty native SEO target scope and keep the legacy `seo` / `seo_i18n` source quiescent. `SeoSchemaAdopter::plan($actor, $source)` accepts `connection`, `scope`, and `owner_aliases`, a map from legacy morph types to registered SEO owner aliases. It checks schema, canonical owners, normalized route conflicts and existing staged rows. The adopter preserves profile and translation UUIDs and timestamps, maps `seo_id` to the native parent, and carries `additional_data` into translation metadata.
+
+Pass the reviewed `fingerprint` and the same source options to `apply()`. Retry with the same fingerprint after interruption. Call `verify()` before switching the host integration. Stage into standalone unowned storage before the separate native Ownership adoption process where applicable.

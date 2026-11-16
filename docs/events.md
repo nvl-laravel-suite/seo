@@ -20,7 +20,7 @@ Use Nvl\Support\Events\DomainEventDispatcher::dispatch($event, $writerConnection
 
 ## Payload security and no-op behavior
 
-Profile ID, scope and operation only; no SEO field content. Source model connection supplies timing.
+Package producers publish the profile ID, scope, operation, stored owner morph type and key, and localized path snapshots. Each snapshot maps a locale to its translation UUID and nullable path. The profile connection supplies commit timing.
 
 Existing sync/archive/delete branches govern publication. No generic request deduplication is added.
 
@@ -30,13 +30,13 @@ Actor/owner identifiers do not grant access. Listeners must preserve the capture
 
 | Event | Schema version | Trigger |
 | --- | --- | --- |
-| [SeoProfileChanged](#seoprofilechanged) | 1 | SEO profile state changed. |
+| [SeoProfileChanged](#seoprofilechanged) | 2 | SEO profile state changed. |
 
 ### SeoProfileChanged
 
-`Nvl\Seo\Events\SeoProfileChanged` · [source](../src/Events/SeoProfileChanged.php) · event schema `1`.
+`Nvl\Seo\Events\SeoProfileChanged` · [source](../src/Events/SeoProfileChanged.php) · event schema `2` for package-produced events.
 
-SEO profile state changed.
+Create has an empty previous snapshot, and delete has an empty current snapshot. Sync captures the complete set on both sides, including locales removed by a replace. Archive and restore carry the same path snapshots on both sides. The event uses the stored owner morph identity. Existing manual construction defaults to schema `1`.
 
 Constructor parameters, in native order:
 
@@ -46,6 +46,10 @@ Constructor parameters, in native order:
 | `$scope` | `string` | public | `required` | — |
 | `$operation` | `string` | public | `required` | — |
 | `$schemaVersion` | `int` | public | `1` | — |
+| `$ownerType` | `?string` | public | `null` | — |
+| `$ownerId` | `?string` | public | `null` | — |
+| `$previousTranslations` | `array` | public | `[]` | `array<string, array{id:string,path:?string}>` |
+| `$currentTranslations` | `array` | public | `[]` | `array<string, array{id:string,path:?string}>` |
 
 Public payload fields:
 
@@ -55,14 +59,16 @@ Public payload fields:
 | `$scope` | `string` | — |
 | `$operation` | `string` | — |
 | `$schemaVersion` | `int` | — |
+| `$ownerType` | `?string` | — |
+| `$ownerId` | `?string` | — |
+| `$previousTranslations` | `array` | Locale keyed path snapshot |
+| `$currentTranslations` | `array` | Locale keyed path snapshot |
 
 Producers and exact scheduling connection expressions (variables are resolved in the linked source):
 
 | Producer | Source connection |
 | --- | --- |
-| [Services/SeoProfiles.php](../src/Services/SeoProfiles.php) (`archive()`) | `$profile->getConnection()` |
-| [Services/SeoProfiles.php](../src/Services/SeoProfiles.php) (`delete()`) | `$profile->getConnection()` |
-| [Services/SeoProfiles.php](../src/Services/SeoProfiles.php) (`sync()`) | `$profile->getConnection()` |
+| [Services/SeoProfiles.php](../src/Services/SeoProfiles.php) (`publishChange()` from `archive()`, `delete()` and `sync()`) | `$connection`, resolved from `$profile->getConnection()` |
 
 ## Deferred acceptance checks
 

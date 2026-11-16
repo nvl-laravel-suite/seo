@@ -42,6 +42,7 @@ Search for the relevant fully qualified service or contract and read only its ma
 - `Nvl\Seo\Services\SeoRedirectChain`
 - `Nvl\Seo\Services\SeoRedirects`
 - `Nvl\Seo\Services\SeoRouteResolver`
+- `Nvl\Seo\Services\SeoSchemaAdopter`
 - `Nvl\Seo\Services\SitemapGenerator`
 - `Nvl\Seo\Services\SitemapRegistry`
 - `Nvl\Seo\Services\StructuredDataBuilder`
@@ -266,9 +267,21 @@ public static function tryFrom(string|int $value): ?static
 
 ```text
 final class Nvl\Seo\Events\SeoProfileChanged implements Nvl\Support\Contracts\DomainEvent
-public function __construct(string $profileId, string $scope, string $operation, int $schemaVersion=1): mixed
+public function __construct(string $profileId, string $scope, string $operation, int $schemaVersion=1, ?string $ownerType=null, ?string $ownerId=null, array $previousTranslations=[], array $currentTranslations=[]): mixed
+@param PathSnapshots $previousTranslations
+resolved @param array<string, array{id: string, path: (string | null)}> $previousTranslations
+@param PathSnapshots $currentTranslations
+resolved @param array<string, array{id: string, path: (string | null)}> $currentTranslations
 public function schemaVersion(): int
+public readonly array $currentTranslations
+@param PathSnapshots $currentTranslations
+resolved @param array<string, array{id: string, path: (string | null)}> $currentTranslations
 public readonly string $operation
+public readonly ?string $ownerId
+public readonly ?string $ownerType
+public readonly array $previousTranslations
+@param PathSnapshots $previousTranslations
+resolved @param array<string, array{id: string, path: (string | null)}> $previousTranslations
 public readonly string $profileId
 public readonly int $schemaVersion
 public readonly string $scope
@@ -532,6 +545,7 @@ public function refresh(): static
 public function refreshForUpdate(): static
 public function save(array $options=[]): bool
 @param array<string, mixed> $options
+@property (string | null) $author
 @property (string | null) $canonical_url
 @property Carbon $created_at
 resolved @property Carbon\Carbon $created_at
@@ -540,14 +554,17 @@ resolved @property Carbon\Carbon $created_at
 @property (string | null) $image_alt
 @property (string | null) $image_reference
 @property (string | null) $image_url
+@property (string | null) $keywords
 @property string $locale
 @property (array<string, mixed> | null) $metadata
 @property (string | null) $open_graph_description
 @property (string | null) $open_graph_title
 @property (string | null) $path
 @property (string | null) $path_hash
+@property (bool | null) $prepend_site_title
 @property-read SeoProfile $profile
 resolved @property-read Nvl\Seo\Models\SeoProfile $profile
+@property (string | null) $robots
 @property string $scope
 @property string $seo_profile_id
 @property (array<array-key, mixed> | null) $structured_data
@@ -626,7 +643,7 @@ final class Nvl\Seo\Services\SeoHeadRenderer
 public function __construct(Nvl\Seo\Services\SeoReader $reader): mixed
 public function render(Illuminate\Database\Eloquent\Model $owner, Illuminate\Contracts\Auth\Authenticatable|Nvl\Support\Enums\SystemActor|Nvl\Support\Enums\PublicActor $actor, ?string $locale=null, ?string $scope=null): string
 public function renderResolved(array $seo): string
-@param array{locale: string, title: (string | null), description: (string | null), canonicalUrl: (string | null), robots: string, alternates: array<string, string>, openGraph: array<string, string>, openGraphLocales: list<string>, twitter: array<string, string>, structuredData: list<array<string, mixed>>} $seo
+@param array{locale: string, title: (string | null), description: (string | null), canonicalUrl: (string | null), robots: string, keywords?: (string | null), author?: (string | null), alternates: array<string, string>, openGraph: array<string, string>, openGraphLocales: list<string>, twitter: array<string, string>, structuredData: list<array<string, mixed>>} $seo
 @throws JsonException
 ```
 
@@ -695,7 +712,7 @@ public function paginate(Illuminate\Contracts\Auth\Authenticatable|Nvl\Support\E
 @return LengthAwarePaginator<int, SeoProfile>
 resolved @return Illuminate\Contracts\Pagination\LengthAwarePaginator<int, Nvl\Seo\Models\SeoProfile>
 public function resolve(Illuminate\Contracts\Auth\Authenticatable|Nvl\Support\Enums\SystemActor|Nvl\Support\Enums\PublicActor $actor, Illuminate\Database\Eloquent\Model|Nvl\Seo\Models\SeoProfile $owner, ?string $locale=null, ?string $scope=null): array
-@return array{locale: string, title: (string | null), description: (string | null), canonicalUrl: (string | null), robots: string, alternates: array<string, string>, openGraph: array<string, string>, openGraphLocales: list<string>, twitter: array<string, string>, structuredData: list<array<string, mixed>>}
+@return array{locale: string, title: (string | null), description: (string | null), canonicalUrl: (string | null), robots: string, keywords: (string | null), author: (string | null), alternates: array<string, string>, openGraph: array<string, string>, openGraphLocales: list<string>, twitter: array<string, string>, structuredData: list<array<string, mixed>>}
 public function revisions(Illuminate\Contracts\Auth\Authenticatable|Nvl\Support\Enums\SystemActor $actor, Illuminate\Database\Eloquent\Model $owner, ?string $scope=null): array
 @return array{ownerAlias: string, ownerId: string, scope: string, profileId: (string | null), revision: int}
 ```
@@ -727,6 +744,25 @@ public function sync(Illuminate\Contracts\Auth\Authenticatable|Nvl\Support\Enums
 ```text
 final class Nvl\Seo\Services\SeoRouteResolver
 public function resolve(string $path, string $locale, ?string $scope=null): ?Nvl\Seo\Models\SeoProfile
+```
+
+## Nvl\Seo\Services\SeoSchemaAdopter
+
+```text
+final readonly class Nvl\Seo\Services\SeoSchemaAdopter
+public function __construct(Illuminate\Database\DatabaseManager $database, Nvl\Seo\Services\SeoOwnerRegistry $owners, Nvl\Seo\Contracts\SeoAuthorization $authorization, Nvl\Seo\Services\SeoMutationValidator $validator, Nvl\Seo\Services\SeoTranslationNormalizer $normalizer): mixed
+public function apply(Illuminate\Contracts\Auth\Authenticatable|Nvl\Support\Enums\SystemActor $actor, string $fingerprint, array $source=[]): array
+@param array<array-key, mixed> $source
+@return Review
+resolved @return array{schema_fingerprint: string, fingerprint: string, profiles: int, translations: int, staged_profiles: int, staged_translations: int, conflicts: list<string>}
+public function plan(Illuminate\Contracts\Auth\Authenticatable|Nvl\Support\Enums\SystemActor $actor, array $source=[]): array
+@param array<array-key, mixed> $source
+@return Review
+resolved @return array{schema_fingerprint: string, fingerprint: string, profiles: int, translations: int, staged_profiles: int, staged_translations: int, conflicts: list<string>}
+public function verify(Illuminate\Contracts\Auth\Authenticatable|Nvl\Support\Enums\SystemActor $actor, string $fingerprint, array $source=[]): array
+@param array<array-key, mixed> $source
+@return Review
+resolved @return array{schema_fingerprint: string, fingerprint: string, profiles: int, translations: int, staged_profiles: int, staged_translations: int, conflicts: list<string>}
 ```
 
 ## Nvl\Seo\Services\SitemapGenerator

@@ -26,7 +26,7 @@ final class SeoHeadRenderer
     }
 
     /**
-     * @param  array{locale:string,title:string|null,description:string|null,canonicalUrl:string|null,robots:string,alternates:array<string,string>,openGraph:array<string,string>,openGraphLocales:list<string>,twitter:array<string,string>,structuredData:list<array<string,mixed>>}  $seo
+     * @param  array{locale:string,title:string|null,description:string|null,canonicalUrl:string|null,robots:string,keywords?:string|null,author?:string|null,alternates:array<string,string>,openGraph:array<string,string>,openGraphLocales:list<string>,twitter:array<string,string>,structuredData:list<array<string,mixed>>}  $seo
      *
      * @throws JsonException
      */
@@ -43,6 +43,12 @@ final class SeoHeadRenderer
         }
 
         $tags[] = $this->meta('name', 'robots', $seo['robots']);
+        foreach (['keywords', 'author'] as $field) {
+            $value = $seo[$field] ?? null;
+            if ($value !== null && $value !== '') {
+                $tags[] = $this->meta('name', $field, $value);
+            }
+        }
 
         if ($seo['canonicalUrl'] !== null) {
             $tags[] = $this->link('canonical', $seo['canonicalUrl']);

@@ -113,7 +113,7 @@ final readonly class SeoDoctor
                     'image_url', 'image_reference', 'image_alt',
                     'open_graph_title', 'open_graph_description',
                     'twitter_title', 'twitter_description', 'twitter_card',
-                    'structured_data', 'metadata', 'created_at', 'updated_at',
+                    'structured_data', 'metadata', 'robots', 'prepend_site_title', 'keywords', 'author', 'created_at', 'updated_at',
                     ...($owned ? ['owner_scope_key'] : []),
                 ],
                 'indexes' => [

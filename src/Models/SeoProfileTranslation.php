@@ -29,6 +29,10 @@ use Nvl\Support\Ownership\Contracts\Ownable;
  * @property string|null $path_hash
  * @property string|null $title
  * @property string|null $description
+ * @property string|null $robots
+ * @property bool|null $prepend_site_title
+ * @property string|null $keywords
+ * @property string|null $author
  * @property string|null $canonical_url
  * @property string|null $image_url
  * @property string|null $image_reference
@@ -67,6 +71,10 @@ final class SeoProfileTranslation extends Model implements Ownable
         'path',
         'title',
         'description',
+        'robots',
+        'prepend_site_title',
+        'keywords',
+        'author',
         'canonical_url',
         'image_url',
         'image_reference',
@@ -113,6 +121,7 @@ final class SeoProfileTranslation extends Model implements Ownable
     protected function casts(): array
     {
         return [
+            'prepend_site_title' => 'boolean',
             'twitter_card' => TwitterCard::class,
             'structured_data' => 'array',
             'metadata' => 'array',

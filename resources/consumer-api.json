@@ -240,7 +240,11 @@
                 "schemaVersion"
             ],
             "properties": [
+                "currentTranslations",
                 "operation",
+                "ownerId",
+                "ownerType",
+                "previousTranslations",
                 "profileId",
                 "schemaVersion",
                 "scope"
@@ -435,6 +439,7 @@
                 "save"
             ],
             "properties": [
+                "author",
                 "canonical_url",
                 "created_at",
                 "description",
@@ -442,13 +447,16 @@
                 "image_alt",
                 "image_reference",
                 "image_url",
+                "keywords",
                 "locale",
                 "metadata",
                 "open_graph_description",
                 "open_graph_title",
                 "path",
                 "path_hash",
+                "prepend_site_title",
                 "profile",
+                "robots",
                 "scope",
                 "seo_profile_id",
                 "structured_data",
@@ -615,6 +623,18 @@
             "file": "src/Services/SeoRouteResolver.php",
             "methods": [
                 "resolve"
+            ],
+            "properties": [],
+            "constants": []
+        },
+        "Nvl\\Seo\\Services\\SeoSchemaAdopter": {
+            "kind": "class",
+            "file": "src/Services/SeoSchemaAdopter.php",
+            "methods": [
+                "__construct",
+                "apply",
+                "plan",
+                "verify"
             ],
             "properties": [],
             "constants": []

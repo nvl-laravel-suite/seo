@@ -52,7 +52,7 @@ final readonly class SeoReader
         private OwnershipResourceRegistry $ownershipResources,
     ) {}
 
-    /** @return array{locale:string,title:string|null,description:string|null,canonicalUrl:string|null,robots:string,alternates:array<string,string>,openGraph:array<string,string>,openGraphLocales:list<string>,twitter:array<string,string>,structuredData:list<array<string,mixed>>} */
+    /** @return array{locale:string,title:string|null,description:string|null,canonicalUrl:string|null,robots:string,keywords:string|null,author:string|null,alternates:array<string,string>,openGraph:array<string,string>,openGraphLocales:list<string>,twitter:array<string,string>,structuredData:list<array<string,mixed>>} */
     public function resolve(
         Authenticatable|SystemActor|PublicActor $actor,
         Model|SeoProfile $owner,
@@ -183,10 +183,12 @@ final readonly class SeoReader
 
         return [
             'locale' => $translation->locale,
-            'title' => $this->brandedTitle($plainTitle),
+            'title' => $this->brandedTitle($plainTitle, $translation->prepend_site_title),
             'description' => $description,
             'canonicalUrl' => $canonical,
-            'robots' => $this->robots($profile),
+            'robots' => $translation->robots ?? $this->robots($profile),
+            'keywords' => $this->translatedString($profile, 'keywords', $locale),
+            'author' => $this->translatedString($profile, 'author', $locale),
             'alternates' => $alternates,
             'openGraph' => $openGraph,
             'openGraphLocales' => $openGraphLocales,
@@ -235,7 +237,7 @@ final readonly class SeoReader
         return $canonical;
     }
 
-    /** @return array{locale:string,title:string|null,description:string|null,canonicalUrl:string|null,robots:string,alternates:array<string,string>,openGraph:array<string,string>,openGraphLocales:list<string>,twitter:array<string,string>,structuredData:list<array<string,mixed>>} */
+    /** @return array{locale:string,title:string|null,description:string|null,canonicalUrl:string|null,robots:string,keywords:string|null,author:string|null,alternates:array<string,string>,openGraph:array<string,string>,openGraphLocales:list<string>,twitter:array<string,string>,structuredData:list<array<string,mixed>>} */
     private function defaults(string $locale, ?string $robots = null): array
     {
         return [
@@ -244,6 +246,8 @@ final readonly class SeoReader
             'description' => $this->stringConfig('nvl-seo.defaults.description'),
             'canonicalUrl' => null,
             'robots' => $robots ?? $this->defaultRobots(),
+            'keywords' => null,
+            'author' => null,
             'alternates' => [],
             'openGraph' => [],
             'openGraphLocales' => [],
@@ -252,10 +256,13 @@ final readonly class SeoReader
         ];
     }
 
-    private function brandedTitle(?string $title): ?string
+    private function brandedTitle(?string $title, ?bool $prepend = null): ?string
     {
         if ($title === '') {
             return null;
+        }
+        if ($prepend === false) {
+            return $title;
         }
 
         $siteName = $this->stringConfig('nvl-seo.site.name');
@@ -270,7 +277,7 @@ final readonly class SeoReader
 
         $separator = SeoConfiguration::string('nvl-seo.site.title_separator', ' | ');
 
-        return config('nvl-seo.site.title_position', 'suffix') === 'prefix'
+        return ($prepend === true || config('nvl-seo.site.title_position', 'suffix') === 'prefix')
             ? $siteName.$separator.$title
             : $title.$separator.$siteName;
     }

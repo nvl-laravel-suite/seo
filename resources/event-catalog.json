@@ -32,6 +32,36 @@
                     "visibility": "public",
                     "required": false,
                     "default_expression": "1"
+                },
+                {
+                    "name": "ownerType",
+                    "type": "?string",
+                    "visibility": "public",
+                    "required": false,
+                    "default_expression": "null"
+                },
+                {
+                    "name": "ownerId",
+                    "type": "?string",
+                    "visibility": "public",
+                    "required": false,
+                    "default_expression": "null"
+                },
+                {
+                    "name": "previousTranslations",
+                    "type": "array",
+                    "collection_shape": "array<string,array{id:string,path:string|null}>",
+                    "visibility": "public",
+                    "required": false,
+                    "default_expression": "[]"
+                },
+                {
+                    "name": "currentTranslations",
+                    "type": "array",
+                    "collection_shape": "array<string,array{id:string,path:string|null}>",
+                    "visibility": "public",
+                    "required": false,
+                    "default_expression": "[]"
                 }
             ],
             "public_fields": [
@@ -50,10 +80,28 @@
                 {
                     "name": "schemaVersion",
                     "type": "int"
+                },
+                {
+                    "name": "ownerType",
+                    "type": "?string"
+                },
+                {
+                    "name": "ownerId",
+                    "type": "?string"
+                },
+                {
+                    "name": "previousTranslations",
+                    "type": "array",
+                    "collection_shape": "array<string,array{id:string,path:string|null}>"
+                },
+                {
+                    "name": "currentTranslations",
+                    "type": "array",
+                    "collection_shape": "array<string,array{id:string,path:string|null}>"
                 }
             ],
             "kind": "value_object",
-            "schema_version": 1,
+            "schema_version": 2,
             "trigger": "SEO profile state changed.",
             "aliases": [],
             "producers": [
@@ -63,7 +111,7 @@
                 }
             ],
             "security_notes": [
-                "Profile ID, scope and operation only; no SEO field content. Source model connection supplies timing."
+                "Profile ID, scope, operation, stored owner identity and locale-keyed translation IDs and paths. The profile connection supplies commit timing."
             ],
             "no_op_semantics": "Existing sync/archive/delete branches govern publication. No generic request deduplication is added."
         }
@@ -80,7 +128,7 @@
         "manual_producers": "Use Nvl\\Support\\Events\\DomainEventDispatcher::dispatch($event, $writerConnection). Native Event::dispatch() is immediate and has no package interception."
     },
     "security_notes": [
-        "Profile ID, scope and operation only; no SEO field content. Source model connection supplies timing."
+        "Profile ID, scope, operation, stored owner identity and locale-keyed translation IDs and paths. The profile connection supplies commit timing."
     ],
     "no_op_semantics": "Existing sync/archive/delete branches govern publication. No generic request deduplication is added.",
     "notes": []

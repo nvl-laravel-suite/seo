@@ -35,6 +35,8 @@ use Nvl\Translatable\Services\RelatedTranslationStore;
  *
  * @api
  *
+ * @phpstan-import-type PathSnapshots from SeoProfileChanged
+ *
  * @phpstan-type ProfileMutation array{isIndexable?:bool,isFollowable?:bool,maxSnippet?:int|null,maxImagePreview?:string|null,maxVideoPreview?:int|null,sitemapIncluded?:bool,sitemapPriority?:string|null,sitemapChangeFrequency?:SitemapChangeFrequency|string|null,metadata?:array<string,mixed>|null,translations?:array<string,array<string,mixed>>,expected_revision?:int|null}
  */
 final readonly class SeoProfiles
@@ -84,6 +86,7 @@ final readonly class SeoProfiles
                 }
 
                 $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: $profile->exists ? SeoAbility::Update : SeoAbility::Create, profile: $profile, owner: $owner, ownerAlias: $this->owners->aliasFor($owner), scope: $scope));
+                $previous = $profile->exists ? $this->pathSnapshots($profile) : [];
                 $profile->fill(collect($data)->except(['translations', 'expected_revision'])->mapWithKeys(static fn (mixed $value, string $field): array => [Str::snake($field) => $value])->all());
 
                 if ($profile->exists) {
@@ -122,11 +125,7 @@ final readonly class SeoProfiles
                 }
 
                 $profile->refresh()->load('translations');
-                $identity = $this->sitemapCache->capture($profile->scope);
-                (SeoModelRegistry::newProfile())->getConnection()->afterCommit(function () use ($identity): void {
-                    $this->sitemapCache->forgetCaptured($identity);
-                });
-                $this->domainEvents->dispatch(new SeoProfileChanged($profile->id, $profile->scope, 'synced'), $profile->getConnection());
+                $this->publishChange($profile, 'synced', $previous, $this->pathSnapshots($profile));
 
                 return $profile;
             });
@@ -202,6 +201,10 @@ final readonly class SeoProfiles
                     'path' => $copyPaths ? $translation->path : null,
                     'title' => $translation->title,
                     'description' => $translation->description,
+                    'robots' => $translation->robots,
+                    'prependSiteTitle' => $translation->prepend_site_title,
+                    'keywords' => $translation->keywords,
+                    'author' => $translation->author,
                     'canonicalUrl' => $copyPaths ? $translation->canonical_url : null,
                     'imageUrl' => $translation->image_url,
                     'imageReference' => $translation->image_reference,
@@ -258,15 +261,8 @@ final readonly class SeoProfiles
             $profile->archived_at = $archived ? now() : null;
             $profile->save();
             $profile->refresh()->load('translations');
-            $identity = $this->sitemapCache->capture($profile->scope);
-            (SeoModelRegistry::newProfile())->getConnection()->afterCommit(function () use ($identity): void {
-                $this->sitemapCache->forgetCaptured($identity);
-            });
-            $this->domainEvents->dispatch(new SeoProfileChanged(
-                $profile->id,
-                $profile->scope,
-                $archived ? 'archived' : 'restored',
-            ), $profile->getConnection());
+            $paths = $this->pathSnapshots($profile);
+            $this->publishChange($profile, $archived ? 'archived' : 'restored', $paths, $paths);
 
             return $profile;
         });
@@ -286,17 +282,12 @@ final readonly class SeoProfiles
                 throw StaleSeoProfileException::forProfile($profile->id);
             }
 
-            $id = $profile->id;
-            $scope = $profile->scope;
+            $previous = $this->pathSnapshots($profile);
             $profile->translations()->delete();
             $deleted = (bool) $profile->delete();
 
             if ($deleted) {
-                $identity = $this->sitemapCache->capture($scope);
-                (SeoModelRegistry::newProfile())->getConnection()->afterCommit(function () use ($identity): void {
-                    $this->sitemapCache->forgetCaptured($identity);
-                });
-                $this->domainEvents->dispatch(new SeoProfileChanged($id, $scope, 'deleted'), $profile->getConnection());
+                $this->publishChange($profile, 'deleted', $previous, []);
             }
 
             return $deleted;
@@ -331,5 +322,38 @@ final readonly class SeoProfiles
             'processed' => $processed,
             'nextCursor' => $page['nextCursor'],
         ];
+    }
+
+    /** @return PathSnapshots */
+    private function pathSnapshots(SeoProfile $profile): array
+    {
+        $profile->loadMissing('translations');
+
+        return $profile->translations->sortBy('locale', SORT_STRING)->mapWithKeys(static fn (SeoProfileTranslation $row): array => [
+            $row->locale => ['id' => $row->id, 'path' => $row->path],
+        ])->all();
+    }
+
+    /**
+     * @param  PathSnapshots  $previous
+     * @param  PathSnapshots  $current
+     */
+    private function publishChange(SeoProfile $profile, string $operation, array $previous, array $current): void
+    {
+        $connection = $profile->getConnection();
+        $identity = $this->sitemapCache->capture($profile->scope);
+        $connection->afterCommit(function () use ($identity): void {
+            $this->sitemapCache->forgetCaptured($identity);
+        });
+        $this->domainEvents->dispatch(new SeoProfileChanged(
+            $profile->id,
+            $profile->scope,
+            $operation,
+            schemaVersion: 2,
+            ownerType: $profile->seoable_type,
+            ownerId: $profile->seoable_id,
+            previousTranslations: $previous,
+            currentTranslations: $current,
+        ), $connection);
     }
 }

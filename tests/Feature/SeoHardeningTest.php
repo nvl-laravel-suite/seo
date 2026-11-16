@@ -11,10 +11,12 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Connection;
 use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Nvl\Seo\Contracts\SeoAuthorization;
 use Nvl\Seo\Contracts\SeoImportSource;
 use Nvl\Seo\Contracts\SitemapArtifactStore;
@@ -28,16 +30,45 @@ use Nvl\Seo\Models\SeoRedirect;
 use Nvl\Seo\Services\AbsoluteUrl;
 use Nvl\Seo\Services\RobotsGenerator;
 use Nvl\Seo\Services\SeoDoctor;
+use Nvl\Seo\Services\SeoHeadRenderer;
 use Nvl\Seo\Services\SeoProfiles;
+use Nvl\Seo\Services\SeoReader;
 use Nvl\Seo\Services\SeoRedirects;
+use Nvl\Seo\Services\SeoSchemaAdopter;
 use Nvl\Seo\Services\SitemapCache;
 use Nvl\Seo\Services\SitemapGenerator;
 use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Seo\Support\SeoAuthorizationContext;
+use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Tests\Fixtures\OwnershipActor;
 use Nvl\Seo\Tests\Fixtures\TestSeoOwner;
 use Nvl\Seo\ValueObjects\SitemapEntry;
 use Nvl\Support\Enums\SystemActor;
+use Nvl\Translatable\Enums\TranslationSyncMode;
+
+function createLegacySeoSchema(): void
+{
+    Schema::create('seo', static function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->uuidMorphs('seoable');
+        $table->timestamps();
+    });
+    Schema::create('seo_i18n', static function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->foreignUuid('seo_id')->constrained('seo');
+        $table->char('locale', 2);
+        foreach (['path', 'title', 'canonical_url', 'author', 'image_url', 'robots'] as $field) {
+            $table->string($field)->nullable();
+        }
+        $table->text('description')->nullable();
+        $table->text('keywords')->nullable();
+        $table->json('additional_data')->nullable();
+        $table->json('jsonld_data')->nullable();
+        $table->boolean('prepend_site_title')->default(true);
+        $table->unique(['seo_id', 'locale']);
+        $table->timestamps();
+    });
+}
 
 it('authorizes redirect updates against the stored source identity', function (string $identity): void {
     $redirect = app(SeoRedirects::class)->sync(SystemActor::Background, null, [
@@ -429,6 +460,134 @@ it('keeps committed profile writes successful when sitemap invalidation fails', 
         ->assertFailed();
 });
 
+it('publishes immutable localized path snapshots only after the profile connection commits', function (): void {
+    $this->commitDatabaseFixture();
+    $owner = TestSeoOwner::query()->create(['name' => 'Path snapshots']);
+    $connection = (new SeoProfile)->getConnection();
+    $profiles = app(SeoProfiles::class);
+    $actor = SystemActor::Background;
+    Event::fake([SeoProfileChanged::class]);
+
+    try {
+        $profile = $connection->transaction(function () use ($profiles, $actor, $owner): SeoProfile {
+            $profile = $profiles->sync($actor, $owner, ['translations' => ['en' => ['path' => '/snapshot-old'], 'bg' => ['path' => '/snapshot-bg']]]);
+            Event::assertNotDispatched(SeoProfileChanged::class);
+
+            return $profile;
+        });
+        $first = Event::dispatched(SeoProfileChanged::class)->sole()[0];
+        expect($first->schemaVersion())->toBe(2)
+            ->and($first->ownerType)->toBe($owner->getMorphClass())->and($first->ownerId)->toBe($owner->getKey())
+            ->and($first->previousTranslations)->toBe([])
+            ->and(array_column($first->currentTranslations, 'path'))->toBe(['/snapshot-bg', '/snapshot-old']);
+
+        $connection->beginTransaction();
+        try {
+            $profiles->sync($actor, $owner, ['translations' => ['en' => ['path' => '/snapshot-rollback']]]);
+        } finally {
+            $connection->rollBack();
+        }
+        Event::assertDispatchedTimes(SeoProfileChanged::class, 1);
+
+        $profile = $profiles->sync($actor, $owner, ['translations' => ['en' => ['path' => '/snapshot-new']]], translationMode: TranslationSyncMode::Replace);
+        $second = Event::dispatched(SeoProfileChanged::class)->last()[0];
+        expect($second->previousTranslations)->toBe($first->currentTranslations)
+            ->and($second->currentTranslations)->toBe(['en' => ['id' => $profile->translations->sole()->id, 'path' => '/snapshot-new']]);
+
+        expect($profiles->delete($actor, $profile))->toBeTrue();
+        $deleted = Event::dispatched(SeoProfileChanged::class)->last()[0];
+        expect($deleted->operation)->toBe('deleted')->and($deleted->previousTranslations)->toBe($second->currentTranslations)
+            ->and($deleted->currentTranslations)->toBe([]);
+    } finally {
+        SeoProfile::query()->where('seoable_id', $owner->getKey())->delete();
+        $owner->forceDelete();
+    }
+});
+
+it('renders localized robots and head metadata and inherits missing locale overrides', function (): void {
+    $owner = TestSeoOwner::query()->create(['name' => 'Localized metadata']);
+    $actor = SystemActor::Background;
+    $profiles = app(SeoProfiles::class);
+    $profiles->sync($actor, $owner, ['translations' => [
+        'en' => ['title' => 'Landing', 'robots' => 'noindex, nofollow', 'prependSiteTitle' => true, 'keywords' => 'Shop, gifts', 'author' => 'A & B'],
+        'bg' => ['title' => 'Начало', 'robots' => 'index, nofollow', 'prependSiteTitle' => false, 'author' => 'Иван'],
+    ]]);
+
+    $reader = app(SeoReader::class);
+    expect($reader->resolve($actor, $owner, 'en'))->toMatchArray(['robots' => 'noindex, nofollow', 'title' => 'Example | Landing', 'keywords' => 'Shop, gifts', 'author' => 'A & B'])
+        ->and($reader->resolve($actor, $owner, 'bg'))->toMatchArray(['robots' => 'index, nofollow', 'title' => 'Начало', 'author' => 'Иван']);
+    expect(app(SeoHeadRenderer::class)->render($owner, $actor, 'en'))->toContain('<meta name="keywords" content="Shop, gifts">', '<meta name="author" content="A &amp; B">');
+
+    $profiles->sync($actor, $owner, ['translations' => ['bg' => ['robots' => null, 'prependSiteTitle' => null]]]);
+    $fallback = $reader->resolve($actor, $owner, 'bg');
+    expect($fallback['robots'])->toStartWith('index, follow')
+        ->and($fallback['title'])->toBe('Начало | Example')
+        ->and($fallback['author'])->toBe('Иван');
+});
+
+it('stages a legacy SEO graph with the same record IDs, timestamps and canonical route hashes', function (): void {
+    $this->commitDatabaseFixture();
+    createLegacySeoSchema();
+    $owner = TestSeoOwner::query()->create(['name' => 'Legacy SEO']);
+    $profileId = (string) Str::uuid();
+    $translationId = (string) Str::uuid();
+    $timestamp = '2026-01-03 12:00:00';
+
+    try {
+        DB::table('seo')->insert(['id' => $profileId, 'seoable_type' => 'old-article', 'seoable_id' => $owner->getKey(), 'created_at' => $timestamp, 'updated_at' => $timestamp]);
+        DB::table('seo_i18n')->insert(['id' => $translationId, 'seo_id' => $profileId, 'locale' => 'en', 'path' => 'legacy/', 'title' => 'Legacy', 'additional_data' => '{"custom":false}', 'robots' => 'noindex', 'prepend_site_title' => false, 'created_at' => $timestamp, 'updated_at' => $timestamp]);
+
+        $actor = SystemActor::Background;
+        $source = ['scope' => 'shop', 'owner_aliases' => ['old-article' => 'article']];
+        $adopter = app(SeoSchemaAdopter::class);
+        $plan = $adopter->plan($actor, $source);
+        expect($plan)->toMatchArray(['profiles' => 1, 'translations' => 1, 'staged_profiles' => 0, 'staged_translations' => 0, 'conflicts' => []]);
+        expect(SeoProfile::query()->whereKey($profileId)->exists())->toBeFalse();
+        expect(fn () => $adopter->verify($actor, $plan['fingerprint'], $source))->toThrow(InvalidSeoMutationException::class, 'not fully staged');
+
+        $staged = $adopter->apply($actor, $plan['fingerprint'], $source);
+        expect($staged)->toMatchArray(['staged_profiles' => 1, 'staged_translations' => 1]);
+        expect($adopter->verify($actor, $plan['fingerprint'], $source))->toBe($staged)
+            ->and($adopter->apply($actor, $plan['fingerprint'], $source))->toBe($staged);
+
+        $profile = SeoProfile::query()->findOrFail($profileId);
+        $translation = $profile->translations()->sole();
+        expect($profile->seoable->getKey())->toBe($owner->getKey())->and($profile->created_at->toDateTimeString())->toBe($timestamp)
+            ->and($translation->id)->toBe($translationId)->and($translation->created_at->toDateTimeString())->toBe($timestamp)
+            ->and($translation->path)->toBe('/legacy')->and($translation->path_hash)->toBe(SeoPath::hash('shop', 'en', '/legacy'))
+            ->and($translation->metadata)->toBe(['custom' => false])->and($translation->prepend_site_title)->toBeFalse();
+    } finally {
+        SeoProfile::query()->whereKey($profileId)->delete();
+        Schema::dropIfExists('seo_i18n');
+        Schema::dropIfExists('seo');
+        $owner->forceDelete();
+    }
+});
+
+it('reports normalized legacy route collisions before staging any SEO profiles', function (): void {
+    $this->commitDatabaseFixture();
+    createLegacySeoSchema();
+    $owners = collect([TestSeoOwner::query()->create(['name' => 'Legacy A']), TestSeoOwner::query()->create(['name' => 'Legacy B'])]);
+    $profileIds = [(string) Str::uuid(), (string) Str::uuid()];
+
+    try {
+        foreach ($owners as $index => $owner) {
+            DB::table('seo')->insert(['id' => $profileIds[$index], 'seoable_type' => $owner->getMorphClass(), 'seoable_id' => $owner->getKey()]);
+            DB::table('seo_i18n')->insert(['id' => (string) Str::uuid(), 'seo_id' => $profileIds[$index], 'locale' => 'en', 'path' => $index === 0 ? '/shared/' : 'shared']);
+        }
+        $actor = SystemActor::Background;
+        $adopter = app(SeoSchemaAdopter::class);
+        $plan = $adopter->plan($actor);
+        expect($plan['conflicts'])->toHaveCount(1)->and($plan['conflicts'][0])->toContain($profileIds[0], $profileIds[1], '/shared');
+        expect(fn () => $adopter->apply($actor, $plan['fingerprint']))->toThrow(InvalidSeoMutationException::class, 'conflicts');
+        expect(SeoProfile::query()->whereKey($profileIds)->count())->toBe(0);
+    } finally {
+        Schema::dropIfExists('seo_i18n');
+        Schema::dropIfExists('seo');
+        $owners->each->forceDelete();
+    }
+});
+
 it('namespaces default sitemap cache identities and preserves host-selected prefixes', function (): void {
     $store = new ArrayStore;
     $repository = new CacheRepository($store);
@@ -802,7 +961,8 @@ it('reports an unapplied redirect lock migration as an unhealthy schema', functi
 });
 
 it('rolls package migrations back cleanly and fails loudly on an occupied table', function (): void {
-    $this->artisan('migrate:rollback', ['--step' => 5, '--force' => true])
+    $directory = __DIR__.'/../../database/migrations';
+    $this->artisan('migrate:rollback', ['--path' => [$directory], '--realpath' => true, '--step' => count(glob($directory.'/*.php') ?: []), '--force' => true])
         ->assertSuccessful();
 
     expect(Schema::hasTable(SeoTables::Profiles))->toBeFalse()
@@ -824,6 +984,7 @@ it('rolls package migrations back cleanly and fails loudly on an occupied table'
 
     expect(Schema::hasTable(SeoTables::Profiles))->toBeTrue()
         ->and(Schema::hasTable(SeoTables::I18n))->toBeTrue()
+        ->and(Schema::hasColumns(SeoTables::I18n, ['robots', 'prepend_site_title', 'keywords', 'author']))->toBeTrue()
         ->and(Schema::hasTable(SeoTables::Redirects))->toBeTrue()
         ->and(Schema::hasTable(SeoTables::RedirectLocks))->toBeTrue();
 });
