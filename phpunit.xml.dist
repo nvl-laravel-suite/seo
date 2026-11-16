@@ -12,7 +12,6 @@
     <testsuites>
         <testsuite name="NVL SEO">
             <directory>tests</directory>
-            <exclude>tests/Fixtures/RetiredApi</exclude>
         </testsuite>
     </testsuites>
     <php>

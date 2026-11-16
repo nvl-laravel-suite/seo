@@ -461,6 +461,11 @@ public function scopeWithAllTranslations(Illuminate\Database\Eloquent\Builder $q
 resolved @param Illuminate\Database\Eloquent\Builder<Nvl\Seo\Models\SeoProfile> $query
 @return Builder<static>
 resolved @return Illuminate\Database\Eloquent\Builder<Nvl\Seo\Models\SeoProfile>
+public function scopeWithJoinedTranslation(Illuminate\Database\Eloquent\Builder $query, ?string $locale=null, string $alias="nvl_translation"): Illuminate\Database\Eloquent\Builder
+@param Builder<static> $query
+resolved @param Illuminate\Database\Eloquent\Builder<Nvl\Seo\Models\SeoProfile> $query
+@return Builder<static>
+resolved @return Illuminate\Database\Eloquent\Builder<Nvl\Seo\Models\SeoProfile>
 public function scopeWithResolvedTranslations(Illuminate\Database\Eloquent\Builder $query, ?string $locale=null): Illuminate\Database\Eloquent\Builder
 @param Builder<static> $query
 resolved @param Illuminate\Database\Eloquent\Builder<Nvl\Seo\Models\SeoProfile> $query
@@ -491,6 +496,8 @@ resolved @method static Illuminate\Database\Eloquent\Builder<Nvl\Seo\Models\SeoP
 resolved @method static Illuminate\Database\Eloquent\Builder<Nvl\Seo\Models\SeoProfile> whereTranslationNull(string $field, ?string $locale = null)
 @method static Builder<static> withAllTranslations()
 resolved @method static Illuminate\Database\Eloquent\Builder<Nvl\Seo\Models\SeoProfile> withAllTranslations()
+@method static Builder<static> withJoinedTranslation(?string $locale = null, string $alias = 'nvl_translation')
+resolved @method static Illuminate\Database\Eloquent\Builder<Nvl\Seo\Models\SeoProfile> withJoinedTranslation(?string $locale = null, string $alias = 'nvl_translation')
 @method static Builder<static> withResolvedTranslations(?string $locale = null)
 resolved @method static Illuminate\Database\Eloquent\Builder<Nvl\Seo\Models\SeoProfile> withResolvedTranslations(?string $locale = null)
 @property (Carbon | null) $archived_at

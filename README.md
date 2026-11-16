@@ -47,3 +47,5 @@ Shared [service contracts, model extensions and composition](https://github.com/
 Migrate an empty native SEO target scope and keep the legacy `seo` / `seo_i18n` source quiescent. `SeoSchemaAdopter::plan($actor, $source)` accepts `connection`, `scope`, and `owner_aliases`, a map from legacy morph types to registered SEO owner aliases. It checks schema, canonical owners, normalized route conflicts and existing staged rows. The adopter preserves profile and translation UUIDs and timestamps, maps `seo_id` to the native parent, and carries `additional_data` into translation metadata.
 
 Pass the reviewed `fingerprint` and the same source options to `apply()`. Retry with the same fingerprint after interruption. Call `verify()` before switching the host integration. Stage into standalone unowned storage before the separate native Ownership adoption process where applicable.
+
+New adoptions should run through `php artisan nvl:adopt seo plan|apply|verify|activate <manifest.json>` with the same options as a JSON manifest. Each batch commits legacy profiles with their translations and is checkpointed; activate after verify passes. See [UPGRADING](UPGRADING.md).

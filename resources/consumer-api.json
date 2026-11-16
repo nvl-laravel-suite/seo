@@ -383,6 +383,7 @@
                 "scopeWhereTranslationNotNull",
                 "scopeWhereTranslationNull",
                 "scopeWithAllTranslations",
+                "scopeWithJoinedTranslation",
                 "scopeWithResolvedTranslations",
                 "seoable",
                 "setLocale",
@@ -395,6 +396,7 @@
                 "whereTranslationNotNull",
                 "whereTranslationNull",
                 "withAllTranslations",
+                "withJoinedTranslation",
                 "withResolvedTranslations"
             ],
             "properties": [

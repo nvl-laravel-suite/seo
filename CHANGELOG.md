@@ -5,6 +5,10 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Adoption runs through nvl:adopt with reviewed, checkpointed batches and an explicit activate step. Committed batches survive a failure. Keep writers stopped until verify and activate pass. The `seo` adapter commits legacy profiles together with their translations and keeps the owner-alias, scope and route-collision checks; `SeoSchemaAdopter` keeps its existing behaviour.
+
 ## [7.1.0] - 2026-11-16
 
 ### Highlights

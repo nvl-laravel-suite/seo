@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
 use Nvl\Ownership\Services\OwnershipAdoptionRegistry;
+use Nvl\Seo\Adoption\SeoSchemaAdoptionAdapter;
 use Nvl\Seo\Console\Commands\ClearSeoSitemapCommand;
 use Nvl\Seo\Console\Commands\PruneSeoRedirectsCommand;
 use Nvl\Seo\Console\Commands\SeoDoctorCommand;
@@ -27,6 +28,7 @@ use Nvl\Seo\Services\SeoModelRegistry;
 use Nvl\Seo\Services\SeoOwnerRegistry;
 use Nvl\Seo\Services\SitemapRegistry;
 use Nvl\Seo\Services\StructuredDataRegistry;
+use Nvl\Support\Adoption\AdoptionRegistry;
 use Nvl\Support\Doctor\PackageDoctorContributor;
 use Nvl\Support\Globals\GlobalNames;
 use Nvl\Support\Ownership\Contracts\OwnershipIntegratedProvider;
@@ -96,6 +98,7 @@ final class SeoServiceProvider extends ServiceProvider implements OwnershipInteg
         StructuredDataRegistry $structuredData,
     ): void {
         (new OwnershipSeoResourceRegistrar)->register($this->app->make(OwnershipResourceRegistry::class));
+        $this->app->make(AdoptionRegistry::class)->register('seo', SeoSchemaAdoptionAdapter::class);
         if ($this->app->bound(OwnershipAdoptionRegistry::class)) {
             $this->app->make(OwnershipAdoptionRegistry::class)->register('seo', SeoAdoptionAdapter::class);
         }
