@@ -5,6 +5,19 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+## [7.1.0] - 2026-11-16
+
+### Highlights
+
+- Adopt legacy SEO records and configure robots directives, title placement, keywords, and author per locale.
+
+<!-- NVL GENERATED CHANGES START -->
+### Changed
+
+- close NVL consumer adoption and portability gaps
+- Merge pull request #21 from nicolasvlachos/codex/consumer-postgresql-validation
+<!-- NVL GENERATED CHANGES END -->
+
 ## [7.0.5] - 2026-11-13
 
 ### Fixed
