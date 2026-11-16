@@ -5,6 +5,8 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+## [7.3.0] - 2026-11-17
+
 ### Fixed
 
 - `SeoReader::resolve()` given a profile now rejects a `$scope` that differs from the profile's stored scope, resolves the profile's canonical owner, authorizes the `Resolve` decision with that owner and the profile, and returns defaults for an archived profile. Hidden, deleted or unregistered owners no longer resolve through their profile.
@@ -15,6 +17,12 @@ All notable changes to `nvl/seo` are documented here.
 ### Added
 
 - PostgreSQL process-level race tests for initial profile creation, identical localized paths and opposing redirect edges.
+
+<!-- NVL GENERATED CHANGES START -->
+### Changed
+
+- implement the Final spec audit for one release
+<!-- NVL GENERATED CHANGES END -->
 
 ## [7.2.0] - 2026-11-16
 
