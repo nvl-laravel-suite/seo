@@ -69,6 +69,9 @@ final readonly class SeoReader
             $scope = $profile->scope;
             $owner = $this->owners->resolve($this->owners->aliasForMorphType($profile->seoable_type), $profile->seoable_id);
         }
+        if ($profile === null) {
+            $scope = SeoScope::normalize($scope);
+        }
         $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::Resolve, profile: $profile, owner: $owner, scope: $scope));
         $locale ??= $this->contentLocale->get();
         $profile ??= SeoModelRegistry::profiles()

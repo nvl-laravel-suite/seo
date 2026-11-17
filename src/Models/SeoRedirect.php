@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 use Nvl\Seo\Database\Factories\SeoRedirectFactory;
 use Nvl\Seo\Definitions\Tables\SeoTables;
 use Nvl\Seo\Models\Concerns\GuardsSeoOwnership;
+use Nvl\Seo\Support\SeoInstantCast;
 use Nvl\Seo\Support\SeoPath;
 use Nvl\Seo\Support\SeoScope;
 use Nvl\Support\Config\PackageStorage;
@@ -85,7 +86,7 @@ class SeoRedirect extends Model implements Ownable
         return [
             'status_code' => 'integer',
             'is_active' => 'boolean',
-            'expires_at' => 'immutable_datetime',
+            'expires_at' => SeoInstantCast::class,
             'hit_count' => 'integer',
             'last_hit_at' => 'immutable_datetime',
             'revision' => 'integer',

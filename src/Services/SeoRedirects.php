@@ -222,16 +222,16 @@ final readonly class SeoRedirects
         ?string $locale = null,
         ?string $scope = null,
     ): ?array {
-        $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::Resolve, scope: $scope, redirectSource: $source, redirectLocale: $locale));
-        if (! (bool) config('nvl-seo.redirects.enabled', true)) {
-            return null;
-        }
-
+        // Authorize the canonical identity the lookup uses, so equivalent spellings cannot pass a narrower policy.
         $scope = SeoScope::normalize($scope);
         $locale = $locale === null ? null : $this->locales->assertSupported($locale);
         try {
             $source = SeoPath::normalize($source) ?? '/';
         } catch (InvalidArgumentException) {
+            $source = null;
+        }
+        $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::Resolve, scope: $scope, redirectSource: $source, redirectLocale: $locale));
+        if ($source === null || ! (bool) config('nvl-seo.redirects.enabled', true)) {
             return null;
         }
         $redirect = $this->redirects->findActive($scope, $locale, $source);

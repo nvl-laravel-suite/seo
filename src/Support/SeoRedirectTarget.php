@@ -16,6 +16,9 @@ final class SeoRedirectTarget
      */
     public static function normalize(string $target): string
     {
+        if (! mb_check_encoding($target, 'UTF-8')) {
+            throw new InvalidArgumentException('A redirect target must be valid UTF-8.');
+        }
         if (HttpUrl::isAbsolute($target)) {
             return $target;
         }

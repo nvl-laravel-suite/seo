@@ -193,9 +193,9 @@ final readonly class SeoMutationValidator
         return [
             'isIndexable' => ['sometimes', 'boolean'],
             'isFollowable' => ['sometimes', 'boolean'],
-            'maxSnippet' => ['sometimes', 'nullable', 'integer', 'min:-1'],
+            'maxSnippet' => ['sometimes', 'nullable', 'integer', 'min:-1', 'max:2147483647'],
             'maxImagePreview' => ['sometimes', 'nullable', Rule::in(['none', 'standard', 'large'])],
-            'maxVideoPreview' => ['sometimes', 'nullable', 'integer', 'min:-1'],
+            'maxVideoPreview' => ['sometimes', 'nullable', 'integer', 'min:-1', 'max:2147483647'],
             'sitemapIncluded' => ['sometimes', 'boolean'],
             'sitemapPriority' => ['sometimes', 'nullable', 'numeric', 'between:0,1'],
             'sitemapChangeFrequency' => [
@@ -213,25 +213,28 @@ final readonly class SeoMutationValidator
         ];
     }
 
+    /** Valid UTF-8 without NUL bytes, which PostgreSQL rejects or silently truncates. */
+    private const string STORABLE_TEXT = 'regex:/\A[^\x00]*\z/u';
+
     /** @return array<string,mixed> */
     public static function translationRules(): array
     {
         return [
             'path' => ['sometimes', 'nullable', 'string', 'max:2048'],
-            'title' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string', 'max:500'],
-            'robots' => ['sometimes', 'nullable', 'string', 'max:255', 'not_regex:/[\x00-\x1F\x7F]/'],
+            'title' => ['sometimes', 'nullable', 'string', 'max:255', self::STORABLE_TEXT],
+            'description' => ['sometimes', 'nullable', 'string', 'max:500', self::STORABLE_TEXT],
+            'robots' => ['sometimes', 'nullable', 'string', 'max:255', 'not_regex:/[\x00-\x1F\x7F]/', self::STORABLE_TEXT],
             'prependSiteTitle' => ['sometimes', 'nullable', 'boolean'],
-            'keywords' => ['sometimes', 'nullable', 'string', 'max:2048'],
-            'author' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'keywords' => ['sometimes', 'nullable', 'string', 'max:2048', self::STORABLE_TEXT],
+            'author' => ['sometimes', 'nullable', 'string', 'max:255', self::STORABLE_TEXT],
             'canonicalUrl' => ['sometimes', 'nullable', 'string', 'max:2048', new CanonicalUrl],
             'imageUrl' => ['sometimes', 'nullable', 'url:http,https', 'max:2048'],
-            'imageReference' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'imageAlt' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'openGraphTitle' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'openGraphDescription' => ['sometimes', 'nullable', 'string', 'max:500'],
-            'twitterTitle' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'twitterDescription' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'imageReference' => ['sometimes', 'nullable', 'string', 'max:255', self::STORABLE_TEXT],
+            'imageAlt' => ['sometimes', 'nullable', 'string', 'max:255', self::STORABLE_TEXT],
+            'openGraphTitle' => ['sometimes', 'nullable', 'string', 'max:255', self::STORABLE_TEXT],
+            'openGraphDescription' => ['sometimes', 'nullable', 'string', 'max:500', self::STORABLE_TEXT],
+            'twitterTitle' => ['sometimes', 'nullable', 'string', 'max:255', self::STORABLE_TEXT],
+            'twitterDescription' => ['sometimes', 'nullable', 'string', 'max:500', self::STORABLE_TEXT],
             'twitterCard' => ['sometimes', 'nullable', Rule::enum(TwitterCard::class)],
             'structuredData' => ['sometimes', 'nullable', 'array', new ValidStructuredData],
             'metadata' => ['sometimes', 'nullable', 'array'],

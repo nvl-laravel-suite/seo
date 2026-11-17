@@ -5,6 +5,17 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- Integer owner lookups by alias validate the original identifier as a signed integer, so a value such as `0-1` is not found before querying instead of passing as `-1` and raising a PostgreSQL invalid-text error. Leading zeros after a minus sign are now accepted as PostgreSQL reads them, so `-05` resolves the owner with key -5.
+- Integer owner lookups by alias also respect the owner key column's width on PostgreSQL, so a key such as `2147483648` for an `increments()` owner is not found instead of raising a numeric-range error.
+- Redirect `expiresAt` values with a UTC offset keep their instant, so `2026-12-01T00:00:00-05:00` no longer expires five hours early.
+- Redirects expire at their instant inside a daylight-saving overlap: `expires_at` is stored and compared as UTC with an explicit offset instead of an ambiguous application-timezone wall clock, which let an expired redirect resolve again during the repeated hour and, on PostgreSQL, depended on the session timezone. See UPGRADING.
+- `SeoRedirects::resolve()`, `SeoReader::resolve()` for an owner, and `SeoProfiles::status()` authorize the normalized scope and redirect path they then read, so an equivalent spelling such as `' PRIVATE '` or `/secret/` can no longer pass a policy that denies `private` or `/secret` and still read the protected record. The `SeoProfiles::duplicate()` authorization context also carries the normalized target scope.
+- Profile titles, descriptions, robots, keywords, authors, image references and alt text, Open Graph and Twitter copy reject NUL bytes and invalid UTF-8 with a validation error. PostgreSQL silently truncated such text at the NUL byte or failed with a raw SQLSTATE 22021 error.
+- Redirect source paths, redirect targets and profile paths reject invalid UTF-8 instead of failing in PostgreSQL with SQLSTATE 22021; public resolution of such a path finds no redirect.
+- Profile `maxSnippet` and `maxVideoPreview` reject values above 2147483647, which their integer columns cannot store.
+
 ## [7.3.0] - 2026-11-17
 
 ### Fixed

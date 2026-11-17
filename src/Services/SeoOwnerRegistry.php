@@ -119,9 +119,7 @@ final class SeoOwnerRegistry
             $query->withoutGlobalScope(SoftDeletingScope::class);
         }
         $prototype = $query->getModel();
-        // Reject keys the owner's key column cannot hold before PostgreSQL raises an invalid-text or range error.
-        $digits = ltrim($id, '0') ?: '0';
-        if ($prototype->getKeyType() === 'int' && (string) (int) $digits !== $digits) {
+        if ($prototype->getKeyType() === 'int' && ! $this->fitsIntegerKey($prototype, $id)) {
             throw (new ModelNotFoundException)->setModel($modelClass, [$id]);
         }
         $model = in_array(HasUniqueStringIds::class, class_uses_recursive($modelClass), true)
@@ -133,6 +131,28 @@ final class SeoOwnerRegistry
         }
 
         return $model;
+    }
+
+    /**
+     * Reject keys the owner's key column cannot hold before PostgreSQL raises an invalid-text or range error.
+     */
+    private function fitsIntegerKey(Model $owner, string $id): bool
+    {
+        if (preg_match('/\A(-?)0*(\d+)\z/', $id, $match) !== 1 || (string) (int) $match[2] !== $match[2]) {
+            return false;
+        }
+        $key = (int) ($match[1].$match[2]);
+        $connection = $owner->getConnection();
+        if (abs($key) <= 32767 || $connection->getDriverName() !== 'pgsql') {
+            return true;
+        }
+        $maximum = match (strtolower($connection->getSchemaBuilder()->getColumnType($owner->getTable(), $owner->getKeyName()))) {
+            'int2', 'smallint' => 32767,
+            'int4', 'integer' => 2147483647,
+            default => PHP_INT_MAX,
+        };
+
+        return $key >= -$maximum - 1 && $key <= $maximum;
     }
 
     /**

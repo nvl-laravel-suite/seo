@@ -164,8 +164,8 @@ final readonly class SeoProfiles
     /** @return array{active:int,archived:int,total:int} */
     public function status(Authenticatable|SystemActor $actor, ?string $scope = null): array
     {
-        $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::List, scope: $scope));
         $scope = $scope === null ? null : SeoScope::normalize($scope);
+        $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::List, scope: $scope));
         $query = SeoModelRegistry::profiles()->when(
             $scope !== null,
             static fn ($builder) => $builder->where('scope', $scope),
@@ -192,6 +192,7 @@ final readonly class SeoProfiles
             ->findOrFail($sourceId);
         $owner = $source->seoable()->firstOrFail();
         $target = $this->owners->resolve($this->owners->aliasFor($target), SeoModelIdentifier::required($target));
+        $scope = SeoScope::normalize($scope);
         $this->authorization->authorize(new SeoAuthorizationContext(actor: $actor, ability: SeoAbility::Duplicate, profile: $source, owner: $owner, ownerAlias: $this->owners->aliasFor($owner), targetOwner: $target, targetOwnerAlias: $this->owners->aliasFor($target), scope: $scope));
 
         /** @var array<string, array<string, mixed>> $translations */

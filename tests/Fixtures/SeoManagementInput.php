@@ -153,9 +153,9 @@ final class SeoManagementInput
         return [
             'isIndexable' => ['sometimes', 'boolean'],
             'isFollowable' => ['sometimes', 'boolean'],
-            'maxSnippet' => ['sometimes', 'nullable', 'integer', 'min:-1'],
+            'maxSnippet' => ['sometimes', 'nullable', 'integer', 'min:-1', 'max:2147483647'],
             'maxImagePreview' => ['sometimes', 'nullable', Rule::in(['none', 'standard', 'large'])],
-            'maxVideoPreview' => ['sometimes', 'nullable', 'integer', 'min:-1'],
+            'maxVideoPreview' => ['sometimes', 'nullable', 'integer', 'min:-1', 'max:2147483647'],
             'sitemapIncluded' => ['sometimes', 'boolean'],
             'sitemapPriority' => ['sometimes', 'nullable', 'numeric', 'between:0,1'],
             'sitemapChangeFrequency' => ['sometimes', 'nullable', Rule::enum(SitemapChangeFrequency::class)],

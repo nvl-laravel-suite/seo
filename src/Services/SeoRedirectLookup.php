@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Nvl\Seo\Services;
 
+use Carbon\CarbonImmutable;
 use Nvl\Seo\Models\SeoRedirect;
+use Nvl\Seo\Support\SeoInstantCast;
 
 /**
  * Resolves active redirects with localized-first global fallback semantics.
@@ -46,7 +48,7 @@ final class SeoRedirectLookup
             ->where('source_hash', SeoRedirect::sourceHash($scope, $locale, $source))
             ->where('is_active', true)
             ->where(static function ($query): void {
-                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', SeoInstantCast::format(CarbonImmutable::now('UTC')));
             })
             ->when(
                 $ignoreId !== null,

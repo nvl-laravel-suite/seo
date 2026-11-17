@@ -10,6 +10,13 @@ Adoption runs through nvl:adopt with reviewed, checkpointed batches and an expli
 
 ## Unreleased
 
+Redirect `expires_at` is now written and compared as a UTC instant with an explicit `+00:00` offset and read back as a UTC `CarbonImmutable`. Earlier releases wrote the application-timezone wall clock without an offset, which repeats inside a daylight-saving overlap, so an expired redirect became active again for that hour. Convert existing rows once, during a redirect write freeze, before serving the new release:
+
+- PostgreSQL (`timestamptz`): rows are already correct when the database session timezone equalled `app.timezone`. Otherwise run `UPDATE nvl_seo_redirects SET expires_at = (expires_at AT TIME ZONE '<session timezone>') AT TIME ZONE '<app.timezone>' WHERE expires_at IS NOT NULL;`.
+- SQLite: read each raw value, parse it with `CarbonImmutable::parse($raw, $appTimezone)` and write `->utc()->format('Y-m-d H:i:sP')`.
+
+Substitute your configured table name. Code that formats `expires_at` without `->setTimezone(...)` now sees UTC values; the instants are unchanged.
+
 `SeoReader::resolve()` with a `SeoProfile` now throws `InvalidSeoMutationException` when the `$scope` argument differs from the profile's scope (pass `null` to use the stored scope), and throws `ModelNotFoundException` when the profile's owner is hidden or deleted, so a host preview endpoint that resolves by profile should catch `ModelNotFoundException` for soft-deleted or hidden owners. Its `SeoAuthorizationContext` now carries the canonical owner in `owner` and the profile in `profile`, not the profile in `owner`; update custom `SeoAuthorization` implementations that inspected `owner` for a profile. An archived profile resolves to the site defaults.
 
 `expected_revision` values that validation accepts as integers, including numeric strings, are now enforced. Clients that sent a stale numeric string previously overwrote newer data and now receive a stale-revision exception.

@@ -29,7 +29,8 @@ final class SeoPath
             return null;
         }
 
-        if (mb_strlen($path) > 2048
+        if (! mb_check_encoding($path, 'UTF-8')
+            || mb_strlen($path) > 2048
             || preg_match('/[\x00-\x20\x7F\\\\]/', $path) === 1
             || str_contains($path, '?')
             || str_contains($path, '#')) {
