@@ -5,6 +5,8 @@ All notable changes to `nvl/seo` are documented here.
 
 ## [Unreleased]
 
+## [7.4.0] - 2026-11-17
+
 ### Fixed
 
 - Integer owner lookups by alias validate the original identifier as a signed integer, so a value such as `0-1` is not found before querying instead of passing as `-1` and raising a PostgreSQL invalid-text error. Leading zeros after a minus sign are now accepted as PostgreSQL reads them, so `-05` resolves the owner with key -5.
@@ -15,6 +17,12 @@ All notable changes to `nvl/seo` are documented here.
 - Profile titles, descriptions, robots, keywords, authors, image references and alt text, Open Graph and Twitter copy reject NUL bytes and invalid UTF-8 with a validation error. PostgreSQL silently truncated such text at the NUL byte or failed with a raw SQLSTATE 22021 error.
 - Redirect source paths, redirect targets and profile paths reject invalid UTF-8 instead of failing in PostgreSQL with SQLSTATE 22021; public resolution of such a path finds no redirect.
 - Profile `maxSnippet` and `maxVideoPreview` reject values above 2147483647, which their integer columns cannot store.
+
+<!-- NVL GENERATED CHANGES START -->
+### Changed
+
+- consumer-audit fixes across the suite, UTC timestamps, core/forms release ordering
+<!-- NVL GENERATED CHANGES END -->
 
 ## [7.3.0] - 2026-11-17
 
